@@ -12,6 +12,10 @@ class ConflictDeclarationDecision
 {
     public function decide(ConflictDeclaration $declaration, string $outcome, User $decidedBy): ConflictDeclaration
     {
+        if (! $decidedBy->isPlatformAdmin()) {
+            throw new DomainStateTransitionException('Only a platform administrator can determine a conflict declaration.');
+        }
+
         if (! in_array($outcome, ['cleared', 'disqualified'], true)) {
             throw new DomainStateTransitionException('A conflict declaration can only be cleared or disqualified.');
         }

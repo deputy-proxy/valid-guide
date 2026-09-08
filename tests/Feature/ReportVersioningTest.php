@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use App\Models\Report;
 use App\Models\ReportVersion;
 use App\Models\User;
 use App\Services\DomainStateTransitionException;

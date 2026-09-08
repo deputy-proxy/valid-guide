@@ -31,6 +31,17 @@ class AuditorEvaluationSubmission
                 throw new DomainStateTransitionException('An auditor assignment must be accepted before submission.');
             }
 
+            $cleared = $assignment->conflictDeclarations()
+                ->where('outcome', 'cleared')
+                ->whereNotNull('determined_at')
+                ->exists();
+
+            if (! $cleared) {
+                throw new DomainStateTransitionException(
+                    'An auditor evaluation cannot be submitted until the assignment conflict declaration has been cleared.',
+                );
+            }
+
             if ($auditorEvaluation->criterionResults()->count() === 0) {
                 throw new DomainStateTransitionException('An auditor evaluation must contain at least one criterion result before submission.');
             }

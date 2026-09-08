@@ -70,4 +70,9 @@ class Evaluation extends Model
     {
         return $this->hasMany(EvaluationDecision::class);
     }
+
+    public function findings(): HasMany
+    {
+        return $this->hasMany(Finding::class);
+    }
 }

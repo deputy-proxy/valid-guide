@@ -4,7 +4,8 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration {
+return new class extends Migration
+{
     public function up(): void
     {
         Schema::create('audit_logs', function (Blueprint $table) {
@@ -17,9 +18,13 @@ return new class extends Migration {
             $table->json('after')->nullable();
             $table->json('metadata')->nullable();
             $table->timestamp('created_at');
-            $table->index(['auditable_type','auditable_id']);
-            $table->index(['event','created_at']);
+            $table->index(['auditable_type', 'auditable_id']);
+            $table->index(['event', 'created_at']);
         });
     }
-    public function down(): void { Schema::dropIfExists('audit_logs'); }
+
+    public function down(): void
+    {
+        Schema::dropIfExists('audit_logs');
+    }
 };

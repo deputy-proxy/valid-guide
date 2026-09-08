@@ -15,6 +15,7 @@ class PublicVerificationRecord extends Model
     protected $fillable = [
         'validation_id',
         'public_slug',
+        'snapshot',
         'directory_visible',
         'full_report_visible',
         'published_at',
@@ -23,6 +24,7 @@ class PublicVerificationRecord extends Model
     protected function casts(): array
     {
         return [
+            'snapshot' => 'array',
             'directory_visible' => 'boolean',
             'full_report_visible' => 'boolean',
             'published_at' => 'datetime',

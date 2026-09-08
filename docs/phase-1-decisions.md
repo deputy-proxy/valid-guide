@@ -57,4 +57,12 @@ Formal disputes are tenant-scoped, require an independent review before resoluti
 
 Resolved disputes are immutable. A `process_flawed` outcome never rewrites the original Evaluation, Auditor Evaluations, votes or decision. Instead, it creates a new Evaluation for the same product release and frozen Standard Version context, preserving the original evaluation as historical evidence.
 
+## 10. An Evaluation Request can produce multiple Evaluation records
+
+An Evaluation Request represents the commercial/intake request and is therefore not itself the historical evaluation record. Its relationship to `Evaluation` is one-to-many.
+
+This is required because a materially flawed process may result in a new Evaluation while the original Evaluation remains immutable. It also provides a clean foundation for future re-evaluation workflows without overwriting the original assessment.
+
+The request-level `evaluation_started_at` remains a lifecycle marker for the request's substantive work and is not treated as the unique start timestamp of every Evaluation record. Each Evaluation retains its own `started_at` and `completed_at` timestamps.
+
 All high-trust dispute actions are enforced in the domain service, audited, and independent of UI permissions. Raw/bulk database writes must not be used to bypass these controls.

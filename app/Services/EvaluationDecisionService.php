@@ -156,6 +156,8 @@ class EvaluationDecisionService
 
     public function decide(Evaluation $evaluation, User $decidedBy): EvaluationDecision
     {
+        $this->authorizePlatformAdmin($decidedBy);
+
         return DB::transaction(function () use ($evaluation, $decidedBy): EvaluationDecision {
             $evaluation = Evaluation::query()->whereKey($evaluation->getKey())->lockForUpdate()->firstOrFail();
             $assessment = $this->assess($evaluation);
@@ -189,6 +191,13 @@ class EvaluationDecisionService
 
             return $decisionRecord->refresh();
         });
+    }
+
+    private function authorizePlatformAdmin(User $user): void
+    {
+        if (! $user->isPlatformAdmin()) {
+            throw new DomainStateTransitionException('Only a platform administrator can record an evaluation decision.');
+        }
     }
 
     private function completeEvaluation(Evaluation $evaluation): void

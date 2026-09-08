@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use App\Enums\PlatformRole;
 use App\Enums\ValidationStatus;
 use App\Models\User;
 use App\Services\DomainStateTransitionException;

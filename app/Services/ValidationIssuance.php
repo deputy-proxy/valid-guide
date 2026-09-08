@@ -7,6 +7,7 @@ namespace App\Services;
 use App\Enums\EvaluationStatus;
 use App\Enums\ValidationStatus;
 use App\Models\Evaluation;
+use App\Models\User;
 use App\Models\Validation;
 use App\Models\ValidationBadge;
 use Illuminate\Support\Facades\DB;
@@ -14,9 +15,13 @@ use Illuminate\Support\Str;
 
 class ValidationIssuance
 {
-    public function issue(Evaluation $evaluation): Validation
+    public function issue(Evaluation $evaluation, User $issuedBy): Validation
     {
-        return DB::transaction(function () use ($evaluation): Validation {
+        if (! $issuedBy->isPlatformAdmin()) {
+            throw new DomainStateTransitionException('Only a platform administrator can issue a validation.');
+        }
+
+        return DB::transaction(function () use ($evaluation, $issuedBy): Validation {
             $evaluation = Evaluation::query()->whereKey($evaluation->getKey())->lockForUpdate()->firstOrFail();
 
             if ($evaluation->status !== EvaluationStatus::Completed) {
@@ -65,6 +70,7 @@ class ValidationIssuance
                     'product_release_id' => $evaluation->product_release_id,
                     'verification_identifier' => $verificationIdentifier,
                     'status' => ValidationStatus::Active->value,
+                    'issued_by' => $issuedBy->id,
                 ],
             );
 

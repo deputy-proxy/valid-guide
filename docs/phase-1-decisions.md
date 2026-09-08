@@ -46,3 +46,15 @@ This authorization is deliberately enforced in domain services rather than relyi
 A Report belongs to one Evaluation and cannot be deleted. Report content is never edited in place after creation. Each correction or substantive revision creates a new immutable `ReportVersion`, with sequential numbering and a mandatory change reason. The Report points to its current version, while older versions remain available as historical records.
 
 Initial report creation captures the evaluation decision and frozen Standard Version identity as snapshots. Revision workflows inherit those snapshots rather than reconstructing historical methodology state from mutable records.
+
+## 9. Clarifications and formal disputes are different workflows
+
+A Clarification Request is for questions about the published evaluation, report, methodology or process. It is not a mechanism for negotiating the outcome. Clarifications are submitted by authorized organization members after completion and answered/closed by platform administrators; submitted content becomes immutable once submitted, and answered requests cannot have their substantive content changed.
+
+A Formal Dispute is a controlled challenge to the integrity of an evaluation. It is limited to four grounds: procedural error, material factual error, conflict of interest, and flawed methodology application. Commercial dissatisfaction, disagreement with the standard itself, or a request for a more favorable result are not dispute grounds.
+
+Formal disputes are tenant-scoped, require an independent review before resolution, and cannot have an active duplicate for the same evaluation. Reviewers are assigned by platform administration and may not have participated in the original evaluation. Original participants include auditors and decision-makers, with auditor-linked findings also excluded from reviewer eligibility.
+
+Resolved disputes are immutable. A `process_flawed` outcome never rewrites the original Evaluation, Auditor Evaluations, votes or decision. Instead, it creates a new Evaluation for the same product release and frozen Standard Version context, preserving the original evaluation as historical evidence.
+
+All high-trust dispute actions are enforced in the domain service, audited, and independent of UI permissions. Raw/bulk database writes must not be used to bypass these controls.

@@ -6,6 +6,7 @@ namespace App\Policies;
 
 use App\Enums\OrganizationRole;
 use App\Models\EvaluationRequest;
+use App\Models\Organization;
 use App\Models\User;
 
 class EvaluationRequestPolicy
@@ -20,13 +21,11 @@ class EvaluationRequestPolicy
         return $evaluationRequest->organization->users()->whereKey($user->getKey())->exists();
     }
 
-    public function create(User $user): bool
+    public function create(User $user, Organization $organization): bool
     {
-        return $user->organizations()->wherePivotIn('role', [
-            OrganizationRole::Owner->value,
-            OrganizationRole::Admin->value,
-            OrganizationRole::Editor->value,
-        ])->exists();
+        return $organization->hasMemberWithRole($user, OrganizationRole::Owner)
+            || $organization->hasMemberWithRole($user, OrganizationRole::Admin)
+            || $organization->hasMemberWithRole($user, OrganizationRole::Editor);
     }
 
     public function update(User $user, EvaluationRequest $evaluationRequest): bool

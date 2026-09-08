@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Enums\ValidationStatus;
 use App\Models\User;
 use App\Services\DomainStateTransitionException;
+use App\Services\EvaluationDecisionService;
 use App\Services\ValidationIssuance;
 use App\Services\ValidationStateTransition;
 
@@ -12,7 +13,7 @@ function issuedValidation(): array
 {
     [$evaluation, $decider] = decisionFixture();
 
-    app(\App\Services\EvaluationDecisionService::class)->decide($evaluation, $decider);
+    app(EvaluationDecisionService::class)->decide($evaluation, $decider);
 
     return [app(ValidationIssuance::class)->issue($evaluation, $decider), $decider];
 }

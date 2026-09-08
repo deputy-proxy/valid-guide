@@ -31,53 +31,15 @@ class Evaluation extends Model
         ];
     }
 
-    public function request(): BelongsTo
-    {
-        return $this->belongsTo(EvaluationRequest::class, 'evaluation_request_id');
-    }
-
-    public function productRelease(): BelongsTo
-    {
-        return $this->belongsTo(ProductRelease::class);
-    }
-
-    public function standardVersion(): BelongsTo
-    {
-        return $this->belongsTo(StandardVersion::class);
-    }
-
-    public function validation(): HasOne
-    {
-        return $this->hasOne(Validation::class);
-    }
-
-    public function assignments(): HasMany
-    {
-        return $this->hasMany(AuditorAssignment::class);
-    }
-
-    public function auditorEvaluations(): HasMany
-    {
-        return $this->hasMany(AuditorEvaluation::class);
-    }
-
-    public function criterionVotes(): HasMany
-    {
-        return $this->hasMany(CriterionVote::class);
-    }
-
-    public function decisions(): HasMany
-    {
-        return $this->hasMany(EvaluationDecision::class);
-    }
-
-    public function findings(): HasMany
-    {
-        return $this->hasMany(Finding::class);
-    }
-
-    public function disputes(): HasMany
-    {
-        return $this->hasMany(Dispute::class);
-    }
+    public function request(): BelongsTo { return $this->belongsTo(EvaluationRequest::class, 'evaluation_request_id'); }
+    public function productRelease(): BelongsTo { return $this->belongsTo(ProductRelease::class); }
+    public function standardVersion(): BelongsTo { return $this->belongsTo(StandardVersion::class); }
+    public function validation(): HasOne { return $this->hasOne(Validation::class); }
+    public function assignments(): HasMany { return $this->hasMany(AuditorAssignment::class); }
+    public function auditorEvaluations(): HasMany { return $this->hasMany(AuditorEvaluation::class); }
+    public function criterionVotes(): HasMany { return $this->hasMany(CriterionVote::class); }
+    public function decisions(): HasMany { return $this->hasMany(EvaluationDecision::class); }
+    public function findings(): HasMany { return $this->hasMany(Finding::class); }
+    public function disputes(): HasMany { return $this->hasMany(Dispute::class); }
+    public function clarificationRequests(): HasMany { return $this->hasMany(ClarificationRequest::class); }
 }

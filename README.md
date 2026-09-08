@@ -2,7 +2,7 @@
 
 ## Application Plan
 
-> **Status:** Phase 0 complete · Implementation ready
+> **Status:** Phase 1 in progress · Domain foundation implemented
 > **Product:** Valid.guide Validation
 > **Stack:** Laravel 13, Filament 5, Livewire 4, Flux 2, Tailwind CSS 4
 >
@@ -11,7 +11,7 @@
 ### Phase status
 
 - **Phase 0 — Product, domain, methodology and architecture:** Complete
-- **Phase 1 — Application foundation and domain implementation:** Next
+- **Phase 1 — Application foundation and domain implementation:** In progress
 
 ### Authoritative specifications
 
@@ -462,15 +462,28 @@ Authoritative outputs:
 
 ### Phase 1 — Application Foundation & Domain Implementation
 
-Next implementation phase:
+**Status: In progress.**
 
-- reconcile the Laravel application structure with the approved domain model
-- implement enums/value objects and core Eloquent models
-- implement migrations and constraints
+Completed so far:
+
+- Domain enums for organization roles, product types, release status, standard version status, evaluation request status, evaluation status and Validation status
+- Organization and organization membership persistence
+- Product and Product Release persistence
+- Evaluation Standard and Standard Version persistence
+- Evaluation Request persistence
+- Evaluation persistence
+- Validation persistence
+- Initial Eloquent relationships and casts
+- Initial feature coverage for the domain foundation
+
+Next:
+
+- complete remaining domain entities and relationships
 - implement policies and organization tenancy
-- implement state transitions and audit logging
-- implement Standard Version and methodology data structures
-- establish automated tests for the critical domain invariants
+- implement explicit state transitions and audit logging
+- implement methodology criteria/guidance persistence
+- implement core domain services and invariants
+- expand automated tests around trust, lifecycle and authorization rules
 
 ### Phase 2 — Creator Intake & Commerce
 
@@ -533,6 +546,6 @@ These rules apply throughout implementation.
 
 ## 17. Current Status
 
-**Phase 0 is complete. The repository is implementation-ready.**
+**Phase 0 is complete. Phase 1 is in progress, with the initial domain foundation now implemented.**
 
-The next work should be Phase 1 implementation against the approved domain/database specification and Validation Methodology v1.0.
+The next work is to complete the remaining domain entities, constraints, policies, state transitions, auditability and automated invariant coverage before moving into creator intake and commerce.

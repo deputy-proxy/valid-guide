@@ -11,7 +11,25 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 class ValidationBadge extends Model
 {
     use HasFactory;
-    protected $fillable = ['validation_id','verification_identifier','status','issued_at','embed_version'];
-    protected function casts(): array { return ['status'=>ValidationStatus::class,'issued_at'=>'datetime']; }
-    public function validation(): BelongsTo { return $this->belongsTo(Validation::class); }
+
+    protected $fillable = [
+        'validation_id',
+        'verification_identifier',
+        'status',
+        'issued_at',
+        'embed_version',
+    ];
+
+    protected function casts(): array
+    {
+        return [
+            'status' => ValidationStatus::class,
+            'issued_at' => 'datetime',
+        ];
+    }
+
+    public function validation(): BelongsTo
+    {
+        return $this->belongsTo(Validation::class);
+    }
 }

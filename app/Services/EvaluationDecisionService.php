@@ -40,11 +40,13 @@ class EvaluationDecisionService
         }
 
         $voterCount = $auditorEvaluations->unique('auditor_assignment_id')->count();
+
         if ($voterCount === 0 || $voterCount % 2 === 0) {
             throw new DomainStateTransitionException('Final evaluation decisions require a positive odd number of submitted Auditor evaluations.');
         }
 
         $criterionVoting = app(CriterionVoting::class);
+
         foreach ($auditorEvaluations as $auditorEvaluation) {
             $criterionVoting->record($auditorEvaluation);
         }
@@ -111,6 +113,7 @@ class EvaluationDecisionService
             $weightedScore += $score * $weight;
 
             $dimension = $criterion->category;
+
             if ($dimension !== null && in_array($dimension, $requiredDimensions, true)) {
                 $dimensionTotals[$dimension] = ($dimensionTotals[$dimension] ?? 0.0) + ($score * $weight);
                 $dimensionWeights[$dimension] = ($dimensionWeights[$dimension] ?? 0.0) + $weight;
@@ -124,6 +127,7 @@ class EvaluationDecisionService
             }
 
             $dimensionScore = round($dimensionTotals[$dimension] / $dimensionWeights[$dimension], 2);
+
             if ($dimensionScore < 60) {
                 $blockers[] = sprintf('%s is below the 60/100 core-dimension floor.', $dimension);
             }
@@ -141,6 +145,7 @@ class EvaluationDecisionService
         }
 
         $overallScore = $totalWeight > 0 ? round($weightedScore / $totalWeight, 2) : null;
+
         if ($overallScore === null || $overallScore < 75) {
             $blockers[] = 'The weighted overall score is below 75/100.';
         }

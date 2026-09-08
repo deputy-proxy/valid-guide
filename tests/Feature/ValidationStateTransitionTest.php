@@ -16,17 +16,19 @@ function issuedValidation(): \App\Models\Validation
     return app(ValidationIssuance::class)->issue($evaluation);
 }
 
-it('supports active to suspended and back to active', function () {
+it('supports active to suspended and back to active while keeping the public record synchronized', function () {
     $validation = issuedValidation();
 
     app(ValidationStateTransition::class)->transition($validation, ValidationStatus::Suspended, 'Temporary verification hold.');
     expect($validation->refresh()->status)->toBe(ValidationStatus::Suspended)
         ->and($validation->suspended_at)->not->toBeNull()
-        ->and($validation->badge()->first()->status)->toBe(ValidationStatus::Suspended);
+        ->and($validation->badge()->first()->status)->toBe(ValidationStatus::Suspended)
+        ->and($validation->publicVerificationRecord()->first()->snapshot['status'])->toBe(ValidationStatus::Suspended->value);
 
     app(ValidationStateTransition::class)->transition($validation, ValidationStatus::Active, 'Verification hold cleared.');
     expect($validation->refresh()->status)->toBe(ValidationStatus::Active)
-        ->and($validation->badge()->first()->status)->toBe(ValidationStatus::Active);
+        ->and($validation->badge()->first()->status)->toBe(ValidationStatus::Active)
+        ->and($validation->publicVerificationRecord()->first()->snapshot['status'])->toBe(ValidationStatus::Active->value);
 });
 
 it('supports terminal revocation and prevents further transitions', function () {
@@ -36,7 +38,8 @@ it('supports terminal revocation and prevents further transitions', function () 
 
     expect($validation->refresh()->status)->toBe(ValidationStatus::Revoked)
         ->and($validation->revoked_at)->not->toBeNull()
-        ->and($validation->badge()->first()->status)->toBe(ValidationStatus::Revoked);
+        ->and($validation->badge()->first()->status)->toBe(ValidationStatus::Revoked)
+        ->and($validation->publicVerificationRecord()->first()->snapshot['status'])->toBe(ValidationStatus::Revoked->value);
 
     expect(fn () => app(ValidationStateTransition::class)->transition($validation, ValidationStatus::Active, 'Attempted reinstatement.'))
         ->toThrow(DomainStateTransitionException::class);
@@ -49,7 +52,8 @@ it('supports terminal supersession and prevents further transitions', function (
 
     expect($validation->refresh()->status)->toBe(ValidationStatus::Superseded)
         ->and($validation->superseded_at)->not->toBeNull()
-        ->and($validation->badge()->first()->status)->toBe(ValidationStatus::Superseded);
+        ->and($validation->badge()->first()->status)->toBe(ValidationStatus::Superseded)
+        ->and($validation->publicVerificationRecord()->first()->snapshot['status'])->toBe(ValidationStatus::Superseded->value);
 });
 
 it('requires a reason for validation status changes', function () {

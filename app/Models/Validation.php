@@ -72,4 +72,9 @@ class Validation extends Model
     {
         return $this->hasOne(ValidationBadge::class);
     }
+
+    public function publicVerificationRecord(): HasOne
+    {
+        return $this->hasOne(PublicVerificationRecord::class);
+    }
 }

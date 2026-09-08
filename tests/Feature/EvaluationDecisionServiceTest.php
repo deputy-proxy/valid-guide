@@ -20,7 +20,7 @@ use App\Services\DomainStateTransitionException;
 use App\Services\EvaluationDecisionService;
 use Illuminate\Support\Facades\DB;
 
-function decisionFixture(float $score = 80): array
+function decisionFixture(float $score = 80, bool $withSubmission = true): array
 {
     $organization = DB::table('organizations')->insertGetId([
         'name' => 'Decision Test',
@@ -92,14 +92,17 @@ function decisionFixture(float $score = 80): array
         'determined_at' => now(),
     ]);
 
-    $auditorEvaluation = AuditorEvaluation::create([
-        'evaluation_id' => $evaluation->id,
-        'auditor_assignment_id' => $assignment->id,
-        'version' => 1,
-        'status' => 'submitted',
-        'submitted_at' => now(),
-        'locked_at' => now(),
-    ]);
+    $auditorEvaluation = null;
+    if ($withSubmission) {
+        $auditorEvaluation = AuditorEvaluation::create([
+            'evaluation_id' => $evaluation->id,
+            'auditor_assignment_id' => $assignment->id,
+            'version' => 1,
+            'status' => 'submitted',
+            'submitted_at' => now(),
+            'locked_at' => now(),
+        ]);
+    }
 
     foreach (range(1, 10) as $number) {
         $criterion = Criterion::create([
@@ -112,16 +115,18 @@ function decisionFixture(float $score = 80): array
             'is_mandatory' => $number === 1,
         ]);
 
-        $resultScore = $number === 1 ? $score : 80;
-        $result = CriterionResult::create([
-            'auditor_evaluation_id' => $auditorEvaluation->id,
-            'criterion_id' => $criterion->id,
-            'assessment' => $resultScore >= 75 ? 'meets' : 'partially_meets',
-            'score' => $resultScore,
-            'rationale' => 'Documented test rationale.',
-            'confidence' => 90,
-            'submitted_at' => now(),
-        ]);
+        if ($auditorEvaluation !== null) {
+            $resultScore = $number === 1 ? $score : 80;
+            CriterionResult::create([
+                'auditor_evaluation_id' => $auditorEvaluation->id,
+                'criterion_id' => $criterion->id,
+                'assessment' => $resultScore >= 75 ? 'meets' : 'partially_meets',
+                'score' => $resultScore,
+                'rationale' => 'Documented test rationale.',
+                'confidence' => 90,
+                'submitted_at' => now(),
+            ]);
+        }
     }
 
     return [$evaluation, $auditor];
@@ -150,8 +155,7 @@ test('evaluation decision rejects a mandatory criterion below threshold', functi
 });
 
 test('evaluation decision refuses incomplete auditor work', function () {
-    [$evaluation, $decider] = decisionFixture();
-    $evaluation->auditorEvaluations()->delete();
+    [$evaluation, $decider] = decisionFixture(80, false);
 
     expect(fn () => app(EvaluationDecisionService::class)->decide($evaluation, $decider))
         ->toThrow(DomainStateTransitionException::class);

@@ -6,7 +6,6 @@ namespace App\Services;
 
 use App\Enums\PlatformRole;
 use App\Enums\StandardVersionStatus;
-use App\Models\EvaluationStandard;
 use App\Models\StandardVersion;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
@@ -35,6 +34,14 @@ class StandardVersionGovernance
                     "Invalid standard version transition from {$from} to {$to->value}.",
                 );
             }
+
+            $before = [
+                'status' => $from,
+                'effective_at' => $version->effective_at?->toISOString(),
+                'retired_at' => $version->retired_at?->toISOString(),
+                'approved_by' => $version->approved_by,
+                'approved_at' => $version->approved_at?->toISOString(),
+            ];
 
             if ($to === StandardVersionStatus::Scheduled) {
                 if ($version->effective_at === null || $version->effective_at->lte(now())) {
@@ -70,14 +77,6 @@ class StandardVersionGovernance
             if ($to === StandardVersionStatus::Retired) {
                 $version->retired_at = now();
             }
-
-            $before = [
-                'status' => $from,
-                'effective_at' => $version->effective_at?->toISOString(),
-                'retired_at' => $version->retired_at?->toISOString(),
-                'approved_by' => $version->approved_by,
-                'approved_at' => $version->approved_at?->toISOString(),
-            ];
 
             $version->status = $to;
             $version->save();

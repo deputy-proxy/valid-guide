@@ -51,6 +51,11 @@ class Evaluation extends Model
         return $this->hasOne(Validation::class);
     }
 
+    public function assignments(): HasMany
+    {
+        return $this->hasMany(AuditorAssignment::class);
+    }
+
     public function criterionVotes(): HasMany
     {
         return $this->hasMany(CriterionVote::class);

@@ -63,6 +63,18 @@ it('requires a reason for validation status changes', function () {
         ->toThrow(DomainStateTransitionException::class);
 });
 
+it('rejects direct mutation of public verification record identity and deletion', function () {
+    $record = issuedValidation()->publicVerificationRecord()->first();
+
+    $record->public_slug = 'tampered';
+
+    expect(fn () => $record->save())
+        ->toThrow(DomainStateTransitionException::class);
+
+    expect(fn () => $record->delete())
+        ->toThrow(DomainStateTransitionException::class);
+});
+
 it('rejects direct mutation of badge identity and deletion', function () {
     $validation = issuedValidation();
     $badge = $validation->badge()->first();

@@ -1,0 +1,158 @@
+<?php
+
+declare(strict_types=1);
+
+use App\Enums\EvaluationStatus;
+use App\Models\AuditorAssignment;
+use App\Models\AuditorEvaluation;
+use App\Models\ConflictDeclaration;
+use App\Models\Criterion;
+use App\Models\CriterionResult;
+use App\Models\Evaluation;
+use App\Models\EvaluationDecision;
+use App\Models\EvaluationRequest;
+use App\Models\EvaluationStandard;
+use App\Models\Product;
+use App\Models\ProductRelease;
+use App\Models\StandardVersion;
+use App\Models\User;
+use App\Services\DomainStateTransitionException;
+use App\Services\EvaluationDecisionService;
+use Illuminate\Support\Facades\DB;
+
+function decisionFixture(float $score = 80): array
+{
+    $organization = DB::table('organizations')->insertGetId([
+        'name' => 'Decision Test',
+        'slug' => 'decision-test-'.uniqid(),
+        'status' => 'active',
+        'created_at' => now(),
+        'updated_at' => now(),
+    ]);
+
+    $product = Product::create([
+        'organization_id' => $organization,
+        'title' => 'Decision Course',
+        'slug' => 'decision-course-'.uniqid(),
+    ]);
+
+    $release = ProductRelease::create([
+        'product_id' => $product->id,
+        'release_identifier' => 'v1.0',
+        'title_snapshot' => 'Decision Course',
+        'version' => '1.0',
+        'status' => 'draft',
+    ]);
+
+    $request = EvaluationRequest::create([
+        'organization_id' => $organization,
+        'product_id' => $product->id,
+        'service_package' => 'standard',
+        'complexity' => 'standard',
+        'quoted_price' => 100,
+        'currency' => 'EUR',
+        'status' => 'ready',
+    ]);
+
+    $standard = EvaluationStandard::create([
+        'name' => 'Decision Standard',
+        'slug' => 'decision-standard-'.uniqid(),
+    ]);
+
+    $version = StandardVersion::create([
+        'evaluation_standard_id' => $standard->id,
+        'version' => '1.0',
+        'status' => 'effective',
+    ]);
+
+    $evaluation = Evaluation::create([
+        'evaluation_request_id' => $request->id,
+        'product_release_id' => $release->id,
+        'standard_version_id' => $version->id,
+        'status' => EvaluationStatus::ReadyForDecision,
+    ]);
+
+    $auditor = User::factory()->create();
+    $assignment = AuditorAssignment::create([
+        'evaluation_id' => $evaluation->id,
+        'auditor_id' => $auditor->id,
+        'sequence' => 1,
+        'status' => 'accepted',
+        'assigned_at' => now(),
+        'accepted_at' => now(),
+    ]);
+
+    ConflictDeclaration::create([
+        'evaluation_id' => $evaluation->id,
+        'auditor_assignment_id' => $assignment->id,
+        'declaration_type' => 'assignment',
+        'disclosure' => 'No known conflict.',
+        'outcome' => 'cleared',
+        'determined_by' => $auditor->id,
+        'determined_at' => now(),
+    ]);
+
+    $auditorEvaluation = AuditorEvaluation::create([
+        'evaluation_id' => $evaluation->id,
+        'auditor_assignment_id' => $assignment->id,
+        'version' => 1,
+        'status' => 'submitted',
+        'submitted_at' => now(),
+        'locked_at' => now(),
+    ]);
+
+    foreach (range(1, 10) as $number) {
+        $criterion = Criterion::create([
+            'standard_version_id' => $version->id,
+            'code' => 'D'.$number.'-01',
+            'name' => 'Dimension '.$number,
+            'category' => 'D'.$number,
+            'sequence' => $number,
+            'weight' => 10,
+            'is_mandatory' => $number === 1,
+        ]);
+
+        $resultScore = $number === 1 ? $score : 80;
+        $result = CriterionResult::create([
+            'auditor_evaluation_id' => $auditorEvaluation->id,
+            'criterion_id' => $criterion->id,
+            'assessment' => $resultScore >= 75 ? 'meets' : 'partially_meets',
+            'score' => $resultScore,
+            'rationale' => 'Documented test rationale.',
+            'confidence' => 90,
+            'submitted_at' => now(),
+        ]);
+    }
+
+    return [$evaluation, $auditor];
+}
+
+test('evaluation decision validates when all gates are satisfied', function () {
+    [$evaluation, $decider] = decisionFixture();
+
+    $decision = app(EvaluationDecisionService::class)->decide($evaluation, $decider);
+
+    expect($decision)->toBeInstanceOf(EvaluationDecision::class)
+        ->and($decision->decision)->toBe('validated')
+        ->and((float) $decision->evaluation->overall_score)->toBe(80.0)
+        ->and($decision->evaluation->status)->toBe(EvaluationStatus::Completed)
+        ->and($decision->evaluation->criterionVotes()->count())->toBe(10);
+});
+
+test('evaluation decision rejects a mandatory criterion below threshold', function () {
+    [$evaluation, $decider] = decisionFixture(70);
+
+    $decision = app(EvaluationDecisionService::class)->decide($evaluation, $decider);
+
+    expect($decision->decision)->toBe('not_validated')
+        ->and($decision->evaluation->status)->toBe(EvaluationStatus::Completed)
+        ->and($decision->rationale)->toContain('Mandatory criterion D1-01 does not meet the 75/100 threshold.');
+});
+
+test('evaluation decision refuses incomplete auditor work', function () {
+    [$evaluation, $decider] = decisionFixture();
+    $evaluation->auditorEvaluations()->delete();
+
+    expect(fn () => app(EvaluationDecisionService::class)->decide($evaluation, $decider))
+        ->toThrow(DomainStateTransitionException::class);
+});

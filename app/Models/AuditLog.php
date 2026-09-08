@@ -1,10 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use LogicException;
 
 class AuditLog extends Model
 {
@@ -22,6 +25,17 @@ class AuditLog extends Model
         'metadata',
         'created_at',
     ];
+
+    protected static function booted(): void
+    {
+        static::updating(function (): void {
+            throw new LogicException('Audit logs are immutable.');
+        });
+
+        static::deleting(function (): void {
+            throw new LogicException('Audit logs cannot be deleted.');
+        });
+    }
 
     protected function casts(): array
     {

@@ -1,12 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models;
 
 use App\Enums\EvaluationRequestStatus;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class EvaluationRequest extends Model
 {
@@ -42,8 +44,8 @@ class EvaluationRequest extends Model
         return $this->belongsTo(Product::class);
     }
 
-    public function evaluation(): HasOne
+    public function evaluations(): HasMany
     {
-        return $this->hasOne(Evaluation::class);
+        return $this->hasMany(Evaluation::class);
     }
 }

@@ -60,6 +60,8 @@ class ValidationStateTransition
                 $badge->save();
             }
 
+            (new PublicVerificationPublication)->sync($validation);
+
             AuditLogger::record(
                 event: 'validation.status_changed',
                 auditable: $validation,

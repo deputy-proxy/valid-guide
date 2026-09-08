@@ -85,7 +85,7 @@ function auditorEvaluationFixture(): array
     ConflictDeclaration::create([
         'evaluation_id' => $evaluation->id,
         'auditor_assignment_id' => $assignment->id,
-        'declaration_type' => 'annual',
+        'declaration_type' => 'assignment',
         'disclosure' => 'No known conflict.',
         'outcome' => 'cleared',
         'determined_by' => $auditor->id,

@@ -75,4 +75,9 @@ class Evaluation extends Model
     {
         return $this->hasMany(Finding::class);
     }
+
+    public function disputes(): HasMany
+    {
+        return $this->hasMany(Dispute::class);
+    }
 }

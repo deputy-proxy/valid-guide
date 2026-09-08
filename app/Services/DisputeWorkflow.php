@@ -50,9 +50,9 @@ class DisputeWorkflow
                 'submitted_by' => $submittedBy->id,
                 'type' => 'formal',
                 'grounds' => $normalizedGrounds,
+                'statement' => trim($statement),
                 'status' => DisputeStatus::Submitted,
                 'submitted_at' => now(),
-                'decision_rationale' => trim($statement),
             ]);
             AuditLogger::record(event: 'dispute.submitted', auditable: $dispute, after: [
                 'evaluation_id' => $evaluation->id,

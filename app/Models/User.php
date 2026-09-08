@@ -6,6 +6,7 @@ namespace App\Models;
 
 use App\Enums\PlatformRole;
 use Database\Factories\UserFactory;
+use Filament\Panel;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -57,6 +58,11 @@ class User extends Authenticatable implements PasskeyUser
     public function isPlatformAdmin(): bool
     {
         return $this->platform_role === PlatformRole::Admin;
+    }
+
+    public function canAccessPanel(Panel $panel): bool
+    {
+        return $panel->getId() !== 'admin' || $this->isPlatformAdmin();
     }
 
     public function initials(): string

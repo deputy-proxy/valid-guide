@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\DomainStateTransitionException;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -28,6 +29,21 @@ class CriterionResult extends Model
             'confidence' => 'decimal:2',
             'submitted_at' => 'datetime',
         ];
+    }
+
+    protected static function booted(): void
+    {
+        static::updating(function (self $result): void {
+            if ($result->auditorEvaluation()->whereNotNull('locked_at')->exists()) {
+                throw new DomainStateTransitionException('Criterion results are immutable after auditor submission.');
+            }
+        });
+
+        static::deleting(function (self $result): void {
+            if ($result->auditorEvaluation()->whereNotNull('locked_at')->exists()) {
+                throw new DomainStateTransitionException('Criterion results are immutable after auditor submission.');
+            }
+        });
     }
 
     public function auditorEvaluation(): BelongsTo

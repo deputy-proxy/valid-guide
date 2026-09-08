@@ -128,16 +128,16 @@ it('does not allow overlapping effective versions of the same standard', functio
     $second = StandardVersion::create([
         'evaluation_standard_id' => $version->evaluation_standard_id,
         'version' => '2.0',
-        'effective_at' => now(),
+        'effective_at' => now()->subDay(),
         'status' => StandardVersionStatus::Draft,
     ]);
 
-    $second->effective_at = now()->subMinute();
-    $second->save();
-    $this->travelBack();
+    app(StandardVersionGovernance::class)->schedule($second, $admin);
 
-    expect(fn () => app(StandardVersionGovernance::class)->schedule($second, $admin))
+    expect(fn () => app(StandardVersionGovernance::class)->makeEffective($second->fresh(), $admin))
         ->toThrow(DomainStateTransitionException::class);
+
+    $this->travelBack();
 });
 
 it('requires a platform administrator for standard governance', function () {

@@ -464,26 +464,29 @@ Authoritative outputs:
 
 **Status: In progress.**
 
-Completed so far:
+Implemented:
 
-- Domain enums for organization roles, product types, release status, standard version status, evaluation request status, evaluation status and Validation status
-- Organization and organization membership persistence
-- Product and Product Release persistence
-- Evaluation Standard and Standard Version persistence
-- Evaluation Request persistence
-- Evaluation persistence
-- Validation persistence
-- Initial Eloquent relationships and casts
-- Initial feature coverage for the domain foundation
+- domain enums and persistence for organization roles, product types, release status, standard versions, evaluation requests, evaluations and Validation
+- organization tenancy and authorization policies
+- explicit state-transition services with audit logging
+- platform-admin separation for high-trust operations
+- immutable Auditor submissions, criterion results and votes
+- multi-Auditor criterion aggregation
+- Evaluation Decision gates and Validation issuance
+- Badge and Public Verification Record persistence/publication
+- versioned immutable Reports
+- Clarification and Formal Dispute workflows
+- independent dispute reviewers and process-flaw re-evaluation path
+- Evaluation Request one-to-many Evaluation relationship to preserve historical re-evaluations
 
-Next:
+Remaining Phase 1 work:
 
-- complete remaining domain entities and relationships
-- implement policies and organization tenancy
-- implement explicit state transitions and audit logging
-- implement methodology criteria/guidance persistence
-- implement core domain services and invariants
-- expand automated tests around trust, lifecycle and authorization rules
+- reconcile the implementation with the full domain/database specification
+- complete methodology guidance/applicability persistence and validation
+- harden domain invariants against all mutation paths
+- complete remaining lifecycle entities and relationships
+- expand authorization, trust, lifecycle and methodology test coverage
+- resolve the current CI/style and dependency-lock issues
 
 ### Phase 2 — Creator Intake & Commerce
 
@@ -531,21 +534,9 @@ Next:
 
 ## 16. Development Rules
 
-These rules apply throughout implementation.
-
-1. **Important decisions must be documented.** Update the relevant specification whenever an architectural, product, methodology, workflow, policy or implementation-significant decision changes.
-2. **Do not silently contradict an approved specification.** If implementation reveals a necessary change, document the change before encoding it.
-3. **Preserve historical truth.** Evaluation inputs, Auditor work, standards, decisions, reports and Validation history must not be casually overwritten.
-4. **Keep payment separate from outcome.** No code path may infer Validation from payment state.
-5. **Prefer explicit domain transitions over arbitrary CRUD.**
-6. **Enforce authorization server-side.** UI visibility is not a security boundary.
-7. **Test invariants, not just happy paths.** Critical trust and lifecycle rules require automated coverage.
-8. **Avoid premature complexity.** Build the smallest architecture that preserves the credibility of the Validation system.
-
----
-
-## 17. Current Status
-
-**Phase 0 is complete. Phase 1 is in progress, with the initial domain foundation now implemented.**
-
-The next work is to complete the remaining domain entities, constraints, policies, state transitions, auditability and automated invariant coverage before moving into creator intake and commerce.
+1. Keep domain rules in explicit services/policies rather than relying on UI behavior.
+2. Treat historical trust and evaluation records as immutable wherever specified.
+3. Record important state changes and administrative actions in the audit log.
+4. Never introduce a commercial mechanism that can reward a positive evaluation outcome.
+5. Update the relevant documentation whenever an important product, architecture, methodology, workflow or security decision changes.
+6. Prefer explicit domain workflows over generic CRUD when direct editing could violate an invariant.

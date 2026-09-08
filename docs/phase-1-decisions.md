@@ -33,6 +33,10 @@ Issuing a Validation, creating its Badge and creating its initial Public Verific
 
 Validation status changes update the Badge and the Public Verification Record through `ValidationStateTransition`. Direct mutation/deletion of trust identities is blocked at the model layer. Bulk/raw database mutation remains outside these protections and must not be used for trust-domain writes.
 
-## 7. High-trust authorization remains a Phase 1 follow-up
+## 7. Platform administration is separate from organization membership
 
-The current domain services enforce state and data invariants but do not yet constitute the complete platform-admin authorization boundary. Before exposing COI determinations, final Evaluation Decisions, Validation status changes or public publication controls through UI, explicit authorization policies for platform administrators must be implemented and tested.
+Platform administration is represented by a dedicated nullable `users.platform_role` field and `PlatformRole::Admin`. Organization membership roles remain tenant-scoped and cannot grant platform authority.
+
+High-trust operations are now explicitly guarded at the domain-service boundary. Recording an Evaluation Decision, determining a Conflict Declaration, issuing a Validation, and changing Validation status each require a platform administrator. The Filament admin panel uses the same platform-admin check, preventing an ordinary organization member from entering the platform administration surface.
+
+This authorization is deliberately enforced in domain services rather than relying only on UI visibility. UI/policy layers may provide additional restrictions, but bypassing the UI must not bypass the platform trust boundary.

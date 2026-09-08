@@ -5,8 +5,6 @@ declare(strict_types=1);
 use App\Enums\EvaluationStatus;
 use App\Enums\ValidationStatus;
 use App\Models\Evaluation;
-use App\Models\PublicVerificationRecord;
-use App\Models\ValidationBadge;
 use App\Services\DomainStateTransitionException;
 use App\Services\EvaluationDecisionService;
 use App\Services\ValidationIssuance;
@@ -35,7 +33,7 @@ it('issues an active validation, badge, and public verification record atomicall
         ->and($record->snapshot['verification_identifier'])->toBe($validation->verification_identifier)
         ->and($record->snapshot['status'])->toBe(ValidationStatus::Active->value)
         ->and($record->snapshot['decision'])->toBe('validated')
-        ->and($record->snapshot['overall_score'])->toBe(80.0);
+        ->and($record->snapshot['overall_score'])->toBe('80.00');
 });
 
 it('refuses to issue validation for a not validated evaluation', function () {

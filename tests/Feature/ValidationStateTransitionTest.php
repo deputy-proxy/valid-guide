@@ -2,53 +2,55 @@
 
 declare(strict_types=1);
 
+use App\Enums\PlatformRole;
 use App\Enums\ValidationStatus;
+use App\Models\User;
 use App\Services\DomainStateTransitionException;
 use App\Services\ValidationIssuance;
 use App\Services\ValidationStateTransition;
 
-function issuedValidation(): \App\Models\Validation
+function issuedValidation(): array
 {
     [$evaluation, $decider] = decisionFixture();
 
     app(\App\Services\EvaluationDecisionService::class)->decide($evaluation, $decider);
 
-    return app(ValidationIssuance::class)->issue($evaluation);
+    return [app(ValidationIssuance::class)->issue($evaluation, $decider), $decider];
 }
 
 it('supports active to suspended and back to active while keeping the public record synchronized', function () {
-    $validation = issuedValidation();
+    [$validation, $admin] = issuedValidation();
 
-    app(ValidationStateTransition::class)->transition($validation, ValidationStatus::Suspended, 'Temporary verification hold.');
+    app(ValidationStateTransition::class)->transition($validation, ValidationStatus::Suspended, $admin, 'Temporary verification hold.');
     expect($validation->refresh()->status)->toBe(ValidationStatus::Suspended)
         ->and($validation->suspended_at)->not->toBeNull()
         ->and($validation->badge()->first()->status)->toBe(ValidationStatus::Suspended)
         ->and($validation->publicVerificationRecord()->first()->snapshot['status'])->toBe(ValidationStatus::Suspended->value);
 
-    app(ValidationStateTransition::class)->transition($validation, ValidationStatus::Active, 'Verification hold cleared.');
+    app(ValidationStateTransition::class)->transition($validation, ValidationStatus::Active, $admin, 'Verification hold cleared.');
     expect($validation->refresh()->status)->toBe(ValidationStatus::Active)
         ->and($validation->badge()->first()->status)->toBe(ValidationStatus::Active)
         ->and($validation->publicVerificationRecord()->first()->snapshot['status'])->toBe(ValidationStatus::Active->value);
 });
 
 it('supports terminal revocation and prevents further transitions', function () {
-    $validation = issuedValidation();
+    [$validation, $admin] = issuedValidation();
 
-    app(ValidationStateTransition::class)->transition($validation, ValidationStatus::Revoked, 'Material integrity issue confirmed.');
+    app(ValidationStateTransition::class)->transition($validation, ValidationStatus::Revoked, $admin, 'Material integrity issue confirmed.');
 
     expect($validation->refresh()->status)->toBe(ValidationStatus::Revoked)
         ->and($validation->revoked_at)->not->toBeNull()
         ->and($validation->badge()->first()->status)->toBe(ValidationStatus::Revoked)
         ->and($validation->publicVerificationRecord()->first()->snapshot['status'])->toBe(ValidationStatus::Revoked->value);
 
-    expect(fn () => app(ValidationStateTransition::class)->transition($validation, ValidationStatus::Active, 'Attempted reinstatement.'))
+    expect(fn () => app(ValidationStateTransition::class)->transition($validation, ValidationStatus::Active, $admin, 'Attempted reinstatement.'))
         ->toThrow(DomainStateTransitionException::class);
 });
 
 it('supports terminal supersession and prevents further transitions', function () {
-    $validation = issuedValidation();
+    [$validation, $admin] = issuedValidation();
 
-    app(ValidationStateTransition::class)->transition($validation, ValidationStatus::Superseded, 'A newer validated release supersedes this validation.');
+    app(ValidationStateTransition::class)->transition($validation, ValidationStatus::Superseded, $admin, 'A newer validated release supersedes this validation.');
 
     expect($validation->refresh()->status)->toBe(ValidationStatus::Superseded)
         ->and($validation->superseded_at)->not->toBeNull()
@@ -57,14 +59,23 @@ it('supports terminal supersession and prevents further transitions', function (
 });
 
 it('requires a reason for validation status changes', function () {
-    $validation = issuedValidation();
+    [$validation, $admin] = issuedValidation();
 
-    expect(fn () => app(ValidationStateTransition::class)->transition($validation, ValidationStatus::Suspended, ''))
+    expect(fn () => app(ValidationStateTransition::class)->transition($validation, ValidationStatus::Suspended, $admin, ''))
+        ->toThrow(DomainStateTransitionException::class);
+});
+
+it('requires a platform administrator to change validation status', function () {
+    [$validation] = issuedValidation();
+    $nonAdmin = User::factory()->create(['platform_role' => null]);
+
+    expect(fn () => app(ValidationStateTransition::class)->transition($validation, ValidationStatus::Suspended, $nonAdmin, 'Temporary verification hold.'))
         ->toThrow(DomainStateTransitionException::class);
 });
 
 it('rejects direct mutation of public verification record identity and deletion', function () {
-    $record = issuedValidation()->publicVerificationRecord()->first();
+    [$validation] = issuedValidation();
+    $record = $validation->publicVerificationRecord()->first();
 
     $record->public_slug = 'tampered';
 
@@ -76,7 +87,7 @@ it('rejects direct mutation of public verification record identity and deletion'
 });
 
 it('rejects direct mutation of badge identity and deletion', function () {
-    $validation = issuedValidation();
+    [$validation] = issuedValidation();
     $badge = $validation->badge()->first();
 
     $badge->verification_identifier = 'VG-TAMPERED';

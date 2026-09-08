@@ -10,9 +10,35 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Finding extends Model
 {
     use HasFactory;
-    protected $fillable = ['evaluation_id','criterion_id','auditor_evaluation_id','type','severity','title','description','status'];
-    public function evaluation(): BelongsTo { return $this->belongsTo(Evaluation::class); }
-    public function criterion(): BelongsTo { return $this->belongsTo(Criterion::class); }
-    public function auditorEvaluation(): BelongsTo { return $this->belongsTo(AuditorEvaluation::class); }
-    public function evidence(): HasMany { return $this->hasMany(Evidence::class); }
+
+    protected $fillable = [
+        'evaluation_id',
+        'criterion_id',
+        'auditor_evaluation_id',
+        'type',
+        'severity',
+        'title',
+        'description',
+        'status',
+    ];
+
+    public function evaluation(): BelongsTo
+    {
+        return $this->belongsTo(Evaluation::class);
+    }
+
+    public function criterion(): BelongsTo
+    {
+        return $this->belongsTo(Criterion::class);
+    }
+
+    public function auditorEvaluation(): BelongsTo
+    {
+        return $this->belongsTo(AuditorEvaluation::class);
+    }
+
+    public function evidence(): HasMany
+    {
+        return $this->hasMany(Evidence::class);
+    }
 }

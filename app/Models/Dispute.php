@@ -35,8 +35,12 @@ class Dispute extends Model
     protected static function booted(): void
     {
         static::updating(function (self $dispute): void {
-            if (in_array($dispute->getOriginal('status'), [DisputeStatus::Submitted->value, DisputeStatus::Resolved->value], true)) {
-                throw new DomainStateTransitionException('Submitted or resolved disputes are immutable.');
+            $originalStatus = $dispute->getOriginal('status');
+            if ($originalStatus === DisputeStatus::Resolved->value) {
+                throw new DomainStateTransitionException('Resolved disputes are immutable.');
+            }
+            if ($originalStatus === DisputeStatus::Submitted->value && array_diff(array_keys($dispute->getDirty()), ['status'])) {
+                throw new DomainStateTransitionException('Submitted dispute content is immutable.');
             }
         });
 

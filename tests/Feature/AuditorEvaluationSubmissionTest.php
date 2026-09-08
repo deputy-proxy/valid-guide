@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Models\AuditorAssignment;
 use App\Models\AuditorEvaluation;
+use App\Models\ConflictDeclaration;
 use App\Models\Criterion;
 use App\Models\CriterionResult;
 use App\Models\Evaluation;
@@ -14,6 +15,7 @@ use App\Models\ProductRelease;
 use App\Models\StandardVersion;
 use App\Models\User;
 use App\Services\AuditorEvaluationSubmission;
+use App\Services\ConflictDeclarationDecision;
 use App\Services\DomainStateTransitionException;
 use Illuminate\Support\Facades\DB;
 
@@ -80,6 +82,16 @@ function auditorEvaluationFixture(): array
         'accepted_at' => now(),
     ]);
 
+    ConflictDeclaration::create([
+        'evaluation_id' => $evaluation->id,
+        'auditor_assignment_id' => $assignment->id,
+        'declaration_type' => 'annual',
+        'disclosure' => 'No known conflict.',
+        'outcome' => 'cleared',
+        'determined_by' => $auditor->id,
+        'determined_at' => now(),
+    ]);
+
     $criterion = Criterion::create([
         'standard_version_id' => $version->id,
         'code' => 'TEST-01',
@@ -142,5 +154,27 @@ it('prevents changes and deletion after auditor evaluation submission', function
         ->toThrow(DomainStateTransitionException::class);
 
     expect(fn () => $auditorEvaluation->delete())
+        ->toThrow(DomainStateTransitionException::class);
+});
+
+it('allows an explicit conflict decision and keeps it immutable', function () {
+    [$auditorEvaluation] = auditorEvaluationFixture();
+    $assignment = $auditorEvaluation->assignment;
+    $declaration = $assignment->conflictDeclarations()->first();
+    $decisionMaker = User::factory()->create();
+
+    $declaration->update([
+        'outcome' => 'potential_conflict',
+        'determined_by' => null,
+        'determined_at' => null,
+    ]);
+
+    $decided = app(ConflictDeclarationDecision::class)->decide($declaration, 'cleared', $decisionMaker);
+
+    expect($decided->outcome)->toBe('cleared')
+        ->and($decided->determined_by)->toBe($decisionMaker->id)
+        ->and($decided->determined_at)->not->toBeNull();
+
+    expect(fn () => $decided->update(['outcome' => 'disqualified']))
         ->toThrow(DomainStateTransitionException::class);
 });

@@ -1,7 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models;
 
+use App\Enums\PlatformRole;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
@@ -21,6 +24,7 @@ use Laravel\Fortify\TwoFactorAuthenticatable;
  * @property string $email
  * @property Carbon|null $email_verified_at
  * @property string $password
+ * @property PlatformRole|null $platform_role
  * @property string|null $two_factor_secret
  * @property string|null $two_factor_recovery_codes
  * @property Carbon|null $two_factor_confirmed_at
@@ -40,6 +44,7 @@ class User extends Authenticatable implements PasskeyUser
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'platform_role' => PlatformRole::class,
         ];
     }
 
@@ -47,6 +52,11 @@ class User extends Authenticatable implements PasskeyUser
     {
         return $this->belongsToMany(Organization::class, 'organization_memberships')
             ->withPivot('role')->withTimestamps();
+    }
+
+    public function isPlatformAdmin(): bool
+    {
+        return $this->platform_role === PlatformRole::Admin;
     }
 
     public function initials(): string

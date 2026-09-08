@@ -76,3 +76,11 @@ Draft versions are editable. Scheduling requires a platform administrator and a 
 Lifecycle metadata may change only through the governance service. A standard may have at most one effective version at a time; an effective version must be retired before a subsequent version can become effective. Every governance transition is audited.
 
 This is a trust invariant, not a UI convention. Administrative screens must use `StandardVersionGovernance`; direct/bulk mutation must not be used to alter methodology state. Existing model-level protections cover ordinary Eloquent updates/deletes for frozen version content, while raw/bulk write hardening remains part of the broader Phase 1 invariant audit.
+
+## 12. Evaluation Requests identify the exact Product Release being purchased for evaluation
+
+An Evaluation Request now carries `product_release_id` in addition to `product_id`. The release is the exact product state for which the commercial request is made, matching the evaluation and validation model's release-specific trust boundary.
+
+This avoids an ambiguity where a creator could purchase an evaluation for a Product while changing or selecting the actual release later. The Product remains the enduring entity; the Product Release is the concrete state being evaluated.
+
+The implementation uses a foreign key to `product_releases` and exposes an `EvaluationRequest::productRelease()` relationship. The existing one-to-many relationship from Evaluation Request to Evaluation remains unchanged.

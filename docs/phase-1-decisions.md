@@ -40,3 +40,9 @@ Platform administration is represented by a dedicated nullable `users.platform_r
 High-trust operations are now explicitly guarded at the domain-service boundary. Recording an Evaluation Decision, determining a Conflict Declaration, issuing a Validation, and changing Validation status each require a platform administrator. The Filament admin panel uses the same platform-admin check, preventing an ordinary organization member from entering the platform administration surface.
 
 This authorization is deliberately enforced in domain services rather than relying only on UI visibility. UI/policy layers may provide additional restrictions, but bypassing the UI must not bypass the platform trust boundary.
+
+## 8. Reports are historical, versioned records
+
+A Report belongs to one Evaluation and cannot be deleted. Report content is never edited in place after creation. Each correction or substantive revision creates a new immutable `ReportVersion`, with sequential numbering and a mandatory change reason. The Report points to its current version, while older versions remain available as historical records.
+
+Initial report creation captures the evaluation decision and frozen Standard Version identity as snapshots. Revision workflows inherit those snapshots rather than reconstructing historical methodology state from mutable records.

@@ -185,7 +185,14 @@ class EvaluationDecisionService
                 ],
             );
 
+            (new self)->completeEvaluation($evaluation);
+
             return $decisionRecord->refresh();
         });
+    }
+
+    private function completeEvaluation(Evaluation $evaluation): void
+    {
+        (new EvaluationStateTransition)->transition($evaluation, EvaluationStatus::Completed);
     }
 }

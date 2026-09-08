@@ -35,6 +35,24 @@ class AuditorAssignmentStateTransition
         }
 
         return DB::transaction(function () use ($assignment, $from, $to): AuditorAssignment {
+            $assignment = AuditorAssignment::query()
+                ->whereKey($assignment->getKey())
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            if ($to === 'accepted') {
+                $cleared = $assignment->conflictDeclarations()
+                    ->where('outcome', 'cleared')
+                    ->whereNotNull('determined_at')
+                    ->exists();
+
+                if (! $cleared) {
+                    throw new DomainStateTransitionException(
+                        'An auditor assignment cannot be accepted until its conflict declaration has been cleared.',
+                    );
+                }
+            }
+
             $assignment->status = $to;
             $now = now();
 

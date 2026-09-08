@@ -1,11 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models;
 
 use App\Enums\EvaluationStatus;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Evaluation extends Model
@@ -46,5 +49,10 @@ class Evaluation extends Model
     public function validation(): HasOne
     {
         return $this->hasOne(Validation::class);
+    }
+
+    public function criterionVotes(): HasMany
+    {
+        return $this->hasMany(CriterionVote::class);
     }
 }

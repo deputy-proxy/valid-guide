@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use App\Models\ConflictDeclaration;
 use App\Services\AuditorAssignmentStateTransition;
 use App\Services\DomainStateTransitionException;
 

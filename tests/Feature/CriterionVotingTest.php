@@ -7,7 +7,6 @@ use App\Models\User;
 use App\Services\AuditorEvaluationSubmission;
 use App\Services\CriterionVoting;
 use App\Services\DomainStateTransitionException;
-use Illuminate\Support\Facades\DB;
 
 it('records a criterion vote from a submitted auditor evaluation', function () {
     [$auditorEvaluation, $result] = auditorEvaluationFixture();

@@ -9,7 +9,26 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class PublicVerificationRecord extends Model
 {
     use HasFactory;
-    protected $fillable = ['validation_id','public_slug','directory_visible','full_report_visible','published_at'];
-    protected function casts(): array { return ['directory_visible'=>'boolean','full_report_visible'=>'boolean','published_at'=>'datetime']; }
-    public function validation(): BelongsTo { return $this->belongsTo(Validation::class); }
+
+    protected $fillable = [
+        'validation_id',
+        'public_slug',
+        'directory_visible',
+        'full_report_visible',
+        'published_at',
+    ];
+
+    protected function casts(): array
+    {
+        return [
+            'directory_visible' => 'boolean',
+            'full_report_visible' => 'boolean',
+            'published_at' => 'datetime',
+        ];
+    }
+
+    public function validation(): BelongsTo
+    {
+        return $this->belongsTo(Validation::class);
+    }
 }

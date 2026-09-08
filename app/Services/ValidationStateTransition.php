@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Enums\ValidationStatus;
+use App\Models\User;
 use App\Models\Validation;
 use Illuminate\Support\Facades\DB;
 
@@ -18,9 +19,13 @@ class ValidationStateTransition
         'superseded' => [],
     ];
 
-    public function transition(Validation $validation, ValidationStatus $to, ?string $reason = null): Validation
+    public function transition(Validation $validation, ValidationStatus $to, User $changedBy, ?string $reason = null): Validation
     {
-        return DB::transaction(function () use ($validation, $to, $reason): Validation {
+        if (! $changedBy->isPlatformAdmin()) {
+            throw new DomainStateTransitionException('Only a platform administrator can change validation status.');
+        }
+
+        return DB::transaction(function () use ($validation, $to, $changedBy, $reason): Validation {
             $validation = Validation::query()->whereKey($validation->getKey())->lockForUpdate()->firstOrFail();
             $from = $validation->status;
 
@@ -65,11 +70,12 @@ class ValidationStateTransition
             AuditLogger::record(
                 event: 'validation.status_changed',
                 auditable: $validation,
-                before: ['status' => $from->value],
                 after: [
                     'status' => $to->value,
                     'reason' => $reason,
+                    'changed_by' => $changedBy->id,
                 ],
+                before: ['status' => $from->value],
             );
 
             return $validation->refresh();

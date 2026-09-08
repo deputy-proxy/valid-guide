@@ -42,6 +42,7 @@ class CriterionVoting
 
                 if ($existing !== null) {
                     $votes->push($existing);
+
                     continue;
                 }
 

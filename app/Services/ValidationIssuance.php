@@ -8,6 +8,7 @@ use App\Enums\EvaluationStatus;
 use App\Enums\ValidationStatus;
 use App\Models\Evaluation;
 use App\Models\Validation;
+use App\Models\ValidationBadge;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -35,12 +36,23 @@ class ValidationIssuance
                 throw new DomainStateTransitionException('This evaluation already has a validation record.');
             }
 
+            $verificationIdentifier = $this->uniqueVerificationIdentifier();
+            $issuedAt = now();
+
             $validation = Validation::query()->create([
                 'product_release_id' => $evaluation->product_release_id,
                 'evaluation_id' => $evaluation->id,
-                'verification_identifier' => $this->uniqueVerificationIdentifier(),
-                'issued_at' => now(),
+                'verification_identifier' => $verificationIdentifier,
+                'issued_at' => $issuedAt,
                 'status' => ValidationStatus::Active,
+            ]);
+
+            ValidationBadge::query()->create([
+                'validation_id' => $validation->id,
+                'verification_identifier' => $verificationIdentifier,
+                'status' => ValidationStatus::Active,
+                'issued_at' => $issuedAt,
+                'embed_version' => '1',
             ]);
 
             AuditLogger::record(
@@ -49,7 +61,7 @@ class ValidationIssuance
                 after: [
                     'evaluation_id' => $evaluation->id,
                     'product_release_id' => $evaluation->product_release_id,
-                    'verification_identifier' => $validation->verification_identifier,
+                    'verification_identifier' => $verificationIdentifier,
                     'status' => ValidationStatus::Active->value,
                 ],
             );

@@ -1,7 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models;
 
+use App\Services\DomainStateTransitionException;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -24,6 +27,13 @@ class Report extends Model
             'creator_visible_at' => 'datetime',
             'public_visible_at' => 'datetime',
         ];
+    }
+
+    protected static function booted(): void
+    {
+        static::deleting(function (): void {
+            throw new DomainStateTransitionException('Reports cannot be deleted; their version history is part of the evaluation record.');
+        });
     }
 
     public function evaluation(): BelongsTo

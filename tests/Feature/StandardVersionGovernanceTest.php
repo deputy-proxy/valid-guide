@@ -128,7 +128,7 @@ it('does not allow overlapping effective versions of the same standard', functio
     $second = StandardVersion::create([
         'evaluation_standard_id' => $version->evaluation_standard_id,
         'version' => '2.0',
-        'effective_at' => now()->subDay(),
+        'effective_at' => now()->addDay(),
         'status' => StandardVersionStatus::Draft,
     ]);
 

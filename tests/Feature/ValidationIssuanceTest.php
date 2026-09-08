@@ -5,18 +5,20 @@ declare(strict_types=1);
 use App\Enums\EvaluationStatus;
 use App\Enums\ValidationStatus;
 use App\Models\Evaluation;
+use App\Models\PublicVerificationRecord;
 use App\Models\ValidationBadge;
 use App\Services\DomainStateTransitionException;
 use App\Services\EvaluationDecisionService;
 use App\Services\ValidationIssuance;
 
-it('issues an active validation and matching badge atomically after a validated evaluation is completed', function () {
+it('issues an active validation, badge, and public verification record atomically after a validated evaluation is completed', function () {
     [$evaluation, $decider] = decisionFixture();
 
     app(EvaluationDecisionService::class)->decide($evaluation, $decider);
 
     $validation = app(ValidationIssuance::class)->issue($evaluation);
     $badge = $validation->badge()->first();
+    $record = $validation->publicVerificationRecord()->first();
 
     expect($validation->status)->toBe(ValidationStatus::Active)
         ->and($validation->evaluation_id)->toBe($evaluation->id)
@@ -26,7 +28,14 @@ it('issues an active validation and matching badge atomically after a validated 
         ->and($badge)->not->toBeNull()
         ->and($badge->status)->toBe(ValidationStatus::Active)
         ->and($badge->verification_identifier)->toBe($validation->verification_identifier)
-        ->and($badge->issued_at->equalTo($validation->issued_at))->toBeTrue();
+        ->and($badge->issued_at->equalTo($validation->issued_at))->toBeTrue()
+        ->and($record)->not->toBeNull()
+        ->and($record->public_slug)->toBe(strtolower($validation->verification_identifier))
+        ->and($record->published_at)->not->toBeNull()
+        ->and($record->snapshot['verification_identifier'])->toBe($validation->verification_identifier)
+        ->and($record->snapshot['status'])->toBe(ValidationStatus::Active->value)
+        ->and($record->snapshot['decision'])->toBe('validated')
+        ->and($record->snapshot['overall_score'])->toBe(80.0);
 });
 
 it('refuses to issue validation for a not validated evaluation', function () {

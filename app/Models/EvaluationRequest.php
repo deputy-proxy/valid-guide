@@ -15,7 +15,7 @@ class EvaluationRequest extends Model
     use HasFactory;
 
     protected $fillable = [
-        'organization_id', 'product_id', 'service_package', 'complexity', 'quoted_price',
+        'organization_id', 'product_id', 'product_release_id', 'service_package', 'complexity', 'quoted_price',
         'currency', 'status', 'submitted_at', 'payment_started_at', 'paid_at',
         'evaluation_started_at', 'cancelled_at', 'refunded_at', 'intake_notes',
     ];
@@ -42,6 +42,11 @@ class EvaluationRequest extends Model
     public function product(): BelongsTo
     {
         return $this->belongsTo(Product::class);
+    }
+
+    public function productRelease(): BelongsTo
+    {
+        return $this->belongsTo(ProductRelease::class);
     }
 
     public function evaluations(): HasMany

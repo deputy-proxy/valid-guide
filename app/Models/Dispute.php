@@ -36,10 +36,15 @@ class Dispute extends Model
     {
         static::updating(function (self $dispute): void {
             $originalStatus = $dispute->getOriginal('status');
+
             if ($originalStatus === DisputeStatus::Resolved->value) {
                 throw new DomainStateTransitionException('Resolved disputes are immutable.');
             }
-            if ($originalStatus === DisputeStatus::Submitted->value && array_diff(array_keys($dispute->getDirty()), ['status'])) {
+
+            if (
+                $originalStatus === DisputeStatus::Submitted->value
+                && array_diff(array_keys($dispute->getDirty()), ['status'])
+            ) {
                 throw new DomainStateTransitionException('Submitted dispute content is immutable.');
             }
         });
@@ -51,9 +56,28 @@ class Dispute extends Model
         });
     }
 
-    public function evaluation(): BelongsTo { return $this->belongsTo(Evaluation::class); }
-    public function organization(): BelongsTo { return $this->belongsTo(Organization::class); }
-    public function submittedBy(): BelongsTo { return $this->belongsTo(User::class, 'submitted_by'); }
-    public function resolvedBy(): BelongsTo { return $this->belongsTo(User::class, 'resolved_by'); }
-    public function reviewers(): HasMany { return $this->hasMany(DisputeReviewer::class); }
+    public function evaluation(): BelongsTo
+    {
+        return $this->belongsTo(Evaluation::class);
+    }
+
+    public function organization(): BelongsTo
+    {
+        return $this->belongsTo(Organization::class);
+    }
+
+    public function submittedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'submitted_by');
+    }
+
+    public function resolvedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'resolved_by');
+    }
+
+    public function reviewers(): HasMany
+    {
+        return $this->hasMany(DisputeReviewer::class);
+    }
 }

@@ -15,8 +15,7 @@ class PublicVerificationPublication
     {
         $validation->loadMissing([
             'productRelease.product.organization',
-            'evaluation.standardVersion',
-            'evaluation.criterionVotes.criterion',
+            'evaluation.standardVersion.standard',
         ]);
 
         if ($validation->status === ValidationStatus::Revoked) {
@@ -28,7 +27,7 @@ class PublicVerificationPublication
         ]);
 
         $record->public_slug ??= Str::lower($validation->verification_identifier);
-        $record->directory_visible = $record->directory_visible ?? true;
+        $record->directory_visible ??= true;
         $record->snapshot = $this->snapshot($validation);
         $record->published_at ??= now();
         $record->save();
@@ -56,7 +55,12 @@ class PublicVerificationPublication
             return null;
         }
 
-        $record->snapshot = $this->snapshot($validation->fresh());
+        $validation->loadMissing([
+            'productRelease.product.organization',
+            'evaluation.standardVersion.standard',
+        ]);
+
+        $record->snapshot = $this->snapshot($validation);
         $record->save();
 
         return $record->refresh();
@@ -81,7 +85,7 @@ class PublicVerificationPublication
                 'version' => $release->version,
             ],
             'standard' => [
-                'name' => $evaluation->standardVersion->name,
+                'name' => $evaluation->standardVersion->standard->name,
                 'version' => $evaluation->standardVersion->version,
             ],
             'decision' => $evaluation->decision,

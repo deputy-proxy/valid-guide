@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Enums\EvaluationStatus;
+use App\Enums\PlatformRole;
 use App\Models\AuditorAssignment;
 use App\Models\AuditorEvaluation;
 use App\Models\ConflictDeclaration;
@@ -73,6 +74,8 @@ function decisionFixture(float $score = 80, bool $withSubmission = true): array
     ]);
 
     $auditor = User::factory()->create();
+    $decider = User::factory()->create(['platform_role' => PlatformRole::Admin]);
+
     $assignment = AuditorAssignment::create([
         'evaluation_id' => $evaluation->id,
         'auditor_id' => $auditor->id,
@@ -88,7 +91,7 @@ function decisionFixture(float $score = 80, bool $withSubmission = true): array
         'declaration_type' => 'assignment',
         'disclosure' => 'No known conflict.',
         'outcome' => 'cleared',
-        'determined_by' => $auditor->id,
+        'determined_by' => $decider->id,
         'determined_at' => now(),
     ]);
 
@@ -129,7 +132,7 @@ function decisionFixture(float $score = 80, bool $withSubmission = true): array
         }
     }
 
-    return [$evaluation, $auditor];
+    return [$evaluation, $decider];
 }
 
 test('evaluation decision validates when all gates are satisfied', function () {
@@ -158,5 +161,13 @@ test('evaluation decision refuses incomplete auditor work', function () {
     [$evaluation, $decider] = decisionFixture(80, false);
 
     expect(fn () => app(EvaluationDecisionService::class)->decide($evaluation, $decider))
+        ->toThrow(DomainStateTransitionException::class);
+});
+
+test('evaluation decision requires a platform administrator', function () {
+    [$evaluation] = decisionFixture();
+    $nonAdmin = User::factory()->create();
+
+    expect(fn () => app(EvaluationDecisionService::class)->decide($evaluation, $nonAdmin))
         ->toThrow(DomainStateTransitionException::class);
 });

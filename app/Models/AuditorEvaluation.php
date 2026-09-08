@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\DomainStateTransitionException;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -26,6 +27,21 @@ class AuditorEvaluation extends Model
             'submitted_at' => 'datetime',
             'locked_at' => 'datetime',
         ];
+    }
+
+    protected static function booted(): void
+    {
+        static::updating(function (self $evaluation): void {
+            if ($evaluation->getOriginal('locked_at') !== null) {
+                throw new DomainStateTransitionException('A submitted auditor evaluation is immutable.');
+            }
+        });
+
+        static::deleting(function (self $evaluation): void {
+            if ($evaluation->locked_at !== null) {
+                throw new DomainStateTransitionException('A submitted auditor evaluation is immutable.');
+            }
+        });
     }
 
     public function evaluation(): BelongsTo

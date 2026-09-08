@@ -66,3 +66,13 @@ This is required because a materially flawed process may result in a new Evaluat
 The request-level `evaluation_started_at` remains a lifecycle marker for the request's substantive work and is not treated as the unique start timestamp of every Evaluation record. Each Evaluation retains its own `started_at` and `completed_at` timestamps.
 
 All high-trust dispute actions are enforced in the domain service, audited, and independent of UI permissions. Raw/bulk database writes must not be used to bypass these controls.
+
+## 11. Standard Version governance freezes evaluative methodology content
+
+A Standard Version has a one-way governance lifecycle: `draft` → `scheduled` → `effective` → `retired`.
+
+Draft versions are editable. Scheduling requires a platform administrator and a future effective date and records approval. Once scheduled, the evaluative content of the version is frozen. This includes the version description and, through the related records, criteria, applicability rules, scoring rules and criterion guidance. Effective and retired versions remain frozen permanently.
+
+Lifecycle metadata may change only through the governance service. A standard may have at most one effective version at a time; an effective version must be retired before a subsequent version can become effective. Every governance transition is audited.
+
+This is a trust invariant, not a UI convention. Administrative screens must use `StandardVersionGovernance`; direct/bulk mutation must not be used to alter methodology state. Existing model-level protections cover ordinary Eloquent updates/deletes for frozen version content, while raw/bulk write hardening remains part of the broader Phase 1 invariant audit.

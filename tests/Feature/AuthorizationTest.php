@@ -81,6 +81,8 @@ it('keeps product releases inside the product organization boundary', function (
     ]);
     $release = ProductRelease::create([
         'product_id' => $product->id,
+        'release_identifier' => 'v1.0',
+        'title_snapshot' => 'Course',
         'version' => '1.0',
         'status' => 'draft',
     ]);

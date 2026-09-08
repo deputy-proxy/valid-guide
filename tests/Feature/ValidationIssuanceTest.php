@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Enums\EvaluationStatus;
 use App\Enums\ValidationStatus;
 use App\Models\Evaluation;
+use App\Models\User;
 use App\Services\DomainStateTransitionException;
 use App\Services\EvaluationDecisionService;
 use App\Services\ValidationIssuance;
@@ -14,7 +15,7 @@ it('issues an active validation, badge, and public verification record atomicall
 
     app(EvaluationDecisionService::class)->decide($evaluation, $decider);
 
-    $validation = app(ValidationIssuance::class)->issue($evaluation);
+    $validation = app(ValidationIssuance::class)->issue($evaluation, $decider);
     $badge = $validation->badge()->first();
     $record = $validation->publicVerificationRecord()->first();
 
@@ -41,17 +42,17 @@ it('refuses to issue validation for a not validated evaluation', function () {
 
     app(EvaluationDecisionService::class)->decide($evaluation, $decider);
 
-    expect(fn () => app(ValidationIssuance::class)->issue($evaluation))
+    expect(fn () => app(ValidationIssuance::class)->issue($evaluation, $decider))
         ->toThrow(DomainStateTransitionException::class);
 });
 
 it('refuses to issue validation before evaluation completion', function () {
-    [$evaluation] = decisionFixture();
+    [$evaluation, $decider] = decisionFixture();
     $evaluation->status = EvaluationStatus::ReadyForDecision;
     $evaluation->decision = 'validated';
     $evaluation->save();
 
-    expect(fn () => app(ValidationIssuance::class)->issue($evaluation))
+    expect(fn () => app(ValidationIssuance::class)->issue($evaluation, $decider))
         ->toThrow(DomainStateTransitionException::class);
 });
 
@@ -59,8 +60,17 @@ it('refuses to issue a second validation for the same evaluation', function () {
     [$evaluation, $decider] = decisionFixture();
 
     app(EvaluationDecisionService::class)->decide($evaluation, $decider);
-    app(ValidationIssuance::class)->issue($evaluation);
+    app(ValidationIssuance::class)->issue($evaluation, $decider);
 
-    expect(fn () => app(ValidationIssuance::class)->issue(Evaluation::findOrFail($evaluation->id)))
+    expect(fn () => app(ValidationIssuance::class)->issue(Evaluation::findOrFail($evaluation->id), $decider))
+        ->toThrow(DomainStateTransitionException::class);
+});
+
+it('requires a platform administrator to issue a validation', function () {
+    [$evaluation, $decider] = decisionFixture();
+    app(EvaluationDecisionService::class)->decide($evaluation, $decider);
+    $nonAdmin = User::factory()->create();
+
+    expect(fn () => app(ValidationIssuance::class)->issue($evaluation, $nonAdmin))
         ->toThrow(DomainStateTransitionException::class);
 });

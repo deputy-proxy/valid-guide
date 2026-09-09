@@ -39,8 +39,8 @@ class EvaluationDecisionService
 
         $assignments = $evaluation->assignments()->get();
         $incompleteAssignments = $assignments->contains(
-            fn ($assignment): bool => ! in_array($assignment->status, ['declined', 'cancelled'], true)
-                && ! $auditorEvaluations->contains('auditor_assignment_id', $assignment->id),
+            fn ($assignment): bool => in_array($assignment->status, ['declined', 'cancelled'], true) === false
+                && $auditorEvaluations->contains('auditor_assignment_id', $assignment->id) === false,
         );
 
         if ($incompleteAssignments) {
@@ -80,7 +80,7 @@ class EvaluationDecisionService
         foreach ($criteria as $criterion) {
             $applicability = $criterionApplicability->resolve($criterion, $product);
 
-            if (! $applicability['applicable']) {
+            if ($applicability['applicable'] === false) {
                 $criterionDecisions[$criterion->code] = [
                     'criterion_id' => $criterion->id,
                     'applicable' => false,

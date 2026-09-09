@@ -28,9 +28,10 @@ class PayoutService
                 throw new DomainStateTransitionException('A payout cannot contain the same compensation more than once.');
             }
 
-            $locked = $ids->map(fn (int $id) =>
-                AuditorCompensation::query()->with('assignment')->lockForUpdate()->findOrFail($id)
-            );
+            $locked = $ids->map(fn (int $id) => AuditorCompensation::query()
+                ->with('assignment')
+                ->lockForUpdate()
+                ->findOrFail($id));
 
             if ($locked->contains(fn (AuditorCompensation $c) => $c->status !== 'payable')) {
                 throw new DomainStateTransitionException('Only payable auditor compensation can be included in a payout.');

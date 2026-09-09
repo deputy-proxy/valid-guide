@@ -154,7 +154,7 @@ class EvaluationDecisionService
         }
 
         foreach (array_keys($applicableDimensions) as $dimension) {
-            if (! isset($dimensionWeights[$dimension]) || $dimensionWeights[$dimension] <= 0) {
+            if (isset($dimensionWeights[$dimension]) === false || $dimensionWeights[$dimension] <= 0) {
                 continue;
             }
 
@@ -232,7 +232,7 @@ class EvaluationDecisionService
 
     private function authorizePlatformAdmin(User $user): void
     {
-        if (! $user->isPlatformAdmin()) {
+        if ($user->isPlatformAdmin() === false) {
             throw new DomainStateTransitionException('Only a platform administrator can record an evaluation decision.');
         }
     }

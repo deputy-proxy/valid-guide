@@ -180,8 +180,9 @@ test('evaluation decision requires a platform administrator', function () {
 
 test('insufficient evidence blocks validation', function () {
     [$evaluation, $decider, $auditorEvaluation] = decisionFixture();
-    $auditorEvaluation->evidence_sufficiency = EvidenceSufficiency::Insufficient;
-    $auditorEvaluation->saveQuietly();
+    DB::table('auditor_evaluations')->where('id', $auditorEvaluation->id)->update([
+        'evidence_sufficiency' => EvidenceSufficiency::Insufficient->value,
+    ]);
 
     $decision = app(EvaluationDecisionService::class)->decide($evaluation, $decider);
     $rationale = json_decode($decision->rationale, true, 512, JSON_THROW_ON_ERROR);
@@ -192,8 +193,9 @@ test('insufficient evidence blocks validation', function () {
 
 test('unresolved audience promise coherence blocks validation', function () {
     [$evaluation, $decider, $auditorEvaluation] = decisionFixture();
-    $auditorEvaluation->audience_promise_coherence = AudiencePromiseCoherence::Unresolved;
-    $auditorEvaluation->saveQuietly();
+    DB::table('auditor_evaluations')->where('id', $auditorEvaluation->id)->update([
+        'audience_promise_coherence' => AudiencePromiseCoherence::Unresolved->value,
+    ]);
 
     $decision = app(EvaluationDecisionService::class)->decide($evaluation, $decider);
     $rationale = json_decode($decision->rationale, true, 512, JSON_THROW_ON_ERROR);
@@ -203,7 +205,7 @@ test('unresolved audience promise coherence blocks validation', function () {
 });
 
 test('central claims without auditor evidence block validation', function () {
-    [$evaluation, $decider, $auditorEvaluation] = decisionFixture();
+    [$evaluation, $decider] = decisionFixture();
     $evaluation->productRelease->product->update(['claimed_outcomes' => ['Learn the subject']]);
 
     $decision = app(EvaluationDecisionService::class)->decide($evaluation, $decider);

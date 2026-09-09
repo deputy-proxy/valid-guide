@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Product extends Model
 {
+    /** @use HasFactory<\Illuminate\Database\Eloquent\Factories\Factory> */
     use HasFactory;
 
     protected $fillable = [
@@ -28,16 +29,19 @@ class Product extends Model
         ];
     }
 
+    /** @return BelongsTo<Organization, Product> */
     public function organization(): BelongsTo
     {
         return $this->belongsTo(Organization::class);
     }
 
+    /** @return HasMany<ProductRelease, Product> */
     public function releases(): HasMany
     {
         return $this->hasMany(ProductRelease::class);
     }
 
+    /** @return HasMany<EvaluationRequest, Product> */
     public function evaluationRequests(): HasMany
     {
         return $this->hasMany(EvaluationRequest::class);

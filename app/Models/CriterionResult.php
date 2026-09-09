@@ -1,7 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models;
 
+use App\Enums\CriterionAssessment;
 use App\Services\DomainStateTransitionException;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -27,6 +30,7 @@ class CriterionResult extends Model
     protected function casts(): array
     {
         return [
+            'assessment' => CriterionAssessment::class,
             'score' => 'decimal:2',
             'confidence' => 'decimal:2',
             'submitted_at' => 'datetime',
@@ -35,6 +39,43 @@ class CriterionResult extends Model
 
     protected static function booted(): void
     {
+        static::saving(function (self $result): void {
+            $assessment = $result->assessment;
+            if (! $assessment instanceof CriterionAssessment) {
+                throw new DomainStateTransitionException('A criterion result must use an allowed methodology assessment.');
+            }
+
+            $standardVersion = $result->criterion()->firstOrFail()->standardVersion()->firstOrFail();
+            $anchor = $standardVersion->scoreAnchorFor($assessment);
+
+            if (! $assessment->isScored()) {
+                if ($result->score !== null) {
+                    throw new DomainStateTransitionException(sprintf(
+                        'Assessment %s must not have a numerical score.',
+                        $assessment->value,
+                    ));
+                }
+
+                return;
+            }
+
+            if ($result->score === null) {
+                throw new DomainStateTransitionException(sprintf(
+                    'Assessment %s requires a numerical score.',
+                    $assessment->value,
+                ));
+            }
+
+            $score = (float) $result->score;
+            if ($anchor === null || $score < $anchor['min'] || $score > $anchor['max']) {
+                throw new DomainStateTransitionException(sprintf(
+                    'Score %.2f is outside the methodology range for assessment %s.',
+                    $score,
+                    $assessment->value,
+                ));
+            }
+        });
+
         static::updating(function (self $result): void {
             if ($result->auditorEvaluation()->whereNotNull('locked_at')->exists()) {
                 throw new DomainStateTransitionException('Criterion results are immutable after auditor submission.');

@@ -48,7 +48,7 @@ class Criterion extends Model
     protected static function booted(): void
     {
         static::updating(function (self $criterion): void {
-            $status = $criterion->standardVersion()->value('status');
+            $status = StandardVersion::query()->whereKey($criterion->standard_version_id)->value('status');
 
             if (in_array($status, [
                 StandardVersionStatus::Scheduled->value,
@@ -62,7 +62,7 @@ class Criterion extends Model
         });
 
         static::deleting(function (self $criterion): void {
-            $status = $criterion->standardVersion()->value('status');
+            $status = StandardVersion::query()->whereKey($criterion->standard_version_id)->value('status');
 
             if ($status !== StandardVersionStatus::Draft->value) {
                 throw new DomainStateTransitionException(

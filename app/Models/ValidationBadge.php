@@ -36,6 +36,10 @@ class ValidationBadge extends Model
             if ($badge->isDirty('validation_id') || $badge->isDirty('verification_identifier') || $badge->isDirty('issued_at') || $badge->isDirty('embed_version')) {
                 throw new DomainStateTransitionException('Validation badge identity and provenance are immutable.');
             }
+
+            if ($badge->isDirty('status')) {
+                throw new DomainStateTransitionException('Validation badge status can only be changed through ValidationStateTransition.');
+            }
         });
 
         static::deleting(function (): void {

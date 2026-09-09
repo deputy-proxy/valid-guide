@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Services\DomainStateTransitionException;
 use App\Services\EvaluationDecisionService;
 use App\Services\ValidationIssuance;
+use App\Services\ValidationStateTransition;
 
 it('issues an active validation, badge, and public verification record atomically after a validated evaluation is completed', function () {
     [$evaluation, $decider] = decisionFixture();
@@ -48,7 +49,6 @@ it('refuses to issue validation for a not validated evaluation', function () {
 
 it('refuses to issue validation before evaluation completion', function () {
     [$evaluation, $decider] = decisionFixture();
-    $evaluation->status = EvaluationStatus::ReadyForDecision;
     $evaluation->decision = 'validated';
     $evaluation->save();
 
@@ -73,4 +73,38 @@ it('requires a platform administrator to issue a validation', function () {
 
     expect(fn () => app(ValidationIssuance::class)->issue($evaluation, $nonAdmin))
         ->toThrow(DomainStateTransitionException::class);
+});
+
+it('prevents direct mutation of validation provenance and lifecycle state', function () {
+    [$evaluation, $decider] = decisionFixture();
+    app(EvaluationDecisionService::class)->decide($evaluation, $decider);
+    $validation = app(ValidationIssuance::class)->issue($evaluation, $decider);
+
+    $validation->verification_identifier = 'VG-TAMPERED';
+    expect(fn () => $validation->save())
+        ->toThrow(DomainStateTransitionException::class);
+
+    $validation->refresh();
+    $validation->status = ValidationStatus::Suspended;
+    $validation->status_reason = 'tampered';
+    expect(fn () => $validation->save())
+        ->toThrow(DomainStateTransitionException::class);
+});
+
+it('changes validation state only through the controlled transition service', function () {
+    [$evaluation, $decider] = decisionFixture();
+    app(EvaluationDecisionService::class)->decide($evaluation, $decider);
+    $validation = app(ValidationIssuance::class)->issue($evaluation, $decider);
+
+    $transitioned = app(ValidationStateTransition::class)->transition(
+        $validation,
+        ValidationStatus::Suspended,
+        $decider,
+        'Material issue identified during post-validation review.',
+    );
+
+    expect($transitioned->status)->toBe(ValidationStatus::Suspended)
+        ->and($transitioned->suspended_at)->not->toBeNull()
+        ->and($transitioned->status_reason)->toBe('Material issue identified during post-validation review.')
+        ->and($transitioned->badge()->first()->status)->toBe(ValidationStatus::Suspended);
 });

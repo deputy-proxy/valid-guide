@@ -30,6 +30,8 @@ function standardVersionFixture(): array
         'standard_version_id' => $version->id,
         'code' => 'GOV-BASE-01',
         'name' => 'Baseline criterion',
+        'category' => 'D1',
+        'sequence' => 1,
         'weight' => 100,
     ]);
 
@@ -38,7 +40,7 @@ function standardVersionFixture(): array
     return [$version, $admin];
 }
 
-it('schedules a draft version only with a future effective date and records approval', function () {
+test('schedules a draft version only with a future effective date and records approval', function () {
     [$version, $admin] = standardVersionFixture();
     $version->effective_at = now()->addDay();
     $version->save();
@@ -51,14 +53,14 @@ it('schedules a draft version only with a future effective date and records appr
         ->and(DB::table('audit_logs')->where('event', 'standard_version.status_changed')->count())->toBe(1);
 });
 
-it('rejects scheduling without a future effective date', function () {
+test('rejects scheduling without a future effective date', function () {
     [$version, $admin] = standardVersionFixture();
 
     expect(fn () => app(StandardVersionGovernance::class)->schedule($version, $admin))
         ->toThrow(DomainStateTransitionException::class);
 });
 
-it('freezes standard version content once scheduled', function () {
+test('freezes standard version content once scheduled', function () {
     [$version, $admin] = standardVersionFixture();
     $version->effective_at = now()->addDay();
     $version->save();
@@ -72,13 +74,15 @@ it('freezes standard version content once scheduled', function () {
         ->toThrow(DomainStateTransitionException::class);
 });
 
-it('freezes criteria and guidance once their standard version is scheduled', function () {
+test('freezes criteria and guidance once their standard version is scheduled', function () {
     [$version, $admin] = standardVersionFixture();
 
     $criterion = Criterion::create([
         'standard_version_id' => $version->id,
         'code' => 'GOV-01',
         'name' => 'Governance criterion',
+        'category' => 'D2',
+        'sequence' => 2,
         'weight' => 100,
     ]);
 
@@ -105,7 +109,7 @@ it('freezes criteria and guidance once their standard version is scheduled', fun
         ->toThrow(DomainStateTransitionException::class);
 });
 
-it('makes a scheduled version effective only on or after its effective date', function () {
+test('makes a scheduled version effective only on or after its effective date', function () {
     [$version, $admin] = standardVersionFixture();
     $version->effective_at = now()->addDay();
     $version->save();
@@ -123,7 +127,7 @@ it('makes a scheduled version effective only on or after its effective date', fu
     $this->travelBack();
 });
 
-it('does not allow overlapping effective versions of the same standard', function () {
+test('does not allow overlapping effective versions of the same standard', function () {
     [$version, $admin] = standardVersionFixture();
     $version->effective_at = now()->addDay();
     $version->save();
@@ -142,6 +146,8 @@ it('does not allow overlapping effective versions of the same standard', functio
         'standard_version_id' => $second->id,
         'code' => 'GOV-BASE-02',
         'name' => 'Second baseline criterion',
+        'category' => 'D1',
+        'sequence' => 1,
         'weight' => 100,
     ]);
 
@@ -153,7 +159,7 @@ it('does not allow overlapping effective versions of the same standard', functio
     $this->travelBack();
 });
 
-it('requires a platform administrator for standard governance', function () {
+test('requires a platform administrator for standard governance', function () {
     [$version] = standardVersionFixture();
     $version->effective_at = now()->addDay();
     $version->save();

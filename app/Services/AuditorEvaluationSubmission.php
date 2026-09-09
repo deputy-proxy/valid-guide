@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace App\Services;
 
-use App\Enums\AudiencePromiseCoherence;
-use App\Enums\EvidenceSufficiency;
 use App\Models\AuditorEvaluation;
 use Illuminate\Support\Facades\DB;
 

@@ -2,7 +2,9 @@
 
 declare(strict_types=1);
 
+use App\Enums\AudiencePromiseCoherence;
 use App\Enums\EvaluationStatus;
+use App\Enums\EvidenceSufficiency;
 use App\Enums\PlatformRole;
 use App\Models\AuditorAssignment;
 use App\Models\AuditorEvaluation;
@@ -105,6 +107,8 @@ function decisionFixture(float $score = 80, bool $withSubmission = true): array
             'status' => 'submitted',
             'submitted_at' => now(),
             'locked_at' => now(),
+            'evidence_sufficiency' => EvidenceSufficiency::Sufficient,
+            'audience_promise_coherence' => AudiencePromiseCoherence::Coherent,
         ]);
     }
 
@@ -133,7 +137,7 @@ function decisionFixture(float $score = 80, bool $withSubmission = true): array
         }
     }
 
-    return [$evaluation, $decider];
+    return [$evaluation, $decider, $auditorEvaluation];
 }
 
 test('evaluation decision validates when all gates are satisfied', function () {
@@ -172,6 +176,41 @@ test('evaluation decision requires a platform administrator', function () {
 
     expect(fn () => app(EvaluationDecisionService::class)->decide($evaluation, $nonAdmin))
         ->toThrow(DomainStateTransitionException::class);
+});
+
+test('insufficient evidence blocks validation', function () {
+    [$evaluation, $decider, $auditorEvaluation] = decisionFixture();
+    $auditorEvaluation->evidence_sufficiency = EvidenceSufficiency::Insufficient;
+    $auditorEvaluation->saveQuietly();
+
+    $decision = app(EvaluationDecisionService::class)->decide($evaluation, $decider);
+    $rationale = json_decode($decision->rationale, true, 512, JSON_THROW_ON_ERROR);
+
+    expect($decision->decision)->toBe('not_validated')
+        ->and($rationale['blockers'][0])->toContain('does not establish sufficient evidence');
+});
+
+test('unresolved audience promise coherence blocks validation', function () {
+    [$evaluation, $decider, $auditorEvaluation] = decisionFixture();
+    $auditorEvaluation->audience_promise_coherence = AudiencePromiseCoherence::Unresolved;
+    $auditorEvaluation->saveQuietly();
+
+    $decision = app(EvaluationDecisionService::class)->decide($evaluation, $decider);
+    $rationale = json_decode($decision->rationale, true, 512, JSON_THROW_ON_ERROR);
+
+    expect($decision->decision)->toBe('not_validated')
+        ->and($rationale['blockers'][0])->toContain('does not establish coherence with the stated audience and promise');
+});
+
+test('central claims without auditor evidence block validation', function () {
+    [$evaluation, $decider, $auditorEvaluation] = decisionFixture();
+    $evaluation->productRelease->product->update(['claimed_outcomes' => ['Learn the subject']]);
+
+    $decision = app(EvaluationDecisionService::class)->decide($evaluation, $decider);
+    $rationale = json_decode($decision->rationale, true, 512, JSON_THROW_ON_ERROR);
+
+    expect($decision->decision)->toBe('not_validated')
+        ->and($rationale['blockers'])->toContain('Central product claims do not have evidence coverage from every submitted Auditor evaluation.');
 });
 
 test('completed evaluations cannot be mutated through the model', function () {

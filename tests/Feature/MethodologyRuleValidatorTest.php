@@ -27,6 +27,8 @@ function methodologyRuleFixture(array $rules = []): Criterion
         'standard_version_id' => $version->id,
         'code' => 'RULE-01',
         'name' => 'Rule criterion',
+        'category' => 'D1',
+        'sequence' => 1,
         'weight' => 10,
         'applicability_rules' => $rules,
     ]);
@@ -41,6 +43,30 @@ test('valid methodology rules are accepted', function () {
     ]);
 
     expect(fn () => app(MethodologyRuleValidator::class)->validateCriterion($criterion))->not->toThrow(Exception::class);
+});
+
+test('criterion dimensions must be D1 through D10', function () {
+    $criterion = methodologyRuleFixture();
+    $criterion->category = 'D11';
+
+    expect(fn () => app(MethodologyRuleValidator::class)->validateCriterion($criterion))
+        ->toThrow(DomainStateTransitionException::class);
+});
+
+test('criterion sequence must be a positive integer', function () {
+    $criterion = methodologyRuleFixture();
+    $criterion->sequence = 0;
+
+    expect(fn () => app(MethodologyRuleValidator::class)->validateCriterion($criterion))
+        ->toThrow(DomainStateTransitionException::class);
+});
+
+test('criterion weight must be positive', function () {
+    $criterion = methodologyRuleFixture();
+    $criterion->weight = 0;
+
+    expect(fn () => app(MethodologyRuleValidator::class)->validateCriterion($criterion))
+        ->toThrow(DomainStateTransitionException::class);
 });
 
 test('unknown applicability rule keys are rejected', function () {
@@ -109,16 +135,52 @@ test('standard versions must contain criteria with unique codes before schedulin
         'standard_version_id' => $version->id,
         'code' => 'RULE-01',
         'name' => 'First',
+        'category' => 'D1',
+        'sequence' => 1,
         'weight' => 10,
     ]);
     Criterion::create([
         'standard_version_id' => $version->id,
         'code' => 'RULE-01',
         'name' => 'Duplicate',
+        'category' => 'D1',
+        'sequence' => 2,
         'weight' => 10,
     ]);
 
     expect(fn () => app(MethodologyRuleValidator::class)->validateStandardVersion($version->fresh()))
+        ->toThrow(DomainStateTransitionException::class);
+});
+
+test('standard versions reject duplicate criterion sequences before scheduling', function () {
+    $standard = EvaluationStandard::create([
+        'name' => 'Sequence Standard',
+        'slug' => 'sequence-standard-'.uniqid(),
+    ]);
+    $version = StandardVersion::create([
+        'evaluation_standard_id' => $standard->id,
+        'version' => '1.0',
+        'status' => 'draft',
+    ]);
+
+    Criterion::create([
+        'standard_version_id' => $version->id,
+        'code' => 'RULE-01',
+        'name' => 'First',
+        'category' => 'D1',
+        'sequence' => 1,
+        'weight' => 10,
+    ]);
+    Criterion::create([
+        'standard_version_id' => $version->id,
+        'code' => 'RULE-02',
+        'name' => 'Second',
+        'category' => 'D2',
+        'sequence' => 1,
+        'weight' => 10,
+    ]);
+
+    expect(fn () => app(MethodologyRuleValidator::class)->validateStandardVersion($version))
         ->toThrow(DomainStateTransitionException::class);
 });
 
@@ -137,6 +199,8 @@ test('scheduling validates methodology rules before freezing a version', functio
         'standard_version_id' => $version->id,
         'code' => 'RULE-01',
         'name' => 'Bad rule',
+        'category' => 'D1',
+        'sequence' => 1,
         'weight' => 10,
         'applicability_rules' => ['unsupported' => true],
     ]);

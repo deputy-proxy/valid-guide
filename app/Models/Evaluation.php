@@ -46,6 +46,11 @@ class Evaluation extends Model
         return $this->belongsTo(StandardVersion::class);
     }
 
+    public function report(): HasOne
+    {
+        return $this->hasOne(Report::class);
+    }
+
     public function validation(): HasOne
     {
         return $this->hasOne(Validation::class);

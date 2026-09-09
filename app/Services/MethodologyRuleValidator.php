@@ -101,23 +101,24 @@ final class MethodologyRuleValidator
         }
 
         $overrides = $rules['weight_overrides'] ?? [];
-        if (! is_array($overrides) || array_is_list($overrides)) {
-            throw new DomainStateTransitionException(sprintf('Criterion %s has invalid weight overrides.', $criterion->code));
-        }
-
-        foreach ($overrides as $type => $weight) {
-            $this->assertProductType($type, $criterion, 'weight override');
-            if (! is_int($weight) && ! is_float($weight) && ! (is_string($weight) && is_numeric($weight))) {
-                throw new DomainStateTransitionException(sprintf('Criterion %s has a non-numeric weight override for %s.', $criterion->code, $type));
+        if ($overrides !== []) {
+            if (! is_array($overrides) || array_is_list($overrides)) {
+                throw new DomainStateTransitionException(sprintf('Criterion %s has invalid weight overrides.', $criterion->code));
             }
 
-            if ((float) $weight < 0) {
-                throw new DomainStateTransitionException(sprintf('Criterion %s cannot have a negative weight override for %s.', $criterion->code, $type));
+            foreach ($overrides as $type => $weight) {
+                $this->assertProductType($type, $criterion, 'weight override');
+                if (! is_int($weight) && ! is_float($weight) && ! (is_string($weight) && is_numeric($weight))) {
+                    throw new DomainStateTransitionException(sprintf('Criterion %s has a non-numeric weight override for %s.', $criterion->code, $type));
+                }
+
+                if ((float) $weight < 0) {
+                    throw new DomainStateTransitionException(sprintf('Criterion %s cannot have a negative weight override for %s.', $criterion->code, $type));
+                }
             }
         }
     }
 
-    /** @param array<string, mixed> $rules */
     /** @param array<string, mixed> $rules */
     /**
      * @param  array<string, mixed>  $rules

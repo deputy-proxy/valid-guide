@@ -28,6 +28,16 @@ class Payout extends Model
 
     protected static function booted(): void
     {
+        static::creating(function (self $payout): void {
+            if ($payout->status !== null && $payout->status !== 'pending') {
+                throw new DomainStateTransitionException('Payouts must be created as pending and completed through PayoutService.');
+            }
+
+            if ($payout->paid_at !== null || $payout->payment_reference !== null) {
+                throw new DomainStateTransitionException('Payout payment details can only be recorded through PayoutService.');
+            }
+        });
+
         static::updating(function (self $payout): void {
             if ($payout->getOriginal('paid_at') !== null) {
                 throw new DomainStateTransitionException('Paid payouts are immutable.');
@@ -35,6 +45,10 @@ class Payout extends Model
 
             if (array_intersect(array_keys($payout->getDirty()), ['auditor_id', 'amount_minor', 'currency']) !== []) {
                 throw new DomainStateTransitionException('Payout identity and amount are immutable.');
+            }
+
+            if ($payout->isDirty('status') || $payout->isDirty('paid_at') || $payout->isDirty('payment_reference')) {
+                throw new DomainStateTransitionException('Payout payment state can only be changed through PayoutService.');
             }
         });
 

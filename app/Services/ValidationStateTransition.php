@@ -46,25 +46,28 @@ class ValidationStateTransition
             }
 
             $now = now();
-            $validation->status = $to;
-            $validation->status_reason = $reason;
+            $updates = [
+                'status' => $to->value,
+                'status_reason' => $reason,
+                'updated_at' => $now,
+            ];
 
             match ($to) {
-                ValidationStatus::Suspended => $validation->suspended_at = $now,
-                ValidationStatus::Revoked => $validation->revoked_at = $now,
-                ValidationStatus::Superseded => $validation->superseded_at = $now,
+                ValidationStatus::Suspended => $updates['suspended_at'] = $now,
+                ValidationStatus::Revoked => $updates['revoked_at'] = $now,
+                ValidationStatus::Superseded => $updates['superseded_at'] = $now,
                 ValidationStatus::Active => null,
             };
 
-            $validation->save();
+            Validation::query()->whereKey($validation->getKey())->update($updates);
 
             $badge = $validation->badge()->lockForUpdate()->first();
-
             if ($badge !== null) {
                 $badge->status = $to;
                 $badge->save();
             }
 
+            $validation->refresh();
             (new PublicVerificationPublication)->sync($validation);
 
             AuditLogger::record(
@@ -78,7 +81,7 @@ class ValidationStateTransition
                 before: ['status' => $from->value],
             );
 
-            return $validation->refresh();
+            return $validation;
         });
     }
 }

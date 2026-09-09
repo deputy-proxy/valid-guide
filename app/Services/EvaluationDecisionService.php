@@ -89,6 +89,7 @@ class EvaluationDecisionService
                     'weight' => 0.0,
                     'mandatory' => false,
                 ];
+
                 continue;
             }
 
@@ -136,12 +137,12 @@ class EvaluationDecisionService
             }
 
             if ($score === null) {
-
                 continue;
             }
 
             $weight = $applicability['weight'];
             if ($weight <= 0) {
+
                 continue;
             }
 

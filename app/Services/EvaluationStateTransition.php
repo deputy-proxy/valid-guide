@@ -43,16 +43,24 @@ class EvaluationStateTransition
         }
 
         return DB::transaction(function () use ($evaluation, $from, $to): Evaluation {
-            $evaluation->status = $to;
+            $evaluation = Evaluation::query()->lockForUpdate()->findOrFail($evaluation->getKey());
             $now = now();
+            $updates = [
+                'status' => $to->value,
+                'updated_at' => $now,
+            ];
 
-            match ($to) {
-                EvaluationStatus::InProgress => $evaluation->started_at ??= $now,
-                EvaluationStatus::Completed => $evaluation->completed_at = $now,
-                default => null,
-            };
+            if ($to === EvaluationStatus::InProgress && $evaluation->started_at === null) {
+                $updates['started_at'] = $now;
+            }
 
-            $evaluation->save();
+            if ($to === EvaluationStatus::Completed) {
+                $updates['completed_at'] = $now;
+            }
+
+            Evaluation::query()->whereKey($evaluation->getKey())->update($updates);
+
+            $evaluation->refresh();
 
             AuditLogger::record(
                 event: 'evaluation.status_changed',
@@ -61,7 +69,7 @@ class EvaluationStateTransition
                 after: ['status' => $to->value],
             );
 
-            return $evaluation->refresh();
+            return $evaluation;
         });
     }
 }

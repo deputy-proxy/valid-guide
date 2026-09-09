@@ -187,7 +187,6 @@ final class MethodologyRuleValidator
         }
     }
 
-    /** @param array<string, mixed> $rules */
     /**
      * @param  array<string, mixed>  $rules
      * @return list<string>

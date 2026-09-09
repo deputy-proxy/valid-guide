@@ -55,8 +55,10 @@ test('rejects submission for an unaccepted assignment', function () {
 
 test('rejects submission without required decision gate conclusions', function () {
     [$auditorEvaluation] = auditorEvaluationFixture();
-    $auditorEvaluation->evidence_sufficiency = null;
-    $auditorEvaluation->audience_promise_coherence = null;
+    $auditorEvaluation->update([
+        'evidence_sufficiency' => null,
+        'audience_promise_coherence' => null,
+    ]);
 
     expect(fn () => app(AuditorEvaluationSubmission::class)->submit($auditorEvaluation))
         ->toThrow(DomainStateTransitionException::class);

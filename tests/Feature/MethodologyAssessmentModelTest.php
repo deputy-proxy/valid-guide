@@ -19,7 +19,7 @@ use App\Models\User;
 use App\Services\DomainStateTransitionException;
 use App\Services\StandardVersionGovernance;
 use Illuminate\Support\Facades\DB;
-use Throwable;
+use ValueError;
 
 function methodologyAssessmentFixture(): array
 {
@@ -139,7 +139,7 @@ test('criterion results accept only scores inside the standard version anchor fo
         ]);
 
         expect($result->assessment)->toBe($assessment)
-            ->and($result->score === null ? null : (float) $result->score)->toBe($score);
+            ->and($result->score === null ? null : (float) $result->score)->toBe((float) $score);
     }
 });
 
@@ -182,7 +182,7 @@ test('criterion results reject assessment and score mismatches', function () {
         'criterion_id' => $criterion->id,
         'assessment' => 'invalid_assessment',
         'score' => 80,
-    ]))->toThrow(Throwable::class);
+    ]))->toThrow(ValueError::class);
 });
 
 test('invalid versioned scoring configuration cannot be scheduled', function () {

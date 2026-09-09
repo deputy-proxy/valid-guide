@@ -168,3 +168,13 @@ The agreed 100% no-questions-asked refund remains available before the report is
 This creates a deterministic commercial boundary: **before `delivered_at` = refund eligible; after `delivered_at` = refund ineligible**. The external payment-provider reversal remains a separate commerce integration concern and must not be conflated with changing the internal request lifecycle state.
 
 Model-level protections do not defend against raw/bulk database writes. Those paths remain prohibited for lifecycle and trust-domain writes.
+
+## 21. Auditor payout creation reserves compensation exactly once
+
+`AuditorCompensation` is the authoritative financial ledger. A payable compensation may be included in only one `Payout`; the payout workflow checks this while the compensation rows are locked, preventing an already-paid or already-batched compensation from being silently reused.
+
+`Payout` records must be created as pending and their identity, amount and payment state are controlled through `PayoutService`. `PayoutItem` records are immutable after creation. Before a payout is marked paid, the service recalculates the item total and verifies the auditor and currency against the payout snapshot, preventing a corrupted payout header from authorizing a mismatched payment.
+
+The resulting financial history is therefore append-oriented: compensation is created once, becomes payable or forfeited once, is attached to one pending payout at most, and becomes paid only as part of the controlled payout payment operation. Direct Eloquent mutation/deletion is blocked for the trust-sensitive financial records.
+
+As elsewhere, these model protections do not cover raw/bulk SQL writes. Application code must use the financial domain services for compensation and payout state changes.

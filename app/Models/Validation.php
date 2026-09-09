@@ -51,6 +51,10 @@ class Validation extends Model
             if ($validation->isDirty('evaluation_id') || $validation->isDirty('product_release_id') || $validation->isDirty('issued_at')) {
                 throw new DomainStateTransitionException('Validation provenance is immutable.');
             }
+
+            if ($validation->isDirty('status') || $validation->isDirty('status_reason') || $validation->isDirty('suspended_at') || $validation->isDirty('revoked_at') || $validation->isDirty('superseded_at')) {
+                throw new DomainStateTransitionException('Validation lifecycle fields can only be changed through ValidationStateTransition.');
+            }
         });
 
         static::deleting(function (self $validation): void {

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Enums\AuditorProfileStatus;
 use App\Models\AuditorAssignment;
 use App\Models\ConflictDeclaration;
 use App\Models\Evaluation;
@@ -122,7 +123,7 @@ class AuditorAssignmentCreation
     {
         $profile = $auditor->auditorProfile()->with('competencies')->first();
 
-        if ($profile === null || $profile->status !== 'approved') {
+        if ($profile === null || $profile->status !== AuditorProfileStatus::Approved) {
             throw new DomainStateTransitionException('The Auditor does not have an approved Auditor profile.');
         }
 

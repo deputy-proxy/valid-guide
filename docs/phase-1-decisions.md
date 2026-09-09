@@ -118,3 +118,13 @@ Auditor compensation is recorded independently of the Evaluation Decision and Va
 Payouts aggregate payable compensation for one auditor and one currency. Payment requires platform administration and a payment reference. Paid payouts and paid compensation are immutable. Compensation and payout records are retained as financial history rather than being deleted or repurposed.
 
 The legacy compensation fields on `AuditorAssignment` remain as a denormalized operational snapshot for compatibility; `AuditorCompensation` is the authoritative compensation ledger. The compensation workflow must not inspect or depend on the Evaluation Decision when determining whether an auditor earned payment.
+
+## 16. Auditor eligibility is explicit and assignment-specific
+
+An Auditor is not eligible merely because they are an experienced creator or because they have been useful before. Eligibility requires an approved Auditor profile, demonstrated methodology literacy, approved experience with the product format, verified subject-matter competence matching the Product's declared subject area, and a current annual COI determination.
+
+The Product therefore carries a normalized `subject_area` used as the matching boundary for Auditor competence. Competence records are separate from credentials so Valid.guide can verify relevant teaching, training, creator, research or application experience without making a particular degree or certificate a universal requirement.
+
+Assignment creation is a platform-admin-only operation. It rechecks eligibility inside a transaction, prevents duplicate Auditor assignments and duplicate sequence numbers, creates the required assignment-specific Conflict Declaration, and fixes the compensation amount/currency and deadline at assignment time.
+
+The resulting state is intentionally conservative: if the product has no subject area, or the Auditor's competence/format experience has not been verified, the Auditor cannot be assigned. It is better to have a temporarily unassignable evaluation than a trust system that quietly appoints an unqualified reviewer because the dropdown happened to contain their name.

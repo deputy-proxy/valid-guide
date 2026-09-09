@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use App\Enums\EvaluationStatus;
 use App\Enums\ValidationStatus;
 use App\Models\Evaluation;
 use App\Models\User;

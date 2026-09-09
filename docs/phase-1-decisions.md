@@ -84,3 +84,13 @@ An Evaluation Request now carries `product_release_id` in addition to `product_i
 This avoids an ambiguity where a creator could purchase an evaluation for a Product while changing or selecting the actual release later. The Product remains the enduring entity; the Product Release is the concrete state being evaluated.
 
 The implementation uses a foreign key to `product_releases` and exposes an `EvaluationRequest::productRelease()` relationship. The existing one-to-many relationship from Evaluation Request to Evaluation remains unchanged.
+
+## 13. Product Releases become immutable once published
+
+A Product Release is the concrete state against which an Evaluation and Validation are anchored. Therefore, once a release leaves `draft`, its identity and snapshot fields cannot be edited or deleted. Material changes require a new Product Release rather than rewriting the state behind an existing evaluation.
+
+Publication and subsequent lifecycle changes are handled through `ProductReleaseStateTransition`, which records the transition and publication timestamp. Creator organization owners, admins and editors may perform these release lifecycle transitions; billing members cannot. The normal update/delete policy is restricted to draft releases.
+
+An Evaluation Request must also reference a Product Release belonging to its selected Product. This invariant is enforced when the request is saved, preventing cross-product release references through ordinary Eloquent mutation.
+
+As elsewhere in the trust domain, model-level protections do not defend against raw/bulk database writes. Those paths remain prohibited and are part of the broader invariant-hardening work.

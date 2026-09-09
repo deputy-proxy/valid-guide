@@ -40,6 +40,14 @@ class Report extends Model
         });
 
         static::updating(function (self $report): void {
+            if ($report->isDirty('evaluation_id')) {
+                throw new DomainStateTransitionException('Report provenance is immutable after creation.');
+            }
+
+            if ($report->isDirty('current_version_id') || $report->isDirty('creator_visible_at') || $report->isDirty('public_visible_at')) {
+                throw new DomainStateTransitionException('Report lifecycle fields can only be changed through report services.');
+            }
+
             if ($report->isDirty('delivered_at')) {
                 throw new DomainStateTransitionException('Report delivery can only be recorded through ReportDelivery.');
             }

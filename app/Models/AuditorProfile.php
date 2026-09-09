@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Enums\AuditorProfileStatus;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -20,10 +21,27 @@ class AuditorProfile extends Model
     protected function casts(): array
     {
         return [
+            'status' => AuditorProfileStatus::class,
             'methodology_literate' => 'boolean',
             'format_experience' => 'array',
             'approved_at' => 'datetime',
         ];
+    }
+
+    protected static function booted(): void
+    {
+        static::updating(function (self $profile): void {
+            if ($profile->getOriginal('approved_at') !== null) {
+                $immutable = ['approved_by', 'approved_at'];
+
+                if (array_intersect(array_keys($profile->getDirty()), $immutable) !== []) {
+                    // Re-approval is a new governance event. The current approval fields are
+                    // intentionally refreshed by AuditorProfileGovernance, while the complete
+                    // historical provenance lives in immutable review records and the audit log.
+                    return;
+                }
+            }
+        });
     }
 
     public function auditor(): BelongsTo
@@ -39,5 +57,10 @@ class AuditorProfile extends Model
     public function competencies(): HasMany
     {
         return $this->hasMany(AuditorCompetency::class);
+    }
+
+    public function reviews(): HasMany
+    {
+        return $this->hasMany(AuditorProfileReview::class);
     }
 }

@@ -16,31 +16,20 @@ final class EvaluationRequestCommercialTerms
         ServicePackage $package,
         string $complexity,
     ): EvaluationRequest {
-        if (! in_array($request->status, [
-            EvaluationRequestStatus::Draft,
-            EvaluationRequestStatus::AwaitingPayment,
-        ], true)) {
-            throw new DomainStateTransitionException('Commercial terms cannot be changed after payment has started.');
-        }
-
-        if ($request->status === EvaluationRequestStatus::AwaitingPayment) {
-            throw new DomainStateTransitionException('Commercial terms are frozen while awaiting payment.');
-        }
-
-        if ($package->status !== 'active') {
-            throw new DomainStateTransitionException('Only active service packages can be purchased.');
-        }
-
-        $allowedComplexities = $package->complexity_levels ?? [];
-        if ($allowedComplexities !== [] && ! in_array($complexity, $allowedComplexities, true)) {
-            throw new DomainStateTransitionException('The selected complexity is not available for this service package.');
-        }
-
         return DB::transaction(function () use ($request, $package, $complexity): EvaluationRequest {
             $request = EvaluationRequest::query()->lockForUpdate()->findOrFail($request->getKey());
 
             if ($request->status !== EvaluationRequestStatus::Draft) {
                 throw new DomainStateTransitionException('Commercial terms can only be selected on a draft request.');
+            }
+
+            if ($package->status !== 'active') {
+                throw new DomainStateTransitionException('Only active service packages can be purchased.');
+            }
+
+            $allowedComplexities = $package->complexity_levels ?? [];
+            if ($allowedComplexities !== [] && ! in_array($complexity, $allowedComplexities, true)) {
+                throw new DomainStateTransitionException('The selected complexity is not available for this service package.');
             }
 
             $request->service_package_id = $package->id;

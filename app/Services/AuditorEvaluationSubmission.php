@@ -48,11 +48,16 @@ class AuditorEvaluationSubmission
                 throw new DomainStateTransitionException('An auditor evaluation must contain at least one criterion result before submission.');
             }
 
-            $product = $auditorEvaluation->evaluation()->with('productRelease.product')->firstOrFail()->productRelease?->product;
+            $evaluation = $auditorEvaluation->evaluation()
+                ->with('productRelease.product')
+                ->firstOrFail();
+            $productRelease = $evaluation->productRelease;
 
-            if ($product === null) {
+            if ($productRelease === null || $productRelease->product === null) {
                 throw new DomainStateTransitionException('An auditor evaluation cannot be submitted without an evaluated product.');
             }
+
+            $product = $productRelease->product;
 
             if ($auditorEvaluation->evidence_sufficiency === null) {
                 throw new DomainStateTransitionException('An auditor evaluation must record an evidence sufficiency conclusion before submission.');
@@ -87,8 +92,8 @@ class AuditorEvaluationSubmission
                     'status' => 'submitted',
                     'submitted_at' => $submittedAt->toIso8601String(),
                     'locked_at' => $submittedAt->toIso8601String(),
-                    'evidence_sufficiency' => $auditorEvaluation->evidence_sufficiency?->value,
-                    'audience_promise_coherence' => $auditorEvaluation->audience_promise_coherence?->value,
+                    'evidence_sufficiency' => $auditorEvaluation->evidence_sufficiency->value,
+                    'audience_promise_coherence' => $auditorEvaluation->audience_promise_coherence->value,
                 ],
             );
 

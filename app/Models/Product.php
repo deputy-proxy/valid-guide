@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models;
 
 use App\Enums\ProductType;
@@ -13,7 +15,7 @@ class Product extends Model
     use HasFactory;
 
     protected $fillable = [
-        'organization_id', 'title', 'slug', 'product_type', 'description', 'url',
+        'organization_id', 'title', 'slug', 'product_type', 'subject_area', 'description', 'url',
         'reference_price', 'reference_currency', 'target_audience', 'claimed_outcomes', 'status',
     ];
 

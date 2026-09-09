@@ -20,6 +20,7 @@ use App\Services\DomainStateTransitionException;
 use App\Services\EvaluationRequestStateTransition;
 use App\Services\ReportDelivery;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 
 uses(RefreshDatabase::class);
 
@@ -106,8 +107,10 @@ function reportDeliveryFixture(): array
         'created_by' => User::factory()->create()->id,
     ]);
 
-    $report->current_version_id = $version->id;
-    $report->save();
+    DB::table('reports')->where('id', $report->id)->update([
+        'current_version_id' => $version->id,
+        'updated_at' => now(),
+    ]);
 
     return [$request->fresh(), $report->fresh()];
 }

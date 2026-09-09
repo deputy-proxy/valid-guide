@@ -34,5 +34,11 @@ jobs:
       - name: Setup Application
         run: composer setup
 
-      - name: Run CI Checks
-        run: composer ci:check
+      - name: Check formatting
+        run: composer lint:check
+
+      - name: Check static analysis
+        run: composer types:check
+
+      - name: Run tests
+        run: php artisan test

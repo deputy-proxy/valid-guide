@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Enums\OrganizationRole;
 use App\Enums\ProductReleaseStatus;
 use App\Models\ProductRelease;
+use App\Models\User;
 use Illuminate\Support\Facades\DB;
 
 final class ProductReleaseStateTransition
@@ -17,10 +19,23 @@ final class ProductReleaseStateTransition
         'superseded' => [],
     ];
 
-    public function transition(ProductRelease $release, ProductReleaseStatus $to): ProductRelease
+    public function transition(ProductRelease $release, ProductReleaseStatus $to, User $actor): ProductRelease
     {
-        return DB::transaction(function () use ($release, $to): ProductRelease {
-            $release = ProductRelease::query()->whereKey($release->getKey())->lockForUpdate()->firstOrFail();
+        return DB::transaction(function () use ($release, $to, $actor): ProductRelease {
+            $release = ProductRelease::query()
+                ->with('product.organization')
+                ->whereKey($release->getKey())
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            $organization = $release->product->organization;
+
+            if (! $organization->hasMemberWithRole($actor, OrganizationRole::Owner)
+                && ! $organization->hasMemberWithRole($actor, OrganizationRole::Admin)
+                && ! $organization->hasMemberWithRole($actor, OrganizationRole::Editor)) {
+                throw new DomainStateTransitionException('The actor is not authorized to change this product release state.');
+            }
+
             $from = $release->status instanceof ProductReleaseStatus
                 ? $release->status->value
                 : (string) $release->status;
@@ -35,11 +50,21 @@ final class ProductReleaseStateTransition
                 );
             }
 
-            if ($to === ProductReleaseStatus::Available && blank($release->published_at)) {
-                $release->published_at = now();
+            if ($to === ProductReleaseStatus::Available) {
+                if (blank($release->release_identifier) || blank($release->title_snapshot)) {
+                    throw new DomainStateTransitionException(
+                        'A product release requires a release identifier and title before publication.',
+                    );
+                }
+
+                $release->published_at ??= now();
             }
 
-            $before = ['status' => $from, 'published_at' => $release->published_at?->toIso8601String()];
+            $before = [
+                'status' => $from,
+                'published_at' => $release->published_at?->toIso8601String(),
+            ];
+
             $release->status = $to;
             $release->save();
 
@@ -50,6 +75,7 @@ final class ProductReleaseStateTransition
                 after: [
                     'status' => $to->value,
                     'published_at' => $release->published_at?->toIso8601String(),
+                    'actor_id' => $actor->id,
                 ],
             );
 

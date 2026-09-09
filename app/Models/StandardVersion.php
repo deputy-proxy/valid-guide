@@ -134,11 +134,27 @@ class StandardVersion extends Model
         return $thresholds;
     }
 
+    public function decisionThreshold(string $key): float
+    {
+        $threshold = $this->decisionThresholds()[$key] ?? null;
+        if (! is_int($threshold) && ! is_float($threshold)) {
+            throw new DomainStateTransitionException(sprintf(
+                'Standard version %s has no valid decision threshold for %s.',
+                $this->version,
+                $key,
+            ));
+        }
+
+        return (float) $threshold;
+    }
+
+    /** @return BelongsTo<EvaluationStandard, $this> */
     public function standard(): BelongsTo
     {
         return $this->belongsTo(EvaluationStandard::class, 'evaluation_standard_id');
     }
 
+    /** @return HasMany<Criterion, $this> */
     public function criteria(): HasMany
     {
         return $this->hasMany(Criterion::class);

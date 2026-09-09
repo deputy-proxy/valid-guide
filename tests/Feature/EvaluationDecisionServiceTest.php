@@ -48,11 +48,12 @@ function decisionFixture(float $score = 80, bool $withSubmission = true): array
     $request = EvaluationRequest::create([
         'organization_id' => $organization,
         'product_id' => $product->id,
+        'product_release_id' => $release->id,
         'service_package' => 'standard',
         'complexity' => 'standard',
         'quoted_price' => 100,
         'currency' => 'EUR',
-        'status' => 'ready',
+        'status' => 'draft',
     ]);
 
     $standard = EvaluationStandard::create([

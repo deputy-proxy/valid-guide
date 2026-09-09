@@ -16,7 +16,7 @@ it('records a criterion vote from a submitted auditor evaluation', function () {
 
     expect($votes)->toHaveCount(1)
         ->and($votes->first()->criterion_result_id)->toBe($result->id)
-        ->and($votes->first()->decision)->toBe('meets');
+        ->and($votes->first()->decision->value)->toBe('meets');
 });
 
 it('aggregates criterion votes by simple majority and preserves minority counts', function () {

@@ -22,13 +22,35 @@ class AuditorAssignment extends Model
     protected function casts(): array
     {
         return [
-            'assigned_at' => 'datetime', 'due_at' => 'datetime', 'accepted_at' => 'datetime', 'completed_at' => 'datetime',
+            'assigned_at' => 'datetime',
+            'due_at' => 'datetime',
+            'accepted_at' => 'datetime',
+            'completed_at' => 'datetime',
         ];
     }
 
-    public function evaluation(): BelongsTo { return $this->belongsTo(Evaluation::class); }
-    public function auditor(): BelongsTo { return $this->belongsTo(User::class, 'auditor_id'); }
-    public function conflictDeclarations(): HasMany { return $this->hasMany(ConflictDeclaration::class); }
-    public function evaluations(): HasMany { return $this->hasMany(AuditorEvaluation::class); }
-    public function compensation(): HasOne { return $this->hasOne(AuditorCompensation::class); }
+    public function evaluation(): BelongsTo
+    {
+        return $this->belongsTo(Evaluation::class);
+    }
+
+    public function auditor(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'auditor_id');
+    }
+
+    public function conflictDeclarations(): HasMany
+    {
+        return $this->hasMany(ConflictDeclaration::class);
+    }
+
+    public function evaluations(): HasMany
+    {
+        return $this->hasMany(AuditorEvaluation::class);
+    }
+
+    public function compensation(): HasOne
+    {
+        return $this->hasOne(AuditorCompensation::class);
+    }
 }

@@ -144,6 +144,8 @@ it('rejects submission for an unaccepted assignment', function () {
 it('prevents changes and deletion after auditor evaluation submission', function () {
     [$auditorEvaluation, $result] = auditorEvaluationFixture();
     app(AuditorEvaluationSubmission::class)->submit($auditorEvaluation);
+    $auditorEvaluation->refresh();
+    $result->refresh();
 
     expect(fn () => $auditorEvaluation->update(['status' => 'draft']))
         ->toThrow(DomainStateTransitionException::class);
@@ -171,6 +173,7 @@ it('allows an explicit conflict decision and keeps it immutable', function () {
     ]);
 
     $decided = app(ConflictDeclarationDecision::class)->decide($declaration, 'cleared', $decisionMaker);
+    $decided->refresh();
 
     expect($decided->outcome)->toBe('cleared')
         ->and($decided->determined_by)->toBe($decisionMaker->id)

@@ -178,3 +178,19 @@ Model-level protections do not defend against raw/bulk database writes. Those pa
 The resulting financial history is therefore append-oriented: compensation is created once, becomes payable or forfeited once, is attached to one pending payout at most, and becomes paid only as part of the controlled payout payment operation. Direct Eloquent mutation/deletion is blocked for the trust-sensitive financial records.
 
 As elsewhere, these model protections do not cover raw/bulk SQL writes. Application code must use the financial domain services for compensation and payout state changes.
+
+## 22. Evaluation, Report and Validation historical boundaries are domain-controlled
+
+An Evaluation is the immutable historical assessment once its decision has been recorded and completed. Its `evaluation_request_id`, `product_release_id` and `standard_version_id` are immutable after creation, while a completed Evaluation cannot be edited. Once a decision exists, its decision, score and rationale cannot be rewritten through ordinary Eloquent mutation.
+
+`EvaluationDecision` is an append-only decision record. Its contents cannot be updated or deleted after recording. The parent Evaluation retains the denormalized decision fields needed for efficient querying, but those fields are treated as a projection of the immutable decision record rather than a second editable source of truth.
+
+Evaluation lifecycle transitions are controlled by `EvaluationStateTransition`, which reloads the row under lock before checking the transition and uses an explicit database update for lifecycle timestamps. This is necessary because the Evaluation model intentionally blocks ordinary mutation of completed historical state.
+
+Reports have the same boundary discipline. `current_version_id`, creator/public visibility timestamps and delivery state cannot be changed through ordinary Eloquent mutation. Report creation and revision therefore use controlled service updates. Initial report creation requires a completed Evaluation and a recorded decision. A delivered report cannot be revised; a materially corrected evaluation outcome must instead proceed through the dispute/re-evaluation path, preserving the delivered report as historical evidence.
+
+Validation provenance (`evaluation_id`, `product_release_id`, `verification_identifier`, `issued_at`) is immutable. Validation lifecycle fields are changed only through `ValidationStateTransition`, which also updates the corresponding Badge and public verification projection in the same transaction. Revoked and superseded validations remain permanently immutable.
+
+The Badge mirrors Validation status but cannot have its identity, provenance or status changed directly. This prevents a badge from being manually made to display a trust state that differs from the authoritative Validation.
+
+These protections are deliberately split between model-level ordinary-mutation guards and explicit domain services. Raw/bulk database writes can bypass Eloquent events and remain prohibited for historical trust state. Regression coverage now exercises direct mutation attempts as well as the controlled lifecycle paths.

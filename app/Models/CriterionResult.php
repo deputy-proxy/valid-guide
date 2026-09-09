@@ -40,7 +40,7 @@ class CriterionResult extends Model
     protected static function booted(): void
     {
         static::saving(function (self $result): void {
-            $assessment = $result->assessment;
+            $assessment = $result->getAttribute('assessment');
             if (! $assessment instanceof CriterionAssessment) {
                 throw new DomainStateTransitionException('A criterion result must use an allowed methodology assessment.');
             }

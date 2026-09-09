@@ -66,6 +66,7 @@ test('freezes standard version content once scheduled', function () {
     $version->save();
 
     app(StandardVersionGovernance::class)->schedule($version, $admin);
+    $version->refresh();
 
     expect(fn () => $version->update(['description' => 'Changed after scheduling.']))
         ->toThrow(DomainStateTransitionException::class);

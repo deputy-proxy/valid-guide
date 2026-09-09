@@ -65,7 +65,7 @@ class AuditorEvaluationSubmission
                 throw new DomainStateTransitionException('An auditor evaluation must record an audience and promise coherence conclusion before submission.');
             }
 
-            $claimedOutcomes = $product->claimed_outcomes;
+            $claimedOutcomes = $product->getAttribute('claimed_outcomes');
             $hasCentralClaims = is_array($claimedOutcomes) && $claimedOutcomes !== [];
 
             if ($hasCentralClaims && $auditorEvaluation->evidence()->count() === 0) {

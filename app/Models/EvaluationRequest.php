@@ -34,6 +34,25 @@ class EvaluationRequest extends Model
         ];
     }
 
+    protected static function booted(): void
+    {
+        static::saving(function (self $request): void {
+            if ($request->product_id === null || $request->product_release_id === null) {
+                return;
+            }
+
+            $releaseProductId = ProductRelease::query()
+                ->whereKey($request->product_release_id)
+                ->value('product_id');
+
+            if ($releaseProductId !== (int) $request->product_id) {
+                throw new DomainStateTransitionException(
+                    'An evaluation request product release must belong to the requested product.',
+                );
+            }
+        });
+    }
+
     public function organization(): BelongsTo
     {
         return $this->belongsTo(Organization::class);

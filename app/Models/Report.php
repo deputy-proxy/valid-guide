@@ -19,6 +19,7 @@ class Report extends Model
         'current_version_id',
         'creator_visible_at',
         'public_visible_at',
+        'delivered_at',
     ];
 
     protected function casts(): array
@@ -26,11 +27,18 @@ class Report extends Model
         return [
             'creator_visible_at' => 'datetime',
             'public_visible_at' => 'datetime',
+            'delivered_at' => 'datetime',
         ];
     }
 
     protected static function booted(): void
     {
+        static::updating(function (self $report): void {
+            if ($report->isDirty('delivered_at')) {
+                throw new DomainStateTransitionException('Report delivery can only be recorded through ReportDelivery.');
+            }
+        });
+
         static::deleting(function (): void {
             throw new DomainStateTransitionException('Reports cannot be deleted; their version history is part of the evaluation record.');
         });

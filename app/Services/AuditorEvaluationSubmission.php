@@ -36,7 +36,7 @@ class AuditorEvaluationSubmission
                 ->whereNotNull('determined_at')
                 ->exists();
 
-            if (!$cleared) {
+            if (! $cleared) {
                 throw new DomainStateTransitionException(
                     'An auditor evaluation cannot be submitted until the assignment conflict declaration has been cleared.',
                 );

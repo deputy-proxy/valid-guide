@@ -136,6 +136,7 @@ class EvaluationDecisionService
             }
 
             if ($score === null) {
+
                 continue;
             }
 

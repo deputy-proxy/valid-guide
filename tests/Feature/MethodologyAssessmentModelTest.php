@@ -19,6 +19,7 @@ use App\Models\User;
 use App\Services\DomainStateTransitionException;
 use App\Services\StandardVersionGovernance;
 use Illuminate\Support\Facades\DB;
+use Throwable;
 
 function methodologyAssessmentFixture(): array
 {
@@ -181,7 +182,7 @@ test('criterion results reject assessment and score mismatches', function () {
         'criterion_id' => $criterion->id,
         'assessment' => 'invalid_assessment',
         'score' => 80,
-    ]))->toThrow(\Throwable::class);
+    ]))->toThrow(Throwable::class);
 });
 
 test('invalid versioned scoring configuration cannot be scheduled', function () {

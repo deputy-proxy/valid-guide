@@ -36,13 +36,25 @@ function releaseIntegrityProduct(Organization $organization): Product
 
 function releaseIntegrityRelease(Product $product, ProductReleaseStatus $status = ProductReleaseStatus::Draft): ProductRelease
 {
-    return ProductRelease::create([
+    $release = ProductRelease::create([
         'product_id' => $product->id,
         'release_identifier' => 'release-'.$product->id,
         'title_snapshot' => 'Course',
         'version' => '1.0',
-        'status' => $status,
+        'status' => ProductReleaseStatus::Draft,
     ]);
+
+    if ($status !== ProductReleaseStatus::Draft) {
+        $user = $product->organization->users()->wherePivotIn('role', [
+            OrganizationRole::Owner->value,
+            OrganizationRole::Admin->value,
+            OrganizationRole::Editor->value,
+        ])->firstOrFail();
+
+        $release = app(ProductReleaseStateTransition::class)->transition($release, $status, $user);
+    }
+
+    return $release;
 }
 
 it('requires an evaluation request release to belong to its product', function () {

@@ -56,6 +56,14 @@ class EvaluationRequestStateTransition
                 }
             }
 
+            if ($to === EvaluationRequestStatus::Refunded) {
+                if ($request->evaluations()->whereHas('report', fn ($query) => $query->whereNotNull('delivered_at'))->exists()) {
+                    throw new DomainStateTransitionException(
+                        'An evaluation request cannot be refunded after a report has been delivered.',
+                    );
+                }
+            }
+
             $now = now();
             $updates = [
                 'status' => $to->value,

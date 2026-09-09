@@ -150,3 +150,15 @@ Verified subject-matter competencies are one-way trust assertions. Once verified
 Auditor assignment eligibility now uses the typed `AuditorProfileStatus::Approved` state, preventing enum-cast profiles from accidentally failing or bypassing the approved-profile check.
 
 As with the rest of the trust domain, these model protections do not defend against raw/bulk database writes. Administrative workflows must use `AuditorProfileGovernance` rather than mutating governance state directly.
+
+## 19. Evaluation Request lifecycle timestamps and status are domain-controlled
+
+`EvaluationRequest` lifecycle state cannot be changed through ordinary Eloquent mutation. This includes `status`, `submitted_at`, `payment_started_at`, `paid_at`, `evaluation_started_at`, `cancelled_at` and `refunded_at`. New requests must be created as drafts with no lifecycle timestamps.
+
+`EvaluationRequestStateTransition` is the controlled mutation path. It locks and reloads the current database row before validating the transition, preventing a stale in-memory request from applying a transition against an already-changed state. It performs the lifecycle update through a deliberate database update, then refreshes the model and records the audit event.
+
+Entering `awaiting_payment` records `submitted_at` if it has not already been set and starts the payment clock. Commercial terms remain frozen after payment processing starts, independently of lifecycle state mutation.
+
+The agreed refund boundary remains **before report delivery**. A dedicated report-delivery timestamp and refund workflow are still required before refund enforcement can be considered complete; the existing request transition to `refunded` is therefore not yet the final commercial refund implementation.
+
+Model-level protections do not defend against raw/bulk database writes. Those paths are prohibited for lifecycle state and are part of the broader invariant audit.

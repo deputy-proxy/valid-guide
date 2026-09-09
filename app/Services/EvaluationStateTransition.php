@@ -22,28 +22,28 @@ class EvaluationStateTransition
 
     public function transition(Evaluation $evaluation, EvaluationStatus $to): Evaluation
     {
-        $from = $evaluation->status;
-
-        if ($from === $to) {
-            throw new DomainStateTransitionException('The evaluation is already in the requested state.');
-        }
-
-        if (! in_array($to, self::TRANSITIONS[$from->value] ?? [], true)) {
-            throw new DomainStateTransitionException(sprintf(
-                'Invalid evaluation transition: %s -> %s.',
-                $from->value,
-                $to->value,
-            ));
-        }
-
-        if ($to === EvaluationStatus::Completed && blank($evaluation->decision)) {
-            throw new DomainStateTransitionException(
-                'An evaluation cannot be completed before an evaluation decision has been recorded.',
-            );
-        }
-
-        return DB::transaction(function () use ($evaluation, $from, $to): Evaluation {
+        return DB::transaction(function () use ($evaluation, $to): Evaluation {
             $evaluation = Evaluation::query()->lockForUpdate()->findOrFail($evaluation->getKey());
+            $from = $evaluation->status;
+
+            if ($from === $to) {
+                throw new DomainStateTransitionException('The evaluation is already in the requested state.');
+            }
+
+            if (! in_array($to, self::TRANSITIONS[$from->value] ?? [], true)) {
+                throw new DomainStateTransitionException(sprintf(
+                    'Invalid evaluation transition: %s -> %s.',
+                    $from->value,
+                    $to->value,
+                ));
+            }
+
+            if ($to === EvaluationStatus::Completed && blank($evaluation->decision)) {
+                throw new DomainStateTransitionException(
+                    'An evaluation cannot be completed before an evaluation decision has been recorded.',
+                );
+            }
+
             $now = now();
             $updates = [
                 'status' => $to->value,

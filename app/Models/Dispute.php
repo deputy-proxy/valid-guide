@@ -7,13 +7,23 @@ namespace App\Models;
 use App\Enums\DisputeOutcome;
 use App\Enums\DisputeStatus;
 use App\Services\DomainStateTransitionException;
+use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
+/**
+ * @property DisputeStatus $status
+ * @property CarbonImmutable|null $submitted_at
+ * @property CarbonImmutable|null $resolved_at
+ * @property int|null $resolved_by
+ * @property DisputeOutcome|null $outcome
+ */
 class Dispute extends Model
 {
+    /** @use HasFactory<Factory> */
     use HasFactory;
 
     protected $fillable = [
@@ -56,26 +66,31 @@ class Dispute extends Model
         });
     }
 
+    /** @return BelongsTo<Evaluation, $this> */
     public function evaluation(): BelongsTo
     {
         return $this->belongsTo(Evaluation::class);
     }
 
+    /** @return BelongsTo<Organization, $this> */
     public function organization(): BelongsTo
     {
         return $this->belongsTo(Organization::class);
     }
 
+    /** @return BelongsTo<User, $this> */
     public function submittedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'submitted_by');
     }
 
+    /** @return BelongsTo<User, $this> */
     public function resolvedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'resolved_by');
     }
 
+    /** @return HasMany<DisputeReviewer, $this> */
     public function reviewers(): HasMany
     {
         return $this->hasMany(DisputeReviewer::class);

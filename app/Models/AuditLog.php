@@ -49,7 +49,7 @@ class AuditLog extends Model
         ];
     }
 
-    /** @return BelongsTo<User, AuditLog> */
+    /** @return BelongsTo<User, $this> */
     public function actor(): BelongsTo
     {
         return $this->belongsTo(User::class, 'actor_id');

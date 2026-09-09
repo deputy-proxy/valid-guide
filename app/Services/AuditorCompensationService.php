@@ -58,22 +58,19 @@ class AuditorCompensationService
     {
         return DB::transaction(function () use ($compensation): AuditorCompensation {
             $compensation = AuditorCompensation::query()->with('assignment')->lockForUpdate()->findOrFail($compensation->id);
-            $assignment = AuditorAssignment::query()->lockForUpdate()->findOrFail($compensation->auditor_assignment_id);
+            $assignment = AuditorAssignment::query()->whereKey($compensation->auditor_assignment_id)->lockForUpdate()->firstOrFail();
 
             if ($compensation->status !== 'pending') {
                 throw new DomainStateTransitionException('Only pending auditor compensation can be finalized.');
             }
-
             if ($assignment->status !== 'completed' || $assignment->completed_at === null) {
                 throw new DomainStateTransitionException('Auditor compensation becomes payable only after assignment completion.');
             }
-
             if ($assignment->due_at !== null && $assignment->completed_at->isAfter($assignment->due_at)) {
                 $compensation->status = 'forfeited';
                 $compensation->forfeited_at = now();
                 $compensation->status_reason = 'Assignment completed after its deadline.';
                 $compensation->save();
-
                 $assignment->compensation_status = 'forfeited';
                 $assignment->save();
 
@@ -85,7 +82,6 @@ class AuditorCompensationService
             $compensation->status = 'payable';
             $compensation->payable_at = now();
             $compensation->save();
-
             $assignment->compensation_status = 'payable';
             $assignment->save();
 

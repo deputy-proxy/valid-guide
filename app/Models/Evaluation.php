@@ -13,6 +13,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
+/**
+ * @property EvaluationStatus $status
+ */
 class Evaluation extends Model
 {
     /** @use HasFactory<Factory> */
@@ -55,73 +58,73 @@ class Evaluation extends Model
         });
     }
 
-    /** @return BelongsTo<EvaluationRequest, Evaluation> */
+    /** @return BelongsTo<EvaluationRequest, $this> */
     public function request(): BelongsTo
     {
         return $this->belongsTo(EvaluationRequest::class, 'evaluation_request_id');
     }
 
-    /** @return BelongsTo<ProductRelease, Evaluation> */
+    /** @return BelongsTo<ProductRelease, $this> */
     public function productRelease(): BelongsTo
     {
         return $this->belongsTo(ProductRelease::class);
     }
 
-    /** @return BelongsTo<StandardVersion, Evaluation> */
+    /** @return BelongsTo<StandardVersion, $this> */
     public function standardVersion(): BelongsTo
     {
         return $this->belongsTo(StandardVersion::class);
     }
 
-    /** @return HasOne<Report, Evaluation> */
+    /** @return HasOne<Report, $this> */
     public function report(): HasOne
     {
         return $this->hasOne(Report::class);
     }
 
-    /** @return HasOne<Validation, Evaluation> */
+    /** @return HasOne<Validation, $this> */
     public function validation(): HasOne
     {
         return $this->hasOne(Validation::class);
     }
 
-    /** @return HasMany<AuditorAssignment, Evaluation> */
+    /** @return HasMany<AuditorAssignment, $this> */
     public function assignments(): HasMany
     {
         return $this->hasMany(AuditorAssignment::class);
     }
 
-    /** @return HasMany<AuditorEvaluation, Evaluation> */
+    /** @return HasMany<AuditorEvaluation, $this> */
     public function auditorEvaluations(): HasMany
     {
         return $this->hasMany(AuditorEvaluation::class);
     }
 
-    /** @return HasMany<CriterionVote, Evaluation> */
+    /** @return HasMany<CriterionVote, $this> */
     public function criterionVotes(): HasMany
     {
         return $this->hasMany(CriterionVote::class);
     }
 
-    /** @return HasMany<EvaluationDecision, Evaluation> */
+    /** @return HasMany<EvaluationDecision, $this> */
     public function decisions(): HasMany
     {
         return $this->hasMany(EvaluationDecision::class);
     }
 
-    /** @return HasMany<Finding, Evaluation> */
+    /** @return HasMany<Finding, $this> */
     public function findings(): HasMany
     {
         return $this->hasMany(Finding::class);
     }
 
-    /** @return HasMany<Dispute, Evaluation> */
+    /** @return HasMany<Dispute, $this> */
     public function disputes(): HasMany
     {
         return $this->hasMany(Dispute::class);
     }
 
-    /** @return HasMany<ClarificationRequest, Evaluation> */
+    /** @return HasMany<ClarificationRequest, $this> */
     public function clarificationRequests(): HasMany
     {
         return $this->hasMany(ClarificationRequest::class);

@@ -5,12 +5,20 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Services\DomainStateTransitionException;
+use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
+/**
+ * @property CarbonImmutable|null $submitted_at
+ * @property int|null $determined_by
+ * @property CarbonImmutable|null $determined_at
+ */
 class AuditorAnnualConflictDeclaration extends Model
 {
+    /** @use HasFactory<Factory> */
     use HasFactory;
 
     protected $fillable = [
@@ -39,11 +47,13 @@ class AuditorAnnualConflictDeclaration extends Model
         });
     }
 
+    /** @return BelongsTo<User, $this> */
     public function auditor(): BelongsTo
     {
         return $this->belongsTo(User::class, 'auditor_id');
     }
 
+    /** @return BelongsTo<User, $this> */
     public function determinedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'determined_by');

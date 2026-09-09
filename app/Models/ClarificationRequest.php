@@ -7,12 +7,21 @@ namespace App\Models;
 use App\Enums\ClarificationRequestStatus;
 use App\Enums\ClarificationRequestType;
 use App\Services\DomainStateTransitionException;
+use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
+/**
+ * @property ClarificationRequestStatus $status
+ * @property CarbonImmutable|null $submitted_at
+ * @property CarbonImmutable|null $resolved_at
+ * @property int|null $resolved_by
+ */
 class ClarificationRequest extends Model
 {
+    /** @use HasFactory<Factory> */
     use HasFactory;
 
     protected $fillable = [
@@ -54,21 +63,25 @@ class ClarificationRequest extends Model
         });
     }
 
+    /** @return BelongsTo<Evaluation, $this> */
     public function evaluation(): BelongsTo
     {
         return $this->belongsTo(Evaluation::class);
     }
 
+    /** @return BelongsTo<Organization, $this> */
     public function organization(): BelongsTo
     {
         return $this->belongsTo(Organization::class);
     }
 
+    /** @return BelongsTo<User, $this> */
     public function submittedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'submitted_by');
     }
 
+    /** @return BelongsTo<User, $this> */
     public function resolvedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'resolved_by');

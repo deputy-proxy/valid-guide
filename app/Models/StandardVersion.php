@@ -6,13 +6,23 @@ namespace App\Models;
 
 use App\Enums\StandardVersionStatus;
 use App\Services\DomainStateTransitionException;
+use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
+/**
+ * @property StandardVersionStatus $status
+ * @property CarbonImmutable|null $effective_at
+ * @property CarbonImmutable|null $retired_at
+ * @property CarbonImmutable|null $approved_at
+ * @property int|null $approved_by
+ */
 class StandardVersion extends Model
 {
+    /** @use HasFactory<Factory> */
     use HasFactory;
 
     protected $fillable = [
@@ -59,21 +69,25 @@ class StandardVersion extends Model
         });
     }
 
+    /** @return BelongsTo<EvaluationStandard, $this> */
     public function standard(): BelongsTo
     {
         return $this->belongsTo(EvaluationStandard::class, 'evaluation_standard_id');
     }
 
+    /** @return BelongsTo<User, $this> */
     public function approver(): BelongsTo
     {
         return $this->belongsTo(User::class, 'approved_by');
     }
 
+    /** @return HasMany<Evaluation, $this> */
     public function evaluations(): HasMany
     {
         return $this->hasMany(Evaluation::class);
     }
 
+    /** @return HasMany<Criterion, $this> */
     public function criteria(): HasMany
     {
         return $this->hasMany(Criterion::class);

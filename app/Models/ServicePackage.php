@@ -4,12 +4,18 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
+/**
+ * @property list<string>|null $complexity_levels
+ * @property list<string>|null $product_types
+ */
 class ServicePackage extends Model
 {
+    /** @use HasFactory<Factory> */
     use HasFactory;
 
     protected $fillable = [
@@ -26,6 +32,7 @@ class ServicePackage extends Model
         ];
     }
 
+    /** @return HasMany<EvaluationRequest, $this> */
     public function evaluationRequests(): HasMany
     {
         return $this->hasMany(EvaluationRequest::class);

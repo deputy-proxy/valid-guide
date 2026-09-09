@@ -11,6 +11,9 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
+/**
+ * @property ProductType $product_type
+ */
 class Product extends Model
 {
     /** @use HasFactory<Factory> */
@@ -30,19 +33,19 @@ class Product extends Model
         ];
     }
 
-    /** @return BelongsTo<Organization, Product> */
+    /** @return BelongsTo<Organization, $this> */
     public function organization(): BelongsTo
     {
         return $this->belongsTo(Organization::class);
     }
 
-    /** @return HasMany<ProductRelease, Product> */
+    /** @return HasMany<ProductRelease, $this> */
     public function releases(): HasMany
     {
         return $this->hasMany(ProductRelease::class);
     }
 
-    /** @return HasMany<EvaluationRequest, Product> */
+    /** @return HasMany<EvaluationRequest, $this> */
     public function evaluationRequests(): HasMany
     {
         return $this->hasMany(EvaluationRequest::class);

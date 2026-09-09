@@ -25,20 +25,20 @@ class Organization extends Model
         return ['contact_details' => 'array'];
     }
 
-    /** @return BelongsToMany<User, Organization> */
+    /** @return BelongsToMany<User, $this> */
     public function users(): BelongsToMany
     {
         return $this->belongsToMany(User::class, 'organization_memberships')
             ->withPivot('role')->withTimestamps();
     }
 
-    /** @return HasMany<Product, Organization> */
+    /** @return HasMany<Product, $this> */
     public function products(): HasMany
     {
         return $this->hasMany(Product::class);
     }
 
-    /** @return HasMany<EvaluationRequest, Organization> */
+    /** @return HasMany<EvaluationRequest, $this> */
     public function evaluationRequests(): HasMany
     {
         return $this->hasMany(EvaluationRequest::class);

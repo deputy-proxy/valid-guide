@@ -24,12 +24,11 @@ class StandardVersionGovernance
         $this->authorize($actor);
 
         return DB::transaction(function () use ($version, $to, $actor): StandardVersion {
-            $version = StandardVersion::query()->lockForUpdate()->findOrFail($version->getKey());
-            $from = $version->status instanceof StandardVersionStatus
-                ? $version->status->value
-                : (string) $version->status;
+            $version = StandardVersion::query()->whereKey($version->getKey())->lockForUpdate()->firstOrFail();
+            /** @var StandardVersion $version */
+            $from = $version->status->value;
 
-            if (! in_array($to->value, self::TRANSITIONS[$from] ?? [], true)) {
+            if (! in_array($to->value, self::TRANSITIONS[$from], true)) {
                 throw new DomainStateTransitionException(
                     "Invalid standard version transition from {$from} to {$to->value}.",
                 );
@@ -37,7 +36,6 @@ class StandardVersionGovernance
 
             if ($to === StandardVersionStatus::Scheduled) {
                 app(MethodologyRuleValidator::class)->validateStandardVersion($version);
-
                 if ($version->effective_at === null || $version->effective_at->lte(now())) {
                     throw new DomainStateTransitionException(
                         'A standard version must have a future effective date before it can be scheduled.',
@@ -81,7 +79,6 @@ class StandardVersionGovernance
             if ($to === StandardVersionStatus::Retired) {
                 $version->retired_at = now();
             }
-
             $version->status = $to;
             $version->save();
 

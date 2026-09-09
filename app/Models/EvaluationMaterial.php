@@ -6,12 +6,19 @@ namespace App\Models;
 
 use App\Enums\EvaluationMaterialType;
 use App\Services\DomainStateTransitionException;
+use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
+/**
+ * @property CarbonImmutable|null $verified_at
+ * @property int|null $verified_by
+ */
 class EvaluationMaterial extends Model
 {
+    /** @use HasFactory<Factory> */
     use HasFactory;
 
     protected $fillable = [
@@ -58,16 +65,19 @@ class EvaluationMaterial extends Model
         });
     }
 
+    /** @return BelongsTo<EvaluationRequest, $this> */
     public function evaluationRequest(): BelongsTo
     {
         return $this->belongsTo(EvaluationRequest::class);
     }
 
+    /** @return BelongsTo<User, $this> */
     public function submittedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'submitted_by');
     }
 
+    /** @return BelongsTo<User, $this> */
     public function verifiedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'verified_by');

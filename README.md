@@ -540,3 +540,10 @@ Remaining Phase 1 work:
 4. Never introduce a commercial mechanism that can reward a positive evaluation outcome.
 5. Update the relevant documentation whenever an important product, architecture, methodology, workflow or security decision changes.
 6. Prefer explicit domain workflows over generic CRUD when direct editing could violate an invariant.
+
+
+## Static Analysis
+
+Phase 1 development uses PHPStan as a CI quality gate. Eloquent models explicitly document relationship generics, factory generics, enum/date casts and relevant collection/value shapes so domain services receive concrete model types rather than generic `Model`/`Collection` unions. Single-record workflows use explicit single-record query operations where appropriate.
+
+PHPStan failures are treated as implementation defects rather than suppressed globally. Temporary diagnostic and repair workflows may be used during development, but they are removed before a repair branch is considered complete.

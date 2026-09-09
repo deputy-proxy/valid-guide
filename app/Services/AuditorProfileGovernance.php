@@ -18,13 +18,13 @@ final class AuditorProfileGovernance
         $this->authorize($actor);
 
         return DB::transaction(function () use ($profile, $actor): AuditorProfile {
-            $profile = AuditorProfile::query()->lockForUpdate()->findOrFail($profile->getKey());
+            $profile = AuditorProfile::query()->whereKey($profile->getKey())->lockForUpdate()->firstOrFail();
+            /** @var AuditorProfile $profile */
             $status = $this->status($profile);
 
             if (! in_array($status, [AuditorProfileStatus::Pending, AuditorProfileStatus::Rejected, AuditorProfileStatus::Suspended], true)) {
                 throw new DomainStateTransitionException('Only pending, rejected, or suspended Auditor profiles can be approved.');
             }
-
             $profile->forceFill([
                 'status' => AuditorProfileStatus::Approved,
                 'approved_by' => $actor->id,
@@ -41,7 +41,6 @@ final class AuditorProfileGovernance
             AuditLogger::record(
                 event: 'auditor_profile.approved',
                 auditable: $profile,
-                actor: $actor,
                 after: ['status' => AuditorProfileStatus::Approved->value, 'approved_by' => $actor->id],
             );
 
@@ -82,19 +81,13 @@ final class AuditorProfileGovernance
                 ->with('profile')
                 ->lockForUpdate()
                 ->findOrFail($competency->getKey());
-
+            /** @var AuditorCompetency $competency */
             if ($competency->verified_at !== null) {
                 throw new DomainStateTransitionException('An Auditor competency that has been verified cannot be verified again.');
             }
-
             if (blank($competency->topic) || blank($competency->experience_type)) {
                 throw new DomainStateTransitionException('An Auditor competency requires a topic and experience type before verification.');
             }
-
-            if ($competency->years_experience !== null && $competency->years_experience < 0) {
-                throw new DomainStateTransitionException('Auditor competency experience cannot be negative.');
-            }
-
             $competency->forceFill([
                 'verified_at' => now(),
                 'verified_by' => $actor->id,
@@ -103,7 +96,6 @@ final class AuditorProfileGovernance
             AuditLogger::record(
                 event: 'auditor_competency.verified',
                 auditable: $competency,
-                actor: $actor,
                 after: [
                     'auditor_profile_id' => $competency->auditor_profile_id,
                     'topic' => $competency->topic,
@@ -115,6 +107,8 @@ final class AuditorProfileGovernance
         });
     }
 
+    /** @param list<AuditorProfileStatus> $allowedFrom */
+    /** @param list<AuditorProfileStatus> $allowedFrom */
     private function changeStatus(
         AuditorProfile $profile,
         User $actor,
@@ -123,13 +117,13 @@ final class AuditorProfileGovernance
         array $allowedFrom,
     ): AuditorProfile {
         return DB::transaction(function () use ($profile, $actor, $to, $reason, $allowedFrom): AuditorProfile {
-            $profile = AuditorProfile::query()->lockForUpdate()->findOrFail($profile->getKey());
+            $profile = AuditorProfile::query()->whereKey($profile->getKey())->lockForUpdate()->firstOrFail();
+            /** @var AuditorProfile $profile */
             $from = $this->status($profile);
 
             if (! in_array($from, $allowedFrom, true)) {
                 throw new DomainStateTransitionException("Invalid Auditor profile transition from {$from->value} to {$to->value}.");
             }
-
             $profile->forceFill(['status' => $to])->save();
 
             AuditorProfileReview::query()->create([
@@ -143,7 +137,6 @@ final class AuditorProfileGovernance
             AuditLogger::record(
                 event: 'auditor_profile.status_changed',
                 auditable: $profile,
-                actor: $actor,
                 before: ['status' => $from->value],
                 after: ['status' => $to->value],
                 metadata: ['reason' => $reason],
@@ -162,8 +155,6 @@ final class AuditorProfileGovernance
 
     private function status(AuditorProfile $profile): AuditorProfileStatus
     {
-        return $profile->status instanceof AuditorProfileStatus
-            ? $profile->status
-            : AuditorProfileStatus::from((string) $profile->status);
+        return $profile->status;
     }
 }

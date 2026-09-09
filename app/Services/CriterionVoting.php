@@ -77,17 +77,22 @@ class CriterionVoting
             throw new DomainStateTransitionException('Criterion voting requires an odd number of auditors.');
         }
 
-        $counts = $votes->groupBy('decision')->map->count()->sortDesc();
-        $winner = $counts->keys()->first();
-        $winnerCount = $counts->first();
+        $counts = [];
+        foreach ($votes as $vote) {
+            $decision = (string) $vote->decision;
+            $counts[$decision] = ($counts[$decision] ?? 0) + 1;
+        }
+        arsort($counts);
+        $winner = array_key_first($counts);
+        $winnerCount = $winner !== null ? $counts[$winner] : 0;
 
-        if ($winnerCount <= intdiv($voterCount, 2)) {
+        if ($winner === null || $winnerCount <= intdiv($voterCount, 2)) {
             throw new DomainStateTransitionException('No criterion decision has a simple majority.');
         }
 
         return [
             'decision' => $winner,
-            'counts' => $counts->all(),
+            'counts' => $counts,
             'voter_count' => $voterCount,
         ];
     }

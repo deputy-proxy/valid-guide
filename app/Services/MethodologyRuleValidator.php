@@ -58,10 +58,6 @@ final class MethodologyRuleValidator
             ));
         }
 
-        if (! is_int($criterion->sequence) && ! (is_string($criterion->sequence) && ctype_digit($criterion->sequence))) {
-            throw new DomainStateTransitionException(sprintf('Criterion %s must have a positive integer sequence.', $criterion->code));
-        }
-
         if ((int) $criterion->sequence < 1) {
             throw new DomainStateTransitionException(sprintf('Criterion %s must have a positive integer sequence.', $criterion->code));
         }
@@ -71,10 +67,6 @@ final class MethodologyRuleValidator
         }
 
         $rules = $criterion->applicability_rules ?? [];
-        if (! is_array($rules)) {
-            throw new DomainStateTransitionException(sprintf('Criterion %s has invalid applicability rules.', $criterion->code));
-        }
-
         $unknownKeys = array_diff(array_keys($rules), self::APPLICABILITY_KEYS);
         if ($unknownKeys !== []) {
             throw new DomainStateTransitionException(sprintf(
@@ -125,7 +117,12 @@ final class MethodologyRuleValidator
         }
     }
 
-    /** @return list<string> */
+    /** @param array<string, mixed> $rules */
+    /** @param array<string, mixed> $rules */
+    /**
+     * @param  array<string, mixed>  $rules
+     * @return list<string>
+     */
     private function productTypes(array $rules, string $key, Criterion $criterion): array
     {
         $values = $rules[$key] ?? [];

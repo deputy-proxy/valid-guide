@@ -34,7 +34,7 @@ class ValidationStateTransition
                 throw new DomainStateTransitionException('The validation is already in the requested state.');
             }
 
-            if (! in_array($to, self::TRANSITIONS[$from->value] ?? [], true)) {
+            if (! in_array($to, self::TRANSITIONS[$from->value], true)) {
                 throw new DomainStateTransitionException(sprintf(
                     'Invalid validation transition: %s -> %s.',
                     $from->value,

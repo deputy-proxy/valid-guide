@@ -6,12 +6,14 @@ namespace App\Models;
 
 use App\Enums\ValidationStatus;
 use App\Services\DomainStateTransitionException;
+use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class ValidationBadge extends Model
 {
+    /** @use HasFactory<Factory> */
     use HasFactory;
 
     protected $fillable = [
@@ -47,6 +49,7 @@ class ValidationBadge extends Model
         });
     }
 
+    /** @return BelongsTo<Validation, $this> */
     public function validation(): BelongsTo
     {
         return $this->belongsTo(Validation::class);

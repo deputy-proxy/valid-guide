@@ -25,14 +25,15 @@ class EvaluationRequestStateTransition
     public function transition(EvaluationRequest $request, EvaluationRequestStatus $to): EvaluationRequest
     {
         return DB::transaction(function () use ($request, $to): EvaluationRequest {
-            $request = EvaluationRequest::query()->lockForUpdate()->findOrFail($request->getKey());
+            $request = EvaluationRequest::query()->whereKey($request->getKey())->lockForUpdate()->firstOrFail();
+            /** @var EvaluationRequest $request */
             $from = $request->status;
 
             if ($from === $to) {
                 throw new DomainStateTransitionException('The evaluation request is already in the requested state.');
             }
 
-            if (! in_array($to, self::TRANSITIONS[$from->value] ?? [], true)) {
+            if (! in_array($to, self::TRANSITIONS[$from->value], true)) {
                 throw new DomainStateTransitionException(sprintf(
                     'Invalid evaluation request transition: %s -> %s.',
                     $from->value,
@@ -41,7 +42,7 @@ class EvaluationRequestStateTransition
             }
 
             if ($to === EvaluationRequestStatus::AwaitingPayment) {
-                if ($request->service_package_id === null || $request->quoted_price === null || $request->currency === null) {
+                if ($request->service_package_id === null || $request->quoted_price === null) {
                     throw new DomainStateTransitionException(
                         'An evaluation request must have frozen commercial terms before payment can begin.',
                     );
@@ -77,7 +78,6 @@ class EvaluationRequestStateTransition
                 EvaluationRequestStatus::Refunded => $updates['refunded_at'] = $request->refunded_at ?? $now,
                 default => null,
             };
-
             if ($to === EvaluationRequestStatus::AwaitingPayment && $request->submitted_at === null) {
                 $updates['submitted_at'] = $now;
             }
@@ -85,7 +85,6 @@ class EvaluationRequestStateTransition
             EvaluationRequest::query()
                 ->whereKey($request->getKey())
                 ->update($updates);
-
             $request->refresh();
 
             AuditLogger::record(

@@ -36,15 +36,13 @@ final class ProductReleaseStateTransition
                 throw new DomainStateTransitionException('The actor is not authorized to change this product release state.');
             }
 
-            $from = $release->status instanceof ProductReleaseStatus
-                ? $release->status->value
-                : (string) $release->status;
+            $from = $release->status->value;
 
             if ($from === $to->value) {
                 throw new DomainStateTransitionException('A product release cannot transition to its current state.');
             }
 
-            if (! in_array($to, self::TRANSITIONS[$from] ?? [], true)) {
+            if (! in_array($to, self::TRANSITIONS[$from], true)) {
                 throw new DomainStateTransitionException(
                     sprintf('Product release cannot transition from [%s] to [%s].', $from, $to->value),
                 );
@@ -86,7 +84,6 @@ final class ProductReleaseStateTransition
                     'published_at' => $release->published_at?->toIso8601String(),
                     'actor_id' => $actor->id,
                 ],
-                actor: $actor,
             );
 
             return $release;

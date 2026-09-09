@@ -74,6 +74,15 @@ class ReportVersioning
         });
     }
 
+    /** @param array<string,mixed> $contentStructure */
+    /** @param array<string,mixed> $contentStructure */
+    /** @param array<string,mixed> $contentStructure */
+    /** @param array<string,mixed> $contentStructure */
+    /** @param array<string,mixed> $contentStructure */
+    /** @param array<string,mixed> $contentStructure */
+    /** @param array<string,mixed> $contentStructure */
+    /** @param array<string,mixed> $contentStructure */
+    /** @param array<string,mixed> $contentStructure */
     public function createRevision(Report $report, User $createdBy, array $contentStructure, ?string $abstract, string $changeReason): ReportVersion
     {
         $this->authorizePlatformAdmin($createdBy);
@@ -136,6 +145,15 @@ class ReportVersioning
         }
     }
 
+    /** @return array<string,mixed> */
+    /** @return array<string,mixed> */
+    /** @return array<string,mixed> */
+    /** @return array<string,mixed> */
+    /** @return array<string,mixed> */
+    /** @return array<string,mixed> */
+    /** @return array<string,mixed> */
+    /** @return array<string,mixed> */
+    /** @return array<string,mixed> */
     private function contentStructure(Evaluation $evaluation): array
     {
         return [

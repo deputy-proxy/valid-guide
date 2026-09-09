@@ -5,13 +5,20 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Services\DomainStateTransitionException;
+use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
+/**
+ * @property CarbonImmutable|null $delivered_at
+ * @property int|null $current_version_id
+ */
 class Report extends Model
 {
+    /** @use HasFactory<Factory> */
     use HasFactory;
 
     protected $fillable = [
@@ -58,16 +65,19 @@ class Report extends Model
         });
     }
 
+    /** @return BelongsTo<Evaluation, $this> */
     public function evaluation(): BelongsTo
     {
         return $this->belongsTo(Evaluation::class);
     }
 
+    /** @return BelongsTo<ReportVersion, $this> */
     public function currentVersion(): BelongsTo
     {
         return $this->belongsTo(ReportVersion::class, 'current_version_id');
     }
 
+    /** @return HasMany<ReportVersion, $this> */
     public function versions(): HasMany
     {
         return $this->hasMany(ReportVersion::class);

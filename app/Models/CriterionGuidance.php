@@ -6,12 +6,14 @@ namespace App\Models;
 
 use App\Enums\StandardVersionStatus;
 use App\Services\DomainStateTransitionException;
+use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class CriterionGuidance extends Model
 {
+    /** @use HasFactory<Factory> */
     use HasFactory;
 
     protected $fillable = [
@@ -57,6 +59,7 @@ class CriterionGuidance extends Model
         });
     }
 
+    /** @return BelongsTo<Criterion, $this> */
     public function criterion(): BelongsTo
     {
         return $this->belongsTo(Criterion::class);

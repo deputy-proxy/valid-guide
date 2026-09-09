@@ -114,10 +114,6 @@ class EvaluationDecisionService
                 ? null
                 : round((float) $winningVotes->avg(fn ($vote): float => (float) $vote->criterionResult->score), 2);
 
-            if ($score === null && $aggregate['decision'] !== 'not_applicable') {
-                throw new DomainStateTransitionException(sprintf('Criterion %s has no numerical score.', $criterion->code));
-            }
-
             $criterionDecisions[$criterion->code] = [
                 'criterion_id' => $criterion->id,
                 'applicable' => true,

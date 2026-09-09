@@ -5,13 +5,19 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Enums\AuditorProfileStatus;
+use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
+/**
+ * @property list<string>|null $format_experience
+ * @property AuditorProfileStatus $status
+ */
 class AuditorProfile extends Model
 {
+    /** @use HasFactory<Factory> */
     use HasFactory;
 
     protected $fillable = [
@@ -28,21 +34,25 @@ class AuditorProfile extends Model
         ];
     }
 
+    /** @return BelongsTo<User, $this> */
     public function auditor(): BelongsTo
     {
         return $this->belongsTo(User::class, 'auditor_id');
     }
 
+    /** @return BelongsTo<User, $this> */
     public function approvedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'approved_by');
     }
 
+    /** @return HasMany<AuditorCompetency, $this> */
     public function competencies(): HasMany
     {
         return $this->hasMany(AuditorCompetency::class);
     }
 
+    /** @return HasMany<AuditorProfileReview, $this> */
     public function reviews(): HasMany
     {
         return $this->hasMany(AuditorProfileReview::class);

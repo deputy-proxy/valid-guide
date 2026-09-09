@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Services;
 
-use App\Enums\ProductType;
 use App\Models\Criterion;
 use App\Models\Product;
 
@@ -14,13 +13,7 @@ final class CriterionApplicability
     public function resolve(Criterion $criterion, Product $product): array
     {
         $rules = $criterion->applicability_rules ?? [];
-        $type = $product->product_type instanceof ProductType
-            ? $product->product_type->value
-            : (string) $product->product_type;
-
-        if (! is_array($rules)) {
-            throw new DomainStateTransitionException(sprintf('Criterion %s has invalid applicability rules.', $criterion->code));
-        }
+        $type = $product->product_type->value;
 
         $applicableTypes = $rules['product_types'] ?? null;
         if ($applicableTypes !== null) {

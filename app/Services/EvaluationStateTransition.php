@@ -23,21 +23,21 @@ class EvaluationStateTransition
     public function transition(Evaluation $evaluation, EvaluationStatus $to): Evaluation
     {
         return DB::transaction(function () use ($evaluation, $to): Evaluation {
-            $evaluation = Evaluation::query()->lockForUpdate()->findOrFail($evaluation->getKey());
+            $evaluation = Evaluation::query()->whereKey($evaluation->getKey())->lockForUpdate()->firstOrFail();
+            /** @var Evaluation $evaluation */
             $from = $evaluation->status;
 
             if ($from === $to) {
                 throw new DomainStateTransitionException('The evaluation is already in the requested state.');
             }
 
-            if (! in_array($to, self::TRANSITIONS[$from->value] ?? [], true)) {
+            if (! in_array($to, self::TRANSITIONS[$from->value], true)) {
                 throw new DomainStateTransitionException(sprintf(
                     'Invalid evaluation transition: %s -> %s.',
                     $from->value,
                     $to->value,
                 ));
             }
-
             if ($to === EvaluationStatus::Completed && blank($evaluation->decision)) {
                 throw new DomainStateTransitionException(
                     'An evaluation cannot be completed before an evaluation decision has been recorded.',
@@ -49,7 +49,6 @@ class EvaluationStateTransition
                 'status' => $to->value,
                 'updated_at' => $now,
             ];
-
             if ($to === EvaluationStatus::InProgress && $evaluation->started_at === null) {
                 $updates['started_at'] = $now;
             }
@@ -57,9 +56,7 @@ class EvaluationStateTransition
             if ($to === EvaluationStatus::Completed) {
                 $updates['completed_at'] = $now;
             }
-
             Evaluation::query()->whereKey($evaluation->getKey())->update($updates);
-
             $evaluation->refresh();
 
             AuditLogger::record(

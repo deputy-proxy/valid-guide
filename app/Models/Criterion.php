@@ -6,13 +6,19 @@ namespace App\Models;
 
 use App\Enums\StandardVersionStatus;
 use App\Services\DomainStateTransitionException;
+use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
+/**
+ * @property array<string,mixed>|null $applicability_rules
+ * @property array<string,mixed>|null $scoring_rules
+ */
 class Criterion extends Model
 {
+    /** @use HasFactory<Factory> */
     use HasFactory;
 
     protected $fillable = [
@@ -66,16 +72,19 @@ class Criterion extends Model
         });
     }
 
+    /** @return BelongsTo<StandardVersion, $this> */
     public function standardVersion(): BelongsTo
     {
         return $this->belongsTo(StandardVersion::class);
     }
 
+    /** @return HasMany<CriterionResult, $this> */
     public function results(): HasMany
     {
         return $this->hasMany(CriterionResult::class);
     }
 
+    /** @return HasMany<CriterionGuidance, $this> */
     public function guidance(): HasMany
     {
         return $this->hasMany(CriterionGuidance::class);

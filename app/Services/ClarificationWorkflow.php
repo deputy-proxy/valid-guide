@@ -65,7 +65,7 @@ class ClarificationWorkflow
             throw new DomainStateTransitionException('Only platform administrators can answer clarification requests.');
         }
 
-        if ($request->status !== ClarificationRequestStatus::Open) {
+        if ($request->status->value !== ClarificationRequestStatus::Open->value) {
             throw new DomainStateTransitionException('Only open clarification requests can be answered.');
         }
 
@@ -95,7 +95,7 @@ class ClarificationWorkflow
             throw new DomainStateTransitionException('Only platform administrators can close clarification requests.');
         }
 
-        if ($request->status !== ClarificationRequestStatus::Answered) {
+        if ($request->status->value !== ClarificationRequestStatus::Answered->value) {
             throw new DomainStateTransitionException('Only answered clarification requests can be closed.');
         }
 

@@ -21,6 +21,8 @@ final class EvaluationMaterialIntake
         EvaluationRequestStatus::AwaitingCreator,
     ];
 
+    /** @param array<string, mixed>|null $metadata */
+    /** @param array<string, mixed>|null $metadata */
     public function submit(
         EvaluationRequest $request,
         User $submittedBy,
@@ -49,7 +51,7 @@ final class EvaluationMaterialIntake
         }
 
         return DB::transaction(function () use ($request, $submittedBy, $type, $label, $description, $location, $metadata): EvaluationMaterial {
-            $request = EvaluationRequest::query()->lockForUpdate()->findOrFail($request->getKey());
+            $request = EvaluationRequest::query()->whereKey($request->getKey())->lockForUpdate()->firstOrFail();
 
             if (! in_array($request->status, self::SUBMISSION_STATES, true)) {
                 throw new DomainStateTransitionException('Materials can only be submitted during evaluation intake.');
@@ -99,12 +101,11 @@ final class EvaluationMaterialIntake
         }
 
         return DB::transaction(function () use ($material, $verifiedBy, $notes): EvaluationMaterial {
-            $material = EvaluationMaterial::query()->lockForUpdate()->findOrFail($material->getKey());
-
+            $material = EvaluationMaterial::query()->whereKey($material->getKey())->lockForUpdate()->firstOrFail();
+            /** @var EvaluationMaterial $material */
             if ($material->verified_at !== null) {
                 throw new DomainStateTransitionException('Evaluation material has already been verified.');
             }
-
             $material->status = 'verified';
             $material->verified_at = now();
             $material->verified_by = $verifiedBy->id;

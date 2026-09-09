@@ -6,13 +6,20 @@ namespace App\Models;
 
 use App\Enums\ValidationStatus;
 use App\Services\DomainStateTransitionException;
+use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
+/**
+ * @property ValidationStatus $status
+ * @property CarbonImmutable|null $issued_at
+ */
 class Validation extends Model
 {
+    /** @use HasFactory<Factory> */
     use HasFactory;
 
     protected $fillable = [
@@ -62,21 +69,25 @@ class Validation extends Model
         });
     }
 
+    /** @return BelongsTo<ProductRelease, $this> */
     public function productRelease(): BelongsTo
     {
         return $this->belongsTo(ProductRelease::class);
     }
 
+    /** @return BelongsTo<Evaluation, $this> */
     public function evaluation(): BelongsTo
     {
         return $this->belongsTo(Evaluation::class);
     }
 
+    /** @return HasOne<ValidationBadge, $this> */
     public function badge(): HasOne
     {
         return $this->hasOne(ValidationBadge::class);
     }
 
+    /** @return HasOne<PublicVerificationRecord, $this> */
     public function publicVerificationRecord(): HasOne
     {
         return $this->hasOne(PublicVerificationRecord::class);

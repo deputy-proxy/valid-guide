@@ -5,12 +5,19 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Services\DomainStateTransitionException;
+use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
+/**
+ * @property array<string,mixed>|null $snapshot
+ * @property CarbonImmutable|null $published_at
+ */
 class PublicVerificationRecord extends Model
 {
+    /** @use HasFactory<Factory> */
     use HasFactory;
 
     protected $fillable = [
@@ -45,6 +52,7 @@ class PublicVerificationRecord extends Model
         });
     }
 
+    /** @return BelongsTo<Validation, $this> */
     public function validation(): BelongsTo
     {
         return $this->belongsTo(Validation::class);

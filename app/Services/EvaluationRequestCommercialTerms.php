@@ -17,8 +17,8 @@ final class EvaluationRequestCommercialTerms
         string $complexity,
     ): EvaluationRequest {
         return DB::transaction(function () use ($request, $package, $complexity): EvaluationRequest {
-            $request = EvaluationRequest::query()->lockForUpdate()->findOrFail($request->getKey());
-
+            $request = EvaluationRequest::query()->whereKey($request->getKey())->lockForUpdate()->firstOrFail();
+            /** @var EvaluationRequest $request */
             if ($request->status !== EvaluationRequestStatus::Draft) {
                 throw new DomainStateTransitionException('Commercial terms can only be selected on a draft request.');
             }

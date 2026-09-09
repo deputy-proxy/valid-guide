@@ -7,6 +7,51 @@ use Illuminate\Database\Eloquent\Model;
 
 class AuditLogger
 {
+    /**
+     * @param  array<string,mixed>|null  $before
+     * @param  array<string,mixed>|null  $after
+     * @param  array<string,mixed>|null  $metadata
+     */
+    /**
+     * @param  array<string,mixed>|null  $before
+     * @param  array<string,mixed>|null  $after
+     * @param  array<string,mixed>|null  $metadata
+     */
+    /**
+     * @param  array<string,mixed>|null  $before
+     * @param  array<string,mixed>|null  $after
+     * @param  array<string,mixed>|null  $metadata
+     */
+    /**
+     * @param  array<string,mixed>|null  $before
+     * @param  array<string,mixed>|null  $after
+     * @param  array<string,mixed>|null  $metadata
+     */
+    /**
+     * @param  array<string,mixed>|null  $before
+     * @param  array<string,mixed>|null  $after
+     * @param  array<string,mixed>|null  $metadata
+     */
+    /**
+     * @param  array<string,mixed>|null  $before
+     * @param  array<string,mixed>|null  $after
+     * @param  array<string,mixed>|null  $metadata
+     */
+    /**
+     * @param  array<string,mixed>|null  $before
+     * @param  array<string,mixed>|null  $after
+     * @param  array<string,mixed>|null  $metadata
+     */
+    /**
+     * @param  array<string,mixed>|null  $before
+     * @param  array<string,mixed>|null  $after
+     * @param  array<string,mixed>|null  $metadata
+     */
+    /**
+     * @param  array<string,mixed>|null  $before
+     * @param  array<string,mixed>|null  $after
+     * @param  array<string,mixed>|null  $metadata
+     */
     public static function record(
         string $event,
         Model $auditable,

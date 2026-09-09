@@ -52,17 +52,14 @@ class AuditorAssignmentCreation
                 ->with(['productRelease.product', 'assignments'])
                 ->lockForUpdate()
                 ->findOrFail($evaluation->getKey());
-
+            /** @var Evaluation $evaluation */
             if ($evaluation->status->value !== 'pending' && $evaluation->status->value !== 'in_progress') {
                 throw new DomainStateTransitionException('Auditors can only be assigned to pending or in-progress evaluations.');
             }
-
             $this->assertEligible($evaluation, $auditor);
-
             if ($evaluation->assignments()->where('auditor_id', $auditor->id)->exists()) {
                 throw new DomainStateTransitionException('The same Auditor cannot be assigned twice to one evaluation.');
             }
-
             if ($evaluation->assignments()->where('sequence', $sequence)->exists()) {
                 throw new DomainStateTransitionException('The requested Auditor assignment sequence is already occupied.');
             }

@@ -31,6 +31,7 @@ class Criterion extends Model
     protected function casts(): array
     {
         return [
+            'sequence' => 'integer',
             'weight' => 'decimal:2',
             'is_mandatory' => 'boolean',
             'applicability_rules' => 'array',

@@ -9,9 +9,12 @@ use App\Models\EvaluationRequest;
 use App\Models\Organization;
 use App\Models\Product;
 use App\Models\ProductRelease;
+use App\Models\ServicePackage;
 use App\Models\User;
 use App\Services\DomainStateTransitionException;
 use App\Services\EvaluationMaterialIntake;
+use App\Services\EvaluationRequestStateTransition;
+use Illuminate\Support\Facades\DB;
 
 function materialIntakeRequest(): EvaluationRequest
 {
@@ -33,13 +36,35 @@ function materialIntakeRequest(): EvaluationRequest
         'title_snapshot' => 'Course',
         'status' => 'draft',
     ]);
+    $package = ServicePackage::create([
+        'name' => 'Standard Evaluation',
+        'slug' => 'material-evaluation-'.$user->id,
+        'description' => 'Evaluation package.',
+        'product_types' => ['course'],
+        'complexity_levels' => ['standard'],
+        'price' => 100,
+        'currency' => 'EUR',
+        'status' => 'active',
+    ]);
 
-    return EvaluationRequest::create([
+    $request = EvaluationRequest::create([
         'organization_id' => $organization->id,
         'product_id' => $product->id,
         'product_release_id' => $release->id,
-        'status' => EvaluationRequestStatus::Paid,
+        'service_package_id' => $package->id,
+        'service_package' => $package->slug,
+        'service_package_name_snapshot' => $package->name,
+        'complexity' => 'standard',
+        'quoted_price' => 100,
+        'currency' => 'EUR',
+        'status' => EvaluationRequestStatus::Draft,
     ]);
+
+    app(EvaluationRequestStateTransition::class)
+        ->transition($request, EvaluationRequestStatus::AwaitingPayment);
+
+    return app(EvaluationRequestStateTransition::class)
+        ->transition($request->fresh(), EvaluationRequestStatus::Paid);
 }
 
 it('records submitted material with its provenance', function () {
@@ -131,8 +156,10 @@ it('verifies material and then makes its identity immutable', function () {
 
 it('does not accept material after intake is ready', function () {
     $request = materialIntakeRequest();
-    $request->status = EvaluationRequestStatus::Ready;
-    $request->save();
+    DB::table('evaluation_requests')
+        ->where('id', $request->id)
+        ->update(['status' => EvaluationRequestStatus::Ready->value]);
+    $request->refresh();
     $user = $request->organization->users()->first();
 
     expect(fn () => app(EvaluationMaterialIntake::class)->submit(

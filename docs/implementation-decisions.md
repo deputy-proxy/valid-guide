@@ -40,3 +40,4 @@
 - `StandardVersion::standard()` explicitly uses `evaluation_standard_id`; the conventional Eloquent key inference would otherwise look for `standard_id` and leave the relationship unresolved.
 - Conflict-declaration decisions remain restricted to platform administrators; the corresponding feature fixture now uses an admin actor rather than weakening the service authorization rule.
 - Report lifecycle fields remain protected by the `Report` model. The delivery fixture establishes `current_version_id` through a direct database update because that state is required as setup for testing the separate `ReportDelivery` service and direct model mutation is intentionally forbidden.
+- Criterion and criterion-guidance lifecycle guards read the persisted `StandardVersion` status directly by primary key. This makes the immutability boundary independent of Eloquent relation state or cached model instances.

@@ -65,7 +65,7 @@ class StandardVersion extends Model
     /** @return BelongsTo<EvaluationStandard, $this> */
     public function standard(): BelongsTo
     {
-        return $this->belongsTo(EvaluationStandard::class);
+        return $this->belongsTo(EvaluationStandard::class, 'evaluation_standard_id');
     }
 
     /** @return BelongsTo<User, $this> */

@@ -20,30 +20,21 @@ class ConflictDeclaration extends Model
     use HasFactory;
 
     protected $fillable = [
-        'evaluation_id',
-        'auditor_assignment_id',
-        'declaration_type',
-        'disclosure',
-        'outcome',
-        'determined_by',
-        'determined_at',
+        'evaluation_id', 'auditor_assignment_id', 'declaration_type', 'disclosure', 'outcome', 'determined_by', 'determined_at',
     ];
 
     protected function casts(): array
     {
-        return [
-            'determined_at' => 'datetime',
-        ];
+        return ['determined_at' => 'datetime'];
     }
 
     protected static function booted(): void
     {
         static::updating(function (self $declaration): void {
-            if ($declaration->getOriginal('determined_at') !== null) {
+            if ($declaration->getRawOriginal('determined_at') !== null) {
                 throw new DomainStateTransitionException('A determined conflict declaration is immutable.');
             }
         });
-
         static::deleting(function (self $declaration): void {
             if ($declaration->determined_at !== null) {
                 throw new DomainStateTransitionException('A determined conflict declaration is immutable.');

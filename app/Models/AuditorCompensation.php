@@ -27,6 +27,8 @@ class AuditorCompensation extends Model
     /** @use HasFactory<Factory> */
     use HasFactory;
 
+    protected $table = 'auditor_compensations';
+
     protected $fillable = [
         'auditor_assignment_id', 'amount_minor', 'currency', 'status', 'payable_at',
         'forfeited_at', 'paid_at', 'status_reason',

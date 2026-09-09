@@ -22,6 +22,7 @@ it('freezes an annual conflict declaration after determination', function () {
     $declaration = app(AuditorAnnualConflictDeclarationService::class)->submit($auditor);
 
     app(AuditorAnnualConflictDeclarationService::class)->determine($declaration, $admin, 'cleared');
+    $declaration->refresh();
 
     expect(fn () => $declaration->update(['disclosure' => 'Changed']))
         ->toThrow(DomainStateTransitionException::class);

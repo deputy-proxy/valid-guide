@@ -17,7 +17,11 @@ final class CriterionApplicability
 
         $applicableTypes = $rules['product_types'] ?? null;
         if ($applicableTypes !== null) {
-            if (! is_array($applicableTypes) || ! in_array($type, $applicableTypes, true)) {
+            if (! is_array($applicableTypes)) {
+                throw new DomainStateTransitionException(sprintf('Criterion %s has invalid product types.', $criterion->code));
+            }
+
+            if (! in_array($type, $applicableTypes, true)) {
                 return ['applicable' => false, 'weight' => (float) $criterion->weight, 'mandatory' => false];
             }
         }

@@ -107,17 +107,22 @@ class PayoutService
                 throw new DomainStateTransitionException('Payout totals and identity do not match their immutable compensation items.');
             }
 
-            $payout->status = 'paid';
-            $payout->paid_at = now();
-            $payout->payment_reference = $paymentReference;
-            $payout->save();
+            $paidAt = now();
+            Payout::query()->whereKey($payout->id)->update([
+                'status' => 'paid',
+                'paid_at' => $paidAt,
+                'payment_reference' => $paymentReference,
+                'updated_at' => $paidAt,
+            ]);
 
             foreach ($payout->items as $item) {
                 $compensation = $item->compensation;
                 $compensation->status = 'paid';
-                $compensation->paid_at = $payout->paid_at;
+                $compensation->paid_at = $paidAt;
                 $compensation->save();
             }
+
+            $payout->refresh();
 
             AuditLogger::record(event: 'auditor.payout.paid', auditable: $payout, after: [
                 'paid_at' => $payout->paid_at,
@@ -125,7 +130,7 @@ class PayoutService
                 'paid_by' => $actor->id,
             ]);
 
-            return $payout->refresh();
+            return $payout;
         });
     }
 }

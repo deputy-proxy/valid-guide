@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Enums\EvaluationRequestStatus;
 use App\Models\EvaluationRequest;
 use App\Models\Product;
+use App\Models\ServicePackage;
 use App\Services\DomainStateTransitionException;
 use App\Services\EvaluationRequestStateTransition;
 use Illuminate\Support\Facades\DB;
@@ -25,10 +26,23 @@ function evaluationRequestForTransition(): EvaluationRequest
         'slug' => 'transition-course-'.uniqid(),
     ]);
 
+    $package = ServicePackage::create([
+        'name' => 'Standard Evaluation',
+        'slug' => 'transition-evaluation-'.uniqid(),
+        'description' => 'Evaluation package.',
+        'product_types' => ['course'],
+        'complexity_levels' => ['standard'],
+        'price' => 100,
+        'currency' => 'EUR',
+        'status' => 'active',
+    ]);
+
     return EvaluationRequest::create([
         'organization_id' => $organization,
         'product_id' => $product->id,
-        'service_package' => 'standard',
+        'service_package_id' => $package->id,
+        'service_package' => $package->slug,
+        'service_package_name_snapshot' => $package->name,
         'complexity' => 'standard',
         'quoted_price' => 100,
         'currency' => 'EUR',

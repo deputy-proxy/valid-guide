@@ -42,20 +42,18 @@ class ClarificationRequest extends Model
     protected static function booted(): void
     {
         static::updating(function (self $request): void {
-            $status = $request->getOriginal('status');
-
+            $status = $request->getRawOriginal('status');
             if ($status === ClarificationRequestStatus::Closed->value) {
                 throw new DomainStateTransitionException('Closed clarification requests are immutable.');
             }
-
-            if (
-                $status === ClarificationRequestStatus::Answered->value
-                && array_diff(array_keys($request->getDirty()), ['status', 'resolved_at', 'resolved_by'])
-            ) {
+            $immutableContent = ['evaluation_id', 'organization_id', 'submitted_by', 'type', 'message'];
+            if ($request->getRawOriginal('submitted_at') !== null && array_intersect(array_keys($request->getDirty()), $immutableContent) !== []) {
+                throw new DomainStateTransitionException('Submitted clarification content is immutable.');
+            }
+            if ($status === ClarificationRequestStatus::Answered->value && array_diff(array_keys($request->getDirty()), ['status', 'resolved_at', 'resolved_by', 'response'])) {
                 throw new DomainStateTransitionException('Answered clarification content is immutable.');
             }
         });
-
         static::deleting(function (self $request): void {
             if ($request->submitted_at !== null) {
                 throw new DomainStateTransitionException('Submitted clarification requests cannot be deleted.');

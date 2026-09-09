@@ -43,28 +43,21 @@ class StandardVersion extends Model
     protected static function booted(): void
     {
         static::updating(function (self $version): void {
-            $status = $version->getOriginal('status');
-
+            $status = $version->getRawOriginal('status');
             if (in_array($status, [
                 StandardVersionStatus::Scheduled->value,
                 StandardVersionStatus::Effective->value,
                 StandardVersionStatus::Retired->value,
             ], true)) {
                 $lifecycleFields = ['status', 'effective_at', 'retired_at', 'approved_by', 'approved_at'];
-
                 if (array_diff(array_keys($version->getDirty()), $lifecycleFields)) {
-                    throw new DomainStateTransitionException(
-                        'Scheduled, effective and retired standard version content is immutable.',
-                    );
+                    throw new DomainStateTransitionException('Scheduled, effective and retired standard version content is immutable.');
                 }
             }
         });
-
         static::deleting(function (self $version): void {
             if ($version->status !== StandardVersionStatus::Draft) {
-                throw new DomainStateTransitionException(
-                    'Only draft standard versions may be deleted.',
-                );
+                throw new DomainStateTransitionException('Only draft standard versions may be deleted.');
             }
         });
     }

@@ -66,7 +66,7 @@ test('product release lifecycle fields cannot be changed through direct model mu
 
     $release->refresh();
 
-    expect(fn () => $release->update(['published_at' => now()]))
+    expect(fn () => $release->update(['published_at' => now()->addMinute()]))
         ->toThrow(DomainStateTransitionException::class);
 });
 

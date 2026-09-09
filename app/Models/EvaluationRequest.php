@@ -51,22 +51,13 @@ class EvaluationRequest extends Model
     {
         static::creating(function (self $request): void {
             if ($request->status !== null && $request->status !== EvaluationRequestStatus::Draft) {
-                throw new DomainStateTransitionException(
-                    'Evaluation requests must be created as drafts and advanced through EvaluationRequestStateTransition.',
-                );
+                throw new DomainStateTransitionException('Evaluation requests must be created as drafts and advanced through EvaluationRequestStateTransition.');
             }
-
-            $lifecycleFields = [
-                'submitted_at', 'payment_started_at', 'paid_at', 'evaluation_started_at', 'cancelled_at', 'refunded_at',
-            ];
-
+            $lifecycleFields = ['submitted_at', 'payment_started_at', 'paid_at', 'evaluation_started_at', 'cancelled_at', 'refunded_at'];
             if (array_intersect(array_keys($request->getDirty()), $lifecycleFields) !== []) {
-                throw new DomainStateTransitionException(
-                    'Evaluation request lifecycle timestamps can only be set by their domain workflow.',
-                );
+                throw new DomainStateTransitionException('Evaluation request lifecycle timestamps can only be set by their domain workflow.');
             }
         });
-
         static::saving(function (self $request): void {
             if ($request->product_id !== null && $request->product_release_id !== null) {
                 $releaseProductId = ProductRelease::query()->whereKey($request->product_release_id)->value('product_id');
@@ -81,13 +72,8 @@ class EvaluationRequest extends Model
             if ($request->exists && array_intersect(array_keys($request->getDirty()), $lifecycleFields) !== []) {
                 throw new DomainStateTransitionException('Evaluation request lifecycle timestamps can only be changed by their domain workflow.');
             }
-            $originalStatus = $request->exists ? $request->getOriginal('status') : null;
-            $frozenStatuses = [
-                EvaluationRequestStatus::AwaitingPayment->value, EvaluationRequestStatus::Paid->value,
-                EvaluationRequestStatus::Intake->value, EvaluationRequestStatus::AwaitingCreator->value,
-                EvaluationRequestStatus::Ready->value, EvaluationRequestStatus::Cancelled->value,
-                EvaluationRequestStatus::Refunded->value,
-            ];
+            $originalStatus = $request->exists ? $request->getRawOriginal('status') : null;
+            $frozenStatuses = [EvaluationRequestStatus::AwaitingPayment->value, EvaluationRequestStatus::Paid->value, EvaluationRequestStatus::Intake->value, EvaluationRequestStatus::AwaitingCreator->value, EvaluationRequestStatus::Ready->value, EvaluationRequestStatus::Cancelled->value, EvaluationRequestStatus::Refunded->value];
             if ($originalStatus !== null && in_array($originalStatus, $frozenStatuses, true)) {
                 $frozenFields = ['service_package_id', 'service_package', 'service_package_name_snapshot', 'service_package_description_snapshot', 'service_package_terms_snapshot', 'complexity', 'quoted_price', 'currency'];
                 if (array_intersect(array_keys($request->getDirty()), $frozenFields) !== []) {

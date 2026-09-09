@@ -32,30 +32,17 @@ class CriterionGuidance extends Model
         ];
     }
 
+    public function save(array $options = []): bool
+    {
+        $this->assertVersionContentIsMutable();
+
+        return parent::save($options);
+    }
+
     protected static function booted(): void
     {
-        static::saving(function (self $guidance): void {
-            $criterion = Criterion::query()->whereKey($guidance->criterion_id)->firstOrFail();
-            $status = StandardVersion::query()
-                ->whereKey($criterion->standard_version_id)
-                ->value('status');
-
-            if (in_array($status, [
-                StandardVersionStatus::Scheduled->value,
-                StandardVersionStatus::Effective->value,
-                StandardVersionStatus::Retired->value,
-            ], true)) {
-                throw new DomainStateTransitionException(
-                    'Criterion guidance is immutable once its standard version is scheduled.',
-                );
-            }
-        });
-
         static::deleting(function (self $guidance): void {
-            $criterion = Criterion::query()->whereKey($guidance->criterion_id)->firstOrFail();
-            $status = StandardVersion::query()
-                ->whereKey($criterion->standard_version_id)
-                ->value('status');
+            $status = $guidance->standardVersionStatus();
 
             if ($status !== StandardVersionStatus::Draft->value) {
                 throw new DomainStateTransitionException(
@@ -65,9 +52,41 @@ class CriterionGuidance extends Model
         });
     }
 
+    private function assertVersionContentIsMutable(): void
+    {
+        $criterionId = $this->getRawOriginal('criterion_id') ?? $this->criterion_id;
+
+        $criterion = Criterion::query()->whereKey($criterionId)->firstOrFail();
+        $status = $this->standardVersionStatus($criterion->standard_version_id);
+
+        if (in_array($status, [
+            StandardVersionStatus::Scheduled->value,
+            StandardVersionStatus::Effective->value,
+            StandardVersionStatus::Retired->value,
+        ], true)) {
+            throw new DomainStateTransitionException(
+                'Criterion guidance is immutable once its standard version is scheduled.',
+            );
+        }
+    }
+
+    private function standardVersionStatus(?int $standardVersionId = null): ?string
+    {
+        return StandardVersion::query()
+            ->whereKey($standardVersionId ?? $this->criterion()->value('standard_version_id'))
+            ->value('status');
+    }
+
     /** @return BelongsTo<Criterion, $this> */
     public function criterion(): BelongsTo
     {
         return $this->belongsTo(Criterion::class);
+    }
+
+    private function standardVersionStatus(): ?string
+    {
+        return StandardVersion::query()
+            ->whereKey(Criterion::query()->whereKey($this->criterion_id)->value('standard_version_id'))
+            ->value('status');
     }
 }

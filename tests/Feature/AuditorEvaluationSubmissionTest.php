@@ -64,7 +64,7 @@ test('prevents changes and deletion after auditor evaluation submission', functi
 
 test('allows an explicit conflict decision and keeps it immutable', function () {
     [, , $declaration] = auditorEvaluationFixture();
-    $decisionMaker = User::factory()->create();
+    $decisionMaker = User::factory()->create(['platform_role' => 'admin']);
     DB::table('conflict_declarations')->where('id', $declaration->id)->update(['outcome' => 'potential_conflict', 'determined_by' => null, 'determined_at' => null]);
     $declaration->refresh();
     $decided = app(ConflictDeclarationDecision::class)->decide($declaration, 'cleared', $decisionMaker);

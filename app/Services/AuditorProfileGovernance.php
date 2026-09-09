@@ -7,8 +7,8 @@ namespace App\Services;
 use App\Enums\AuditorProfileStatus;
 use App\Models\AuditorCompetency;
 use App\Models\AuditorProfile;
+use App\Models\AuditorProfileReview;
 use App\Models\User;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 
 final class AuditorProfileGovernance
@@ -30,6 +30,13 @@ final class AuditorProfileGovernance
                 'approved_by' => $actor->id,
                 'approved_at' => now(),
             ])->save();
+
+            AuditorProfileReview::query()->create([
+                'auditor_profile_id' => $profile->id,
+                'reviewed_by' => $actor->id,
+                'action' => AuditorProfileStatus::Approved->value,
+                'created_at' => now(),
+            ]);
 
             AuditLogger::record(
                 event: 'auditor_profile.approved',
@@ -88,10 +95,6 @@ final class AuditorProfileGovernance
                 throw new DomainStateTransitionException('Auditor competency experience cannot be negative.');
             }
 
-            if ($competency->profile === null) {
-                throw new DomainStateTransitionException('An Auditor competency must belong to an Auditor profile.');
-            }
-
             $competency->forceFill([
                 'verified_at' => now(),
                 'verified_by' => $actor->id,
@@ -128,6 +131,14 @@ final class AuditorProfileGovernance
             }
 
             $profile->forceFill(['status' => $to])->save();
+
+            AuditorProfileReview::query()->create([
+                'auditor_profile_id' => $profile->id,
+                'reviewed_by' => $actor->id,
+                'action' => $to->value,
+                'reason' => $reason,
+                'created_at' => now(),
+            ]);
 
             AuditLogger::record(
                 event: 'auditor_profile.status_changed',

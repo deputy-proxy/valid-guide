@@ -22,7 +22,6 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  */
 class StandardVersion extends Model
 {
-    /** @use HasFactory<Factory> */
     use HasFactory;
 
     protected $fillable = [
@@ -43,7 +42,7 @@ class StandardVersion extends Model
     protected static function booted(): void
     {
         static::updating(function (self $version): void {
-            $status = $version->getOriginal('status');
+            $status = $version->getRawOriginal('status');
 
             if (in_array($status, [
                 StandardVersionStatus::Scheduled->value,
@@ -62,34 +61,13 @@ class StandardVersion extends Model
 
         static::deleting(function (self $version): void {
             if ($version->status !== StandardVersionStatus::Draft) {
-                throw new DomainStateTransitionException(
-                    'Only draft standard versions may be deleted.',
-                );
+                throw new DomainStateTransitionException('Only draft standard versions may be deleted.');
             }
         });
     }
 
-    /** @return BelongsTo<EvaluationStandard, $this> */
-    public function standard(): BelongsTo
-    {
-        return $this->belongsTo(EvaluationStandard::class, 'evaluation_standard_id');
-    }
-
-    /** @return BelongsTo<User, $this> */
-    public function approver(): BelongsTo
-    {
-        return $this->belongsTo(User::class, 'approved_by');
-    }
-
-    /** @return HasMany<Evaluation, $this> */
-    public function evaluations(): HasMany
-    {
-        return $this->hasMany(Evaluation::class);
-    }
-
-    /** @return HasMany<Criterion, $this> */
-    public function criteria(): HasMany
-    {
-        return $this->hasMany(Criterion::class);
-    }
+    public function standard(): BelongsTo { return $this->belongsTo(EvaluationStandard::class); }
+    public function approver(): BelongsTo { return $this->belongsTo(User::class, 'approved_by'); }
+    public function evaluations(): HasMany { return $this->hasMany(Evaluation::class); }
+    public function criteria(): HasMany { return $this->hasMany(Criterion::class); }
 }

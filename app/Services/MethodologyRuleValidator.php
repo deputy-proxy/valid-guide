@@ -21,7 +21,6 @@ final class MethodologyRuleValidator
 
     public function validateStandardVersion(StandardVersion $version): void
     {
-        $this->validateScoringConfiguration($version);
         $criteria = $version->criteria()->get();
 
         if ($criteria->isEmpty()) {
@@ -45,6 +44,8 @@ final class MethodologyRuleValidator
         foreach ($criteria as $criterion) {
             $this->validateCriterion($criterion);
         }
+
+        $this->validateScoringConfiguration($version);
     }
 
     public function validateCriterion(Criterion $criterion): void

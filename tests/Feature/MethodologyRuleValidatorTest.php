@@ -9,6 +9,7 @@ use App\Models\StandardVersion;
 use App\Models\User;
 use App\Services\DomainStateTransitionException;
 use App\Services\MethodologyRuleValidator;
+use App\Services\StandardVersionGovernance;
 
 function methodologyRuleFixture(array $rules = []): Criterion
 {
@@ -206,7 +207,7 @@ test('scheduling validates methodology rules before freezing a version', functio
     ]);
     $admin = User::factory()->create(['platform_role' => PlatformRole::Admin]);
 
-    expect(fn () => app(\App\Services\StandardVersionGovernance::class)->schedule($version, $admin))
+    expect(fn () => app(StandardVersionGovernance::class)->schedule($version, $admin))
         ->toThrow(DomainStateTransitionException::class);
 
     expect($version->fresh()->status->value)->toBe('draft');

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Enums\MethodologyDimension;
 use App\Enums\ProductType;
 use App\Models\Criterion;
 use App\Models\StandardVersion;
@@ -30,6 +31,15 @@ final class MethodologyRuleValidator
             throw new DomainStateTransitionException('Criterion codes must be unique within a standard version.');
         }
 
+        $sequences = $criteria->pluck('sequence')->filter(fn ($sequence) => $sequence !== null);
+        if ($sequences->count() !== $criteria->count()) {
+            throw new DomainStateTransitionException('Every criterion must have a sequence before a standard version can be scheduled.');
+        }
+
+        if ($sequences->count() !== $sequences->unique()->count()) {
+            throw new DomainStateTransitionException('Criterion sequences must be unique within a standard version.');
+        }
+
         foreach ($criteria as $criterion) {
             $this->validateCriterion($criterion);
         }
@@ -41,8 +51,23 @@ final class MethodologyRuleValidator
             throw new DomainStateTransitionException(sprintf('Criterion %s must have a code and name.', $criterion->code ?: '(unknown)'));
         }
 
-        if ((float) $criterion->weight < 0) {
-            throw new DomainStateTransitionException(sprintf('Criterion %s cannot have a negative weight.', $criterion->code));
+        if (! is_string($criterion->category) || MethodologyDimension::tryFrom($criterion->category) === null) {
+            throw new DomainStateTransitionException(sprintf(
+                'Criterion %s must have a valid methodology dimension (D1-D10).',
+                $criterion->code,
+            ));
+        }
+
+        if (! is_int($criterion->sequence) && ! (is_string($criterion->sequence) && ctype_digit($criterion->sequence))) {
+            throw new DomainStateTransitionException(sprintf('Criterion %s must have a positive integer sequence.', $criterion->code));
+        }
+
+        if ((int) $criterion->sequence < 1) {
+            throw new DomainStateTransitionException(sprintf('Criterion %s must have a positive integer sequence.', $criterion->code));
+        }
+
+        if ((float) $criterion->weight <= 0) {
+            throw new DomainStateTransitionException(sprintf('Criterion %s must have a positive weight.', $criterion->code));
         }
 
         $rules = $criterion->applicability_rules ?? [];

@@ -30,7 +30,7 @@ class Payout extends Model
     protected static function booted(): void
     {
         static::creating(function (self $payout): void {
-            if ($payout->status !== null && $payout->status !== 'pending') {
+            if (isset($payout->status) && $payout->status !== 'pending') {
                 throw new DomainStateTransitionException('Payouts must be created as pending and completed through PayoutService.');
             }
             if ($payout->paid_at !== null || $payout->payment_reference !== null) {

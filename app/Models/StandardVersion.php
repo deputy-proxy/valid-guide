@@ -21,7 +21,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property CarbonImmutable|null $approved_at
  * @property int|null $approved_by
  * @property array<string,mixed>|null $score_anchors
- * @property array<string,int|float>|null $decision_thresholds
+ * @property array<string,mixed>|null $decision_thresholds
  */
 class StandardVersion extends Model
 {
@@ -120,40 +120,25 @@ class StandardVersion extends Model
         ];
     }
 
-    public function decisionThreshold(string $key): float
+    /** @return array<string,mixed> */
+    public function decisionThresholds(): array
     {
-        $value = $this->decision_thresholds[$key] ?? null;
-
-        if (! is_int($value) && ! is_float($value)) {
+        $thresholds = $this->decision_thresholds;
+        if (! is_array($thresholds)) {
             throw new DomainStateTransitionException(sprintf(
-                'Standard version %s has no valid decision threshold for %s.',
+                'Standard version %s has no decision thresholds.',
                 $this->version,
-                $key,
             ));
         }
 
-        return (float) $value;
+        return $thresholds;
     }
 
-    /** @return BelongsTo<EvaluationStandard, $this> */
     public function standard(): BelongsTo
     {
         return $this->belongsTo(EvaluationStandard::class, 'evaluation_standard_id');
     }
 
-    /** @return BelongsTo<User, $this> */
-    public function approver(): BelongsTo
-    {
-        return $this->belongsTo(User::class, 'approved_by');
-    }
-
-    /** @return HasMany<Evaluation, $this> */
-    public function evaluations(): HasMany
-    {
-        return $this->hasMany(Evaluation::class);
-    }
-
-    /** @return HasMany<Criterion, $this> */
     public function criteria(): HasMany
     {
         return $this->hasMany(Criterion::class);

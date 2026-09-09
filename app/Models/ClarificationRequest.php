@@ -21,6 +21,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class ClarificationRequest extends Model
 {
+    /** @use HasFactory<Factory> */
     use HasFactory;
 
     protected $fillable = [
@@ -42,27 +43,17 @@ class ClarificationRequest extends Model
     {
         static::updating(function (self $request): void {
             $status = $request->getRawOriginal('status');
-
             if ($status === ClarificationRequestStatus::Closed->value) {
                 throw new DomainStateTransitionException('Closed clarification requests are immutable.');
             }
-
             $immutableContent = ['evaluation_id', 'organization_id', 'submitted_by', 'type', 'message'];
-            if (
-                $request->getRawOriginal('submitted_at') !== null
-                && array_intersect(array_keys($request->getDirty()), $immutableContent) !== []
-            ) {
+            if ($request->getRawOriginal('submitted_at') !== null && array_intersect(array_keys($request->getDirty()), $immutableContent) !== []) {
                 throw new DomainStateTransitionException('Submitted clarification content is immutable.');
             }
-
-            if (
-                $status === ClarificationRequestStatus::Answered->value
-                && array_diff(array_keys($request->getDirty()), ['status', 'resolved_at', 'resolved_by', 'response'])
-            ) {
+            if ($status === ClarificationRequestStatus::Answered->value && array_diff(array_keys($request->getDirty()), ['status', 'resolved_at', 'resolved_by', 'response'])) {
                 throw new DomainStateTransitionException('Answered clarification content is immutable.');
             }
         });
-
         static::deleting(function (self $request): void {
             if ($request->submitted_at !== null) {
                 throw new DomainStateTransitionException('Submitted clarification requests cannot be deleted.');
@@ -70,8 +61,27 @@ class ClarificationRequest extends Model
         });
     }
 
-    public function evaluation(): BelongsTo { return $this->belongsTo(Evaluation::class); }
-    public function organization(): BelongsTo { return $this->belongsTo(Organization::class); }
-    public function submittedBy(): BelongsTo { return $this->belongsTo(User::class, 'submitted_by'); }
-    public function resolvedBy(): BelongsTo { return $this->belongsTo(User::class, 'resolved_by'); }
+    /** @return BelongsTo<Evaluation, $this> */
+    public function evaluation(): BelongsTo
+    {
+        return $this->belongsTo(Evaluation::class);
+    }
+
+    /** @return BelongsTo<Organization, $this> */
+    public function organization(): BelongsTo
+    {
+        return $this->belongsTo(Organization::class);
+    }
+
+    /** @return BelongsTo<User, $this> */
+    public function submittedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'submitted_by');
+    }
+
+    /** @return BelongsTo<User, $this> */
+    public function resolvedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'resolved_by');
+    }
 }

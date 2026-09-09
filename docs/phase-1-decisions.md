@@ -106,3 +106,15 @@ Materials that require access or an external location must provide a location. P
 An Evaluation Request cannot enter `ready` without at least one verified material. This creates a concrete intake-to-evaluation boundary: the Auditor work is performed against an evidence set that has been received and verified rather than an informal, mutable collection of creator submissions.
 
 As with other domain protections, these guarantees apply to normal application mutation paths. Raw/bulk database writes remain prohibited for trust-domain data.
+
+## 15. Annual auditor COI is separate from assignment-specific COI, and compensation is outcome-independent
+
+Every auditor must have a current annual conflict declaration determined as `cleared` before accepting an assignment. Assignment-specific conflict declarations remain mandatory and must also be explicitly cleared. The annual declaration and assignment declaration are separate records because a general annual disclosure does not replace a conflict check for a specific evaluation.
+
+Annual conflict determinations are made by platform administrators and become immutable once determined. A new annual declaration is required for the next calendar year rather than rewriting a prior determination.
+
+Auditor compensation is recorded independently of the Evaluation Decision and Validation outcome. Compensation amount and currency are fixed per assignment and cannot be changed after creation. Compensation becomes payable only when the assignment is completed on or before its deadline. Completion after the deadline forfeits the compensation. This rule is deliberately independent of whether the evaluated product is validated.
+
+Payouts aggregate payable compensation for one auditor and one currency. Payment requires platform administration and a payment reference. Paid payouts and paid compensation are immutable. Compensation and payout records are retained as financial history rather than being deleted or repurposed.
+
+The legacy compensation fields on `AuditorAssignment` remain as a denormalized operational snapshot for compatibility; `AuditorCompensation` is the authoritative compensation ledger. The compensation workflow must not inspect or depend on the Evaluation Decision when determining whether an auditor earned payment.

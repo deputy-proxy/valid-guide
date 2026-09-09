@@ -159,6 +159,12 @@ As with the rest of the trust domain, these model protections do not defend agai
 
 Entering `awaiting_payment` records `submitted_at` if it has not already been set and starts the payment clock. Commercial terms remain frozen after payment processing starts, independently of lifecycle state mutation.
 
-The agreed refund boundary remains **before report delivery**. A dedicated report-delivery timestamp and refund workflow are still required before refund enforcement can be considered complete; the existing request transition to `refunded` is therefore not yet the final commercial refund implementation.
+## 20. Refund eligibility ends at report delivery
 
-Model-level protections do not defend against raw/bulk database writes. Those paths are prohibited for lifecycle state and are part of the broader invariant audit.
+The agreed 100% no-questions-asked refund remains available before the report is delivered and is not available after delivery. Report delivery is now an explicit historical event represented by `reports.delivered_at`, rather than being inferred from visibility timestamps. A report must have a current version before it can be delivered.
+
+`ReportDelivery` is the controlled workflow for recording delivery and requires a platform administrator. `Report.delivered_at` cannot be changed through ordinary Eloquent mutation and delivery cannot be recorded twice. `EvaluationRequestStateTransition` also checks the request's evaluations and rejects a refund transition when any associated report has already been delivered.
+
+This creates a deterministic commercial boundary: **before `delivered_at` = refund eligible; after `delivered_at` = refund ineligible**. The external payment-provider reversal remains a separate commerce integration concern and must not be conflated with changing the internal request lifecycle state.
+
+Model-level protections do not defend against raw/bulk database writes. Those paths remain prohibited for lifecycle and trust-domain writes.

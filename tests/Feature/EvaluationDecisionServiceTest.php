@@ -171,3 +171,37 @@ test('evaluation decision requires a platform administrator', function () {
     expect(fn () => app(EvaluationDecisionService::class)->decide($evaluation, $nonAdmin))
         ->toThrow(DomainStateTransitionException::class);
 });
+
+test('completed evaluations cannot be mutated through the model', function () {
+    [$evaluation, $decider] = decisionFixture();
+    app(EvaluationDecisionService::class)->decide($evaluation, $decider);
+
+    $evaluation->product_release_id = $evaluation->product_release_id + 1;
+    expect(fn () => $evaluation->save())
+        ->toThrow(DomainStateTransitionException::class);
+
+    $evaluation->refresh();
+    $evaluation->decision = 'tampered';
+    expect(fn () => $evaluation->save())
+        ->toThrow(DomainStateTransitionException::class);
+});
+
+test('evaluation provenance cannot be changed after creation', function () {
+    [$evaluation] = decisionFixture();
+    $evaluation->standard_version_id = $evaluation->standard_version_id + 1;
+
+    expect(fn () => $evaluation->save())
+        ->toThrow(DomainStateTransitionException::class);
+});
+
+test('evaluation decisions cannot be changed or deleted', function () {
+    [$evaluation, $decider] = decisionFixture();
+    $decision = app(EvaluationDecisionService::class)->decide($evaluation, $decider);
+
+    $decision->rationale = 'tampered';
+    expect(fn () => $decision->save())
+        ->toThrow(DomainStateTransitionException::class);
+
+    expect(fn () => $decision->delete())
+        ->toThrow(DomainStateTransitionException::class);
+});

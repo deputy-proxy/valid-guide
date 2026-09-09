@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Facades\DB;
 
 class CriterionGuidance extends Model
 {
@@ -77,8 +78,8 @@ class CriterionGuidance extends Model
             ->whereKey($criterionId ?? $this->criterion_id)
             ->value('standard_version_id');
 
-        return StandardVersion::query()
-            ->whereKey($standardVersionId)
+        return DB::table('standard_versions')
+            ->where('id', $standardVersionId)
             ->value('status');
     }
 

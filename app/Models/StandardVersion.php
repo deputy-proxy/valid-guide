@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Enums\CriterionAssessment;
 use App\Enums\StandardVersionStatus;
 use App\Services\DomainStateTransitionException;
 use Carbon\CarbonImmutable;
@@ -19,15 +20,34 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property CarbonImmutable|null $retired_at
  * @property CarbonImmutable|null $approved_at
  * @property int|null $approved_by
+ * @property array<string,array{min:int|null,max:int|null}>|null $score_anchors
+ * @property array<string,int|float>|null $decision_thresholds
  */
 class StandardVersion extends Model
 {
+    /** @var array<string,array{min:int|null,max:int|null}> */
+    public const DEFAULT_SCORE_ANCHORS = [
+        'exceeds' => ['min' => 90, 'max' => 100],
+        'meets' => ['min' => 75, 'max' => 89],
+        'partially_meets' => ['min' => 50, 'max' => 74],
+        'does_not_meet' => ['min' => 0, 'max' => 49],
+        'insufficient_evidence' => ['min' => null, 'max' => null],
+        'not_applicable' => ['min' => null, 'max' => null],
+    ];
+
+    /** @var array<string,int> */
+    public const DEFAULT_DECISION_THRESHOLDS = [
+        'overall_minimum' => 75,
+        'mandatory_minimum' => 75,
+        'dimension_minimum' => 60,
+    ];
+
     /** @use HasFactory<Factory> */
     use HasFactory;
 
     protected $fillable = [
         'evaluation_standard_id', 'version', 'description', 'effective_at', 'retired_at',
-        'status', 'approved_by', 'approved_at',
+        'status', 'approved_by', 'approved_at', 'score_anchors', 'decision_thresholds',
     ];
 
     protected function casts(): array
@@ -37,11 +57,18 @@ class StandardVersion extends Model
             'effective_at' => 'datetime',
             'retired_at' => 'datetime',
             'approved_at' => 'datetime',
+            'score_anchors' => 'array',
+            'decision_thresholds' => 'array',
         ];
     }
 
     protected static function booted(): void
     {
+        static::creating(function (self $version): void {
+            $version->score_anchors ??= self::DEFAULT_SCORE_ANCHORS;
+            $version->decision_thresholds ??= self::DEFAULT_DECISION_THRESHOLDS;
+        });
+
         static::updating(function (self $version): void {
             $status = $version->getRawOriginal('status');
             if (in_array($status, [
@@ -60,6 +87,41 @@ class StandardVersion extends Model
                 throw new DomainStateTransitionException('Only draft standard versions may be deleted.');
             }
         });
+    }
+
+    /** @return array{min:int,max:int}|null */
+    public function scoreAnchorFor(CriterionAssessment $assessment): ?array
+    {
+        $anchor = $this->score_anchors[$assessment->value] ?? null;
+
+        if ($assessment->isScored() === false) {
+            return null;
+        }
+
+        if (! is_array($anchor) || ! isset($anchor['min'], $anchor['max']) || ! is_int($anchor['min']) || ! is_int($anchor['max'])) {
+            throw new DomainStateTransitionException(sprintf(
+                'Standard version %s has no valid score anchor for %s.',
+                $this->version,
+                $assessment->value,
+            ));
+        }
+
+        return $anchor;
+    }
+
+    public function decisionThreshold(string $key): float
+    {
+        $value = $this->decision_thresholds[$key] ?? null;
+
+        if (! is_int($value) && ! is_float($value)) {
+            throw new DomainStateTransitionException(sprintf(
+                'Standard version %s has no valid decision threshold for %s.',
+                $this->version,
+                $key,
+            ));
+        }
+
+        return (float) $value;
     }
 
     /** @return BelongsTo<EvaluationStandard, $this> */

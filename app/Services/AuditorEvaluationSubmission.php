@@ -46,6 +46,31 @@ class AuditorEvaluationSubmission
                 throw new DomainStateTransitionException('An auditor evaluation must contain at least one criterion result before submission.');
             }
 
+            $evaluation = $auditorEvaluation->evaluation()
+                ->with('productRelease.product')
+                ->firstOrFail();
+            $productRelease = $evaluation->productRelease;
+
+            if ($productRelease === null || $productRelease->product === null) {
+                throw new DomainStateTransitionException('An auditor evaluation cannot be submitted without an evaluated product.');
+            }
+
+            $product = $productRelease->product;
+
+            if ($auditorEvaluation->evidence_sufficiency === null) {
+                throw new DomainStateTransitionException('An auditor evaluation must record an evidence sufficiency conclusion before submission.');
+            }
+
+            if ($auditorEvaluation->audience_promise_coherence === null) {
+                throw new DomainStateTransitionException('An auditor evaluation must record an audience and promise coherence conclusion before submission.');
+            }
+
+            $hasCentralClaims = is_array($product->claimed_outcomes) && $product->claimed_outcomes !== [];
+
+            if ($hasCentralClaims && $auditorEvaluation->evidence()->count() === 0) {
+                throw new DomainStateTransitionException('An auditor evaluation must contain evidence when the evaluated product has central claims.');
+            }
+
             $submittedAt = now();
 
             $auditorEvaluation->criterionResults()->update([
@@ -64,6 +89,8 @@ class AuditorEvaluationSubmission
                     'status' => 'submitted',
                     'submitted_at' => $submittedAt->toIso8601String(),
                     'locked_at' => $submittedAt->toIso8601String(),
+                    'evidence_sufficiency' => $auditorEvaluation->evidence_sufficiency->value,
+                    'audience_promise_coherence' => $auditorEvaluation->audience_promise_coherence->value,
                 ],
             );
 

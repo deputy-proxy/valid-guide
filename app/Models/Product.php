@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * @property ProductType $product_type
+ * @property array<int|string, mixed>|null $claimed_outcomes
  */
 class Product extends Model
 {

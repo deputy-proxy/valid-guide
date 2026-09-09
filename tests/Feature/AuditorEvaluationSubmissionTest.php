@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use App\Enums\AudiencePromiseCoherence;
+use App\Enums\EvidenceSufficiency;
 use App\Models\AuditorAssignment;
 use App\Models\AuditorEvaluation;
 use App\Models\ConflictDeclaration;
@@ -32,7 +34,7 @@ function auditorEvaluationFixture(): array
     $assignment = AuditorAssignment::create(['evaluation_id' => $evaluation->id, 'auditor_id' => $auditor->id, 'sequence' => 1, 'status' => 'accepted', 'assigned_at' => now(), 'accepted_at' => now()]);
     $declaration = ConflictDeclaration::create(['evaluation_id' => $evaluation->id, 'auditor_assignment_id' => $assignment->id, 'declaration_type' => 'assignment', 'disclosure' => 'No known conflict.', 'outcome' => 'cleared', 'determined_by' => $auditor->id, 'determined_at' => now()]);
     $criterion = Criterion::create(['standard_version_id' => $version->id, 'code' => 'TEST-01', 'name' => 'Test criterion', 'weight' => 100, 'is_mandatory' => true]);
-    $auditorEvaluation = AuditorEvaluation::create(['evaluation_id' => $evaluation->id, 'auditor_assignment_id' => $assignment->id, 'version' => 1, 'status' => 'draft']);
+    $auditorEvaluation = AuditorEvaluation::create(['evaluation_id' => $evaluation->id, 'auditor_assignment_id' => $assignment->id, 'version' => 1, 'status' => 'draft', 'evidence_sufficiency' => EvidenceSufficiency::Sufficient, 'audience_promise_coherence' => AudiencePromiseCoherence::Coherent]);
     $result = CriterionResult::create(['auditor_evaluation_id' => $auditorEvaluation->id, 'criterion_id' => $criterion->id, 'assessment' => 'meets', 'score' => 80, 'rationale' => 'Sufficient evidence.', 'confidence' => 90]);
 
     return [$auditorEvaluation, $result, $declaration];
@@ -49,6 +51,17 @@ test('rejects submission for an unaccepted assignment', function () {
     [$auditorEvaluation] = auditorEvaluationFixture();
     $auditorEvaluation->assignment()->update(['status' => 'offered']);
     expect(fn () => app(AuditorEvaluationSubmission::class)->submit($auditorEvaluation))->toThrow(DomainStateTransitionException::class);
+});
+
+test('rejects submission without required decision gate conclusions', function () {
+    [$auditorEvaluation] = auditorEvaluationFixture();
+    $auditorEvaluation->update([
+        'evidence_sufficiency' => null,
+        'audience_promise_coherence' => null,
+    ]);
+
+    expect(fn () => app(AuditorEvaluationSubmission::class)->submit($auditorEvaluation))
+        ->toThrow(DomainStateTransitionException::class);
 });
 
 test('prevents changes and deletion after auditor evaluation submission', function () {

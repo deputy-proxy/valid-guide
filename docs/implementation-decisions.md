@@ -59,3 +59,12 @@
 - `MethodologyRuleValidator` requires complete assessment coverage, continuous 0–100 numerical coverage, and three numeric decision thresholds before a Standard Version can be scheduled.
 - `CriterionResult` enforces the mapping at persistence time: scored assessments require a score inside the applicable versioned anchor, while non-scored assessments require a null score. This prevents categorical/numerical contradictions from entering the evaluation history.
 - `EvaluationDecisionService` consumes the applicable Standard Version's mandatory, dimension and overall thresholds instead of hard-coding those values.
+
+## 2026-09-10 — Validation decision gates require explicit Auditor conclusions
+
+- An `AuditorEvaluation` records two explicit, immutable decision-gate conclusions: `evidence_sufficiency` and `audience_promise_coherence`.
+- Evidence sufficiency uses the controlled values `sufficient`, `insufficient` and `unresolved`. Audience/promise coherence uses `coherent`, `incoherent` and `unresolved`.
+- Auditor evaluation submission requires both conclusions. This prevents a missing conclusion from being interpreted as a positive result.
+- When a Product has claimed outcomes, an Auditor Evaluation must also contain at least one evidence record before submission. The decision engine independently checks evidence presence so incomplete historical data cannot silently validate.
+- The final decision blocks validation when any submitted Auditor evaluation does not establish sufficient evidence or coherence with the stated audience and promise. Multiple-Auditor majority semantics remain delegated to the methodology-controlled voting work in #27 rather than being duplicated here.
+- These gate conclusions are immutable once the Auditor Evaluation is locked, preserving the historical basis of the final decision.

@@ -39,6 +39,33 @@ class EvaluationRequest extends Model
 
     protected static function booted(): void
     {
+        static::creating(function (self $request): void {
+            $status = $request->status instanceof EvaluationRequestStatus
+                ? $request->status
+                : EvaluationRequestStatus::tryFrom((string) $request->status);
+
+            if ($status !== null && $status !== EvaluationRequestStatus::Draft) {
+                throw new DomainStateTransitionException(
+                    'Evaluation requests must be created as drafts and advanced through EvaluationRequestStateTransition.',
+                );
+            }
+
+            $lifecycleFields = [
+                'submitted_at',
+                'payment_started_at',
+                'paid_at',
+                'evaluation_started_at',
+                'cancelled_at',
+                'refunded_at',
+            ];
+
+            if (array_intersect(array_keys($request->getDirty()), $lifecycleFields) !== []) {
+                throw new DomainStateTransitionException(
+                    'Evaluation request lifecycle timestamps can only be set by their domain workflow.',
+                );
+            }
+        });
+
         static::saving(function (self $request): void {
             if ($request->product_id !== null && $request->product_release_id !== null) {
                 $releaseProductId = ProductRelease::query()
@@ -50,6 +77,27 @@ class EvaluationRequest extends Model
                         'An evaluation request product release must belong to the requested product.',
                     );
                 }
+            }
+
+            if ($request->exists && $request->isDirty('status')) {
+                throw new DomainStateTransitionException(
+                    'Evaluation request status can only be changed through EvaluationRequestStateTransition.',
+                );
+            }
+
+            $lifecycleFields = [
+                'submitted_at',
+                'payment_started_at',
+                'paid_at',
+                'evaluation_started_at',
+                'cancelled_at',
+                'refunded_at',
+            ];
+
+            if ($request->exists && array_intersect(array_keys($request->getDirty()), $lifecycleFields) !== []) {
+                throw new DomainStateTransitionException(
+                    'Evaluation request lifecycle timestamps can only be changed by their domain workflow.',
+                );
             }
 
             $originalStatus = $request->exists ? $request->getOriginal('status') : null;

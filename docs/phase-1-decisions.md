@@ -138,3 +138,15 @@ Applicability rules use an explicit supported-key set and validated product-type
 This validation occurs inside `StandardVersionGovernance` immediately before scheduling, so malformed methodology cannot become an effective historical standard. The validator deliberately does not yet enforce the full product-type weight profiles or ten-dimension completeness because those require a separate decision about how criterion weights aggregate into dimension-level thresholds.
 
 The `MethodologyDimension` enum provides a single canonical representation for D1-D10 without prematurely encoding unresolved scoring policy into the database.
+
+## 18. Auditor profile governance has immutable review history
+
+Auditor profile status is represented by the explicit lifecycle `pending` → `approved`, `rejected` or `suspended`, with re-approval allowed from rejected or suspended states. Suspension is only available for an approved profile and rejection requires a recorded reason. All profile governance actions require a platform administrator.
+
+Approval provenance is represented both by the profile's current `approved_by` / `approved_at` fields and by an append-only `AuditorProfileReview` history. Review records cannot be updated or deleted, so re-approval never erases the history of a prior rejection or suspension.
+
+Verified subject-matter competencies are one-way trust assertions. Once verified, a competency cannot be edited or deleted through normal Eloquent mutation. Verification requires a topic and experience type and records the verifying platform administrator and timestamp.
+
+Auditor assignment eligibility now uses the typed `AuditorProfileStatus::Approved` state, preventing enum-cast profiles from accidentally failing or bypassing the approved-profile check.
+
+As with the rest of the trust domain, these model protections do not defend against raw/bulk database writes. Administrative workflows must use `AuditorProfileGovernance` rather than mutating governance state directly.

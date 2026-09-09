@@ -15,7 +15,7 @@ return new class extends Migration
             $table->foreignId('product_id')->constrained()->restrictOnDelete();
             $table->string('service_package')->default('validation');
             $table->string('complexity')->default('standard');
-            $table->decimal('quoted_price', 12, 2);
+            $table->decimal('quoted_price', 12, 2)->nullable();
             $table->char('currency', 3)->default('EUR');
             $table->string('status')->default(EvaluationRequestStatus::Draft->value)->index();
             $table->timestamp('submitted_at')->nullable();

@@ -12,6 +12,7 @@ return new class extends Migration
     {
         Schema::table('evaluation_requests', function (Blueprint $table): void {
             $table->foreignId('product_release_id')
+                ->nullable()
                 ->after('product_id')
                 ->constrained('product_releases')
                 ->restrictOnDelete();

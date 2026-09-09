@@ -9,7 +9,6 @@ use Illuminate\Support\Facades\DB;
 
 class AuditorAssignmentStateTransition
 {
-    /** @var array<string, list<string>> */
     private const TRANSITIONS = [
         'offered' => ['accepted', 'declined', 'cancelled'],
         'accepted' => ['completed', 'cancelled'],
@@ -27,29 +26,25 @@ class AuditorAssignmentStateTransition
         }
 
         if (! in_array($to, self::TRANSITIONS[$from] ?? [], true)) {
-            throw new DomainStateTransitionException(sprintf(
-                'Invalid auditor assignment transition: %s -> %s.',
-                $from,
-                $to,
-            ));
+            throw new DomainStateTransitionException(sprintf('Invalid auditor assignment transition: %s -> %s.', $from, $to));
         }
 
         return DB::transaction(function () use ($assignment, $from, $to): AuditorAssignment {
-            $assignment = AuditorAssignment::query()
-                ->whereKey($assignment->getKey())
-                ->lockForUpdate()
-                ->firstOrFail();
+            $assignment = AuditorAssignment::query()->whereKey($assignment->getKey())->lockForUpdate()->firstOrFail();
 
             if ($to === 'accepted') {
-                $cleared = $assignment->conflictDeclarations()
+                $annualCleared = app(AuditorAnnualConflictDeclarationService::class)->isCurrentAndCleared($assignment->auditor);
+                $assignmentCleared = $assignment->conflictDeclarations()
                     ->where('outcome', 'cleared')
                     ->whereNotNull('determined_at')
                     ->exists();
 
-                if (! $cleared) {
-                    throw new DomainStateTransitionException(
-                        'An auditor assignment cannot be accepted until its conflict declaration has been cleared.',
-                    );
+                if (! $annualCleared) {
+                    throw new DomainStateTransitionException('An auditor assignment cannot be accepted until the auditor has a current annual conflict declaration cleared.');
+                }
+
+                if (! $assignmentCleared) {
+                    throw new DomainStateTransitionException('An auditor assignment cannot be accepted until its conflict declaration has been cleared.');
                 }
             }
 

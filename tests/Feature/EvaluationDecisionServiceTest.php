@@ -152,10 +152,11 @@ test('evaluation decision rejects a mandatory criterion below threshold', functi
     [$evaluation, $decider] = decisionFixture(70);
 
     $decision = app(EvaluationDecisionService::class)->decide($evaluation, $decider);
+    $rationale = json_decode($decision->rationale, true, 512, JSON_THROW_ON_ERROR);
 
     expect($decision->decision)->toBe('not_validated')
         ->and($decision->evaluation->status)->toBe(EvaluationStatus::Completed)
-        ->and($decision->rationale)->toContain('Mandatory criterion D1-01 does not meet the 75/100 threshold.');
+        ->and($rationale['blockers'])->toContain('Mandatory criterion D1-01 does not meet the 75/100 threshold.');
 });
 
 test('evaluation decision refuses incomplete auditor work', function () {

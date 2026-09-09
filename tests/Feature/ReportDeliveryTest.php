@@ -6,12 +6,15 @@ use App\Enums\EvaluationRequestStatus;
 use App\Enums\ProductType;
 use App\Models\Evaluation;
 use App\Models\EvaluationRequest;
+use App\Models\EvaluationStandard;
 use App\Models\Organization;
 use App\Models\Product;
 use App\Models\ProductRelease;
 use App\Models\Report;
 use App\Models\ReportVersion;
+use App\Models\Criterion;
 use App\Models\ServicePackage;
+use App\Models\StandardVersion;
 use App\Models\User;
 use App\Services\DomainStateTransitionException;
 use App\Services\EvaluationRequestStateTransition;
@@ -65,15 +68,31 @@ function reportDeliveryFixture(): array
         'currency' => $package->currency,
     ]);
 
-    app(EvaluationRequestStateTransition::class)
-        ->transition($request, EvaluationRequestStatus::AwaitingPayment);
+    app(EvaluationRequestStateTransition::class)->transition($request, EvaluationRequestStatus::AwaitingPayment);
+    app(EvaluationRequestStateTransition::class)->transition($request->fresh(), EvaluationRequestStatus::Paid);
 
-    app(EvaluationRequestStateTransition::class)
-        ->transition($request->fresh(), EvaluationRequestStatus::Paid);
+    $standard = EvaluationStandard::create([
+        'name' => 'Report Standard',
+        'slug' => 'report-standard',
+    ]);
+    $standardVersion = StandardVersion::create([
+        'evaluation_standard_id' => $standard->id,
+        'version' => '1.0',
+        'status' => 'effective',
+    ]);
+    Criterion::create([
+        'standard_version_id' => $standardVersion->id,
+        'code' => 'REPORT-01',
+        'name' => 'Report criterion',
+        'category' => 'D1',
+        'sequence' => 1,
+        'weight' => 100,
+    ]);
 
     $evaluation = Evaluation::create([
         'evaluation_request_id' => $request->id,
         'product_release_id' => $release->id,
+        'standard_version_id' => $standardVersion->id,
     ]);
 
     $report = Report::create(['evaluation_id' => $evaluation->id]);
@@ -103,8 +122,7 @@ test('report delivery is controlled and immutable', function () {
 
     $delivered->delivered_at = null;
 
-    expect(fn () => $delivered->save())
-        ->toThrow(DomainStateTransitionException::class);
+    expect(fn () => $delivered->save())->toThrow(DomainStateTransitionException::class);
 });
 
 test('report delivery cannot be recorded twice', function () {

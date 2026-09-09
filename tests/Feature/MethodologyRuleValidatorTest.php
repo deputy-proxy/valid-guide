@@ -10,6 +10,7 @@ use App\Models\User;
 use App\Services\DomainStateTransitionException;
 use App\Services\MethodologyRuleValidator;
 use App\Services\StandardVersionGovernance;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 function methodologyRuleFixture(array $rules = []): Criterion
 {
@@ -132,7 +133,7 @@ test('standard versions must contain criteria with unique codes before schedulin
     expect(fn () => app(MethodologyRuleValidator::class)->validateStandardVersion($version))
         ->toThrow(DomainStateTransitionException::class);
 
-    Criterion::create([
+    $first = Criterion::create([
         'standard_version_id' => $version->id,
         'code' => 'RULE-01',
         'name' => 'First',
@@ -140,16 +141,22 @@ test('standard versions must contain criteria with unique codes before schedulin
         'sequence' => 1,
         'weight' => 10,
     ]);
-    Criterion::create([
+    $second = Criterion::create([
         'standard_version_id' => $version->id,
-        'code' => 'RULE-01',
+        'code' => 'RULE-02',
         'name' => 'Duplicate',
         'category' => 'D1',
         'sequence' => 2,
         'weight' => 10,
     ]);
+    $second->code = $first->code;
 
-    expect(fn () => app(MethodologyRuleValidator::class)->validateStandardVersion($version->fresh()))
+    $criteriaRelation = Mockery::mock(HasMany::class);
+    $criteriaRelation->shouldReceive('get')->once()->andReturn(collect([$first, $second]));
+    $versionMock = Mockery::mock(StandardVersion::class)->makePartial();
+    $versionMock->shouldReceive('criteria')->once()->andReturn($criteriaRelation);
+
+    expect(fn () => app(MethodologyRuleValidator::class)->validateStandardVersion($versionMock))
         ->toThrow(DomainStateTransitionException::class);
 });
 

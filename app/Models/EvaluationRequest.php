@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class EvaluationRequest extends Model
 {
+    /** @use HasFactory<\Illuminate\Database\Eloquent\Factories\Factory> */
     use HasFactory;
 
     protected $fillable = [
@@ -132,31 +133,37 @@ class EvaluationRequest extends Model
         });
     }
 
+    /** @return BelongsTo<Organization, EvaluationRequest> */
     public function organization(): BelongsTo
     {
         return $this->belongsTo(Organization::class);
     }
 
+    /** @return BelongsTo<Product, EvaluationRequest> */
     public function product(): BelongsTo
     {
         return $this->belongsTo(Product::class);
     }
 
+    /** @return BelongsTo<ProductRelease, EvaluationRequest> */
     public function productRelease(): BelongsTo
     {
         return $this->belongsTo(ProductRelease::class);
     }
 
+    /** @return BelongsTo<ServicePackage, EvaluationRequest> */
     public function servicePackage(): BelongsTo
     {
         return $this->belongsTo(ServicePackage::class);
     }
 
+    /** @return HasMany<EvaluationMaterial, EvaluationRequest> */
     public function materials(): HasMany
     {
         return $this->hasMany(EvaluationMaterial::class);
     }
 
+    /** @return HasMany<Evaluation, EvaluationRequest> */
     public function evaluations(): HasMany
     {
         return $this->hasMany(Evaluation::class);

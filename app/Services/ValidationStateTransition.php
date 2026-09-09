@@ -7,6 +7,7 @@ namespace App\Services;
 use App\Enums\ValidationStatus;
 use App\Models\User;
 use App\Models\Validation;
+use App\Models\ValidationBadge;
 use Illuminate\Support\Facades\DB;
 
 class ValidationStateTransition
@@ -63,8 +64,10 @@ class ValidationStateTransition
 
             $badge = $validation->badge()->lockForUpdate()->first();
             if ($badge !== null) {
-                $badge->status = $to;
-                $badge->saveQuietly();
+                ValidationBadge::query()->whereKey($badge->getKey())->update([
+                    'status' => $to->value,
+                    'updated_at' => $now,
+                ]);
             }
 
             $validation->refresh();

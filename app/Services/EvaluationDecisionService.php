@@ -68,12 +68,12 @@ class EvaluationDecisionService
 
         foreach ($auditorEvaluations as $auditorEvaluation) {
             if ($auditorEvaluation->evidence_sufficiency !== EvidenceSufficiency::Sufficient) {
-                $value = $auditorEvaluation->evidence_sufficiency?->value ?? 'unresolved';
+                $value = $auditorEvaluation->getRawOriginal('evidence_sufficiency') ?? 'unresolved';
                 $blockers[] = sprintf('Auditor evaluation %d does not establish sufficient evidence for central product claims (%s).', $auditorEvaluation->id, $value);
             }
 
             if ($auditorEvaluation->audience_promise_coherence !== AudiencePromiseCoherence::Coherent) {
-                $value = $auditorEvaluation->audience_promise_coherence?->value ?? 'unresolved';
+                $value = $auditorEvaluation->getRawOriginal('audience_promise_coherence') ?? 'unresolved';
                 $blockers[] = sprintf('Auditor evaluation %d does not establish coherence with the stated audience and promise (%s).', $auditorEvaluation->id, $value);
             }
         }

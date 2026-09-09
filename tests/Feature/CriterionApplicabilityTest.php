@@ -27,6 +27,7 @@ function applicabilityFixture(array $rules = [], bool $mandatory = false): array
         'category' => 'D1', 'sequence' => 1, 'weight' => 10, 'is_mandatory' => $mandatory,
         'applicability_rules' => $rules,
     ]);
+
     return [$criterion, $product];
 }
 

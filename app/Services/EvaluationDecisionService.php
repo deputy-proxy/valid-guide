@@ -78,8 +78,9 @@ class EvaluationDecisionService
             }
         }
 
-        $claimedOutcomes = $product->getAttribute('claimed_outcomes');
-        if (is_array($claimedOutcomes) && $claimedOutcomes !== []) {
+        $hasCentralClaims = is_array($product->claimed_outcomes) && $product->claimed_outcomes !== [];
+
+        if ($hasCentralClaims) {
             $missingEvidence = $auditorEvaluations->contains(
                 fn (AuditorEvaluation $auditorEvaluation): bool => $auditorEvaluation->evidence()->exists() === false,
             );

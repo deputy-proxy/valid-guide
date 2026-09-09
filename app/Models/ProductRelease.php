@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class ProductRelease extends Model
 {
+    /** @use HasFactory<\Illuminate\Database\Eloquent\Factories\Factory> */
     use HasFactory;
 
     protected $fillable = [
@@ -73,16 +74,19 @@ class ProductRelease extends Model
         });
     }
 
+    /** @return BelongsTo<Product, ProductRelease> */
     public function product(): BelongsTo
     {
         return $this->belongsTo(Product::class);
     }
 
+    /** @return HasMany<Evaluation, ProductRelease> */
     public function evaluations(): HasMany
     {
         return $this->hasMany(Evaluation::class);
     }
 
+    /** @return HasMany<Validation, ProductRelease> */
     public function validations(): HasMany
     {
         return $this->hasMany(Validation::class);

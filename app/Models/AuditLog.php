@@ -11,6 +11,7 @@ use LogicException;
 
 class AuditLog extends Model
 {
+    /** @use HasFactory<\Illuminate\Database\Eloquent\Factories\Factory> */
     use HasFactory;
 
     public $timestamps = false;
@@ -47,6 +48,7 @@ class AuditLog extends Model
         ];
     }
 
+    /** @return BelongsTo<User, AuditLog> */
     public function actor(): BelongsTo
     {
         return $this->belongsTo(User::class, 'actor_id');

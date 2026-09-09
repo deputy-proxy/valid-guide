@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Services;
 
 use App\Enums\EvaluationRequestStatus;
@@ -37,10 +39,29 @@ class EvaluationRequestStateTransition
         }
 
         return DB::transaction(function () use ($request, $from, $to): EvaluationRequest {
+            $request = EvaluationRequest::query()->lockForUpdate()->findOrFail($request->getKey());
+
+            if ($to === EvaluationRequestStatus::AwaitingPayment) {
+                if ($request->service_package_id === null || $request->quoted_price === null || $request->currency === null) {
+                    throw new DomainStateTransitionException(
+                        'An evaluation request must have frozen commercial terms before payment can begin.',
+                    );
+                }
+            }
+
+            if ($to === EvaluationRequestStatus::Ready) {
+                if (! $request->materials()->where('status', 'verified')->exists()) {
+                    throw new DomainStateTransitionException(
+                        'An evaluation request cannot become ready without at least one verified material.',
+                    );
+                }
+            }
+
             $request->status = $to;
             $now = now();
 
             match ($to) {
+                EvaluationRequestStatus::AwaitingPayment => $request->payment_started_at = $now,
                 EvaluationRequestStatus::Paid => $request->paid_at = $now,
                 EvaluationRequestStatus::Cancelled => $request->cancelled_at = $now,
                 EvaluationRequestStatus::Refunded => $request->refunded_at = $now,

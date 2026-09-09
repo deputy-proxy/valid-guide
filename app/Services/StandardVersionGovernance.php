@@ -35,6 +35,16 @@ class StandardVersionGovernance
                 );
             }
 
+            if ($to === StandardVersionStatus::Scheduled) {
+                app(MethodologyRuleValidator::class)->validateStandardVersion($version);
+
+                if ($version->effective_at === null || $version->effective_at->lte(now())) {
+                    throw new DomainStateTransitionException(
+                        'A standard version must have a future effective date before it can be scheduled.',
+                    );
+                }
+            }
+
             $before = [
                 'status' => $from,
                 'effective_at' => $version->effective_at?->toISOString(),
@@ -44,12 +54,6 @@ class StandardVersionGovernance
             ];
 
             if ($to === StandardVersionStatus::Scheduled) {
-                if ($version->effective_at === null || $version->effective_at->lte(now())) {
-                    throw new DomainStateTransitionException(
-                        'A standard version must have a future effective date before it can be scheduled.',
-                    );
-                }
-
                 $version->approved_by = $actor->getKey();
                 $version->approved_at = now();
             }

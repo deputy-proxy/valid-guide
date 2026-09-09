@@ -8,6 +8,7 @@ use App\Models\Evaluation;
 use App\Models\EvaluationRequest;
 use App\Models\Organization;
 use App\Models\Product;
+use App\Models\ProductRelease;
 use App\Models\Report;
 use App\Models\ReportVersion;
 use App\Models\ServicePackage;
@@ -35,6 +36,13 @@ function reportDeliveryFixture(): array
         'status' => 'active',
     ]);
 
+    $release = ProductRelease::create([
+        'product_id' => $product->id,
+        'release_identifier' => '2026-01',
+        'title_snapshot' => $product->title,
+        'version' => '1.0',
+    ]);
+
     $package = ServicePackage::create([
         'name' => 'Standard Validation',
         'slug' => 'standard-validation',
@@ -47,6 +55,7 @@ function reportDeliveryFixture(): array
     $request = EvaluationRequest::create([
         'organization_id' => $organization->id,
         'product_id' => $product->id,
+        'product_release_id' => $release->id,
         'service_package_id' => $package->id,
         'service_package' => $package->slug,
         'service_package_name_snapshot' => $package->name,
@@ -60,11 +69,11 @@ function reportDeliveryFixture(): array
         ->transition($request, EvaluationRequestStatus::AwaitingPayment);
 
     app(EvaluationRequestStateTransition::class)
-        ->transition($request, EvaluationRequestStatus::Paid);
+        ->transition($request->fresh(), EvaluationRequestStatus::Paid);
 
     $evaluation = Evaluation::create([
         'evaluation_request_id' => $request->id,
-        'product_release_id' => $request->product_release_id,
+        'product_release_id' => $release->id,
     ]);
 
     $report = Report::create(['evaluation_id' => $evaluation->id]);

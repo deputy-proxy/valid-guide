@@ -94,3 +94,15 @@ Publication and subsequent lifecycle changes are handled through `ProductRelease
 An Evaluation Request must also reference a Product Release belonging to its selected Product. This invariant is enforced when the request is saved, preventing cross-product release references through ordinary Eloquent mutation.
 
 As elsewhere in the trust domain, model-level protections do not defend against raw/bulk database writes. Those paths remain prohibited and are part of the broader invariant-hardening work.
+
+## 14. Commercial terms are frozen before payment and intake materials have a defined evidence boundary
+
+An Evaluation Request must have its service package, complexity and quoted price fixed before it enters `awaiting_payment`. The request stores a snapshot of the selected package's name, description, applicability and price so later catalog changes cannot rewrite historical commercial terms.
+
+Evaluation materials belong to the Evaluation Request intake record, not directly to an Evaluation. Materials may be files, URLs, access instructions or notes and retain submission provenance and timestamps. Creator-side material submission is limited to the paid/intake stages; once the request becomes `ready`, the evidence set is closed.
+
+Materials that require access or an external location must provide a location. Platform administrators explicitly verify submitted materials, recording who verified them, when, and with notes. Submitted materials cannot be deleted, and verified material identity/content is immutable.
+
+An Evaluation Request cannot enter `ready` without at least one verified material. This creates a concrete intake-to-evaluation boundary: the Auditor work is performed against an evidence set that has been received and verified rather than an informal, mutable collection of creator submissions.
+
+As with other domain protections, these guarantees apply to normal application mutation paths. Raw/bulk database writes remain prohibited for trust-domain data.

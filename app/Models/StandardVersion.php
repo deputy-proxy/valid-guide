@@ -20,7 +20,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property CarbonImmutable|null $retired_at
  * @property CarbonImmutable|null $approved_at
  * @property int|null $approved_by
- * @property array<string,array{min:int|null,max:int|null}>|null $score_anchors
+ * @property array<string,mixed>|null $score_anchors
  * @property array<string,int|float>|null $decision_thresholds
  */
 class StandardVersion extends Model
@@ -92,9 +92,17 @@ class StandardVersion extends Model
     /** @return array{min:int,max:int}|null */
     public function scoreAnchorFor(CriterionAssessment $assessment): ?array
     {
-        $anchor = $this->score_anchors[$assessment->value] ?? null;
+        $anchors = $this->score_anchors;
+        if (! is_array($anchors)) {
+            throw new DomainStateTransitionException(sprintf(
+                'Standard version %s has no score anchors.',
+                $this->version,
+            ));
+        }
 
-        if ($assessment->isScored() === false) {
+        $anchor = $anchors[$assessment->value] ?? null;
+
+        if (! $assessment->isScored()) {
             return null;
         }
 
@@ -106,7 +114,10 @@ class StandardVersion extends Model
             ));
         }
 
-        return $anchor;
+        return [
+            'min' => $anchor['min'],
+            'max' => $anchor['max'],
+        ];
     }
 
     public function decisionThreshold(string $key): float

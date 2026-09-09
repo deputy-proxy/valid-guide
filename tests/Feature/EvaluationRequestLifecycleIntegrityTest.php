@@ -11,6 +11,7 @@ use App\Models\ServicePackage;
 use App\Services\DomainStateTransitionException;
 use App\Services\EvaluationRequestStateTransition;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 
 uses(RefreshDatabase::class);
 
@@ -85,7 +86,7 @@ test('state transition service rechecks the locked current state', function () {
     $request = evaluationRequestLifecycleFixture();
 
     $request->status = EvaluationRequestStatus::Cancelled;
-    Illuminate\Support\Facades\DB::table('evaluation_requests')
+    DB::table('evaluation_requests')
         ->where('id', $request->id)
         ->update(['status' => EvaluationRequestStatus::Cancelled->value]);
 

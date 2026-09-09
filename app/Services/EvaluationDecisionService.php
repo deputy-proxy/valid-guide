@@ -17,10 +17,18 @@ class EvaluationDecisionService
     /** @return array{decision:string, overall_score:float|null, blockers:list<string>, criterion_decisions:array<string,array<string,mixed>>, voter_count:int} */
     public function assess(Evaluation $evaluation): array
     {
-        $evaluation = Evaluation::query()->whereKey($evaluation->getKey())->firstOrFail();
+        $evaluation = Evaluation::query()
+            ->with('productRelease.product')
+            ->whereKey($evaluation->getKey())
+            ->firstOrFail();
 
         if ($evaluation->status !== EvaluationStatus::ReadyForDecision) {
             throw new DomainStateTransitionException('An evaluation must be ready for decision before it can be assessed.');
+        }
+
+        $product = $evaluation->productRelease?->product;
+        if ($product === null) {
+            throw new DomainStateTransitionException('An evaluation cannot be decided without an evaluated product.');
         }
 
         $auditorEvaluations = AuditorEvaluation::query()
@@ -60,19 +68,39 @@ class EvaluationDecisionService
             throw new DomainStateTransitionException('An evaluation cannot be decided without methodology criteria.');
         }
 
+        $criterionApplicability = app(CriterionApplicability::class);
         $criterionDecisions = [];
         $totalWeight = 0.0;
         $weightedScore = 0.0;
         $dimensionTotals = [];
         $dimensionWeights = [];
+        $applicableDimensions = [];
         $blockers = [];
-        $requiredDimensions = array_map(fn (int $number): string => 'D'.$number, range(1, 10));
 
         foreach ($criteria as $criterion) {
+            $applicability = $criterionApplicability->resolve($criterion, $product);
+
+            if (! $applicability['applicable']) {
+                $criterionDecisions[$criterion->code] = [
+                    'criterion_id' => $criterion->id,
+                    'applicable' => false,
+                    'decision' => 'not_applicable',
+                    'score' => null,
+                    'weight' => 0.0,
+                    'mandatory' => false,
+                ];
+                continue;
+            }
+
+            $dimension = $criterion->category;
+            if ($dimension !== null) {
+                $applicableDimensions[$dimension] = true;
+            }
+
             $aggregate = $criterionVoting->aggregate($evaluation, $criterion->id);
 
             if ($aggregate['voter_count'] !== $voterCount) {
-                throw new DomainStateTransitionException(sprintf('Criterion %s does not have a vote from every submitted Auditor.', $criterion->code));
+                throw new DomainStateTransitionException(sprintf('Applicable criterion %s does not have a vote from every submitted Auditor.', $criterion->code));
             }
 
             $winningVotes = $evaluation->criterionVotes()
@@ -91,12 +119,15 @@ class EvaluationDecisionService
 
             $criterionDecisions[$criterion->code] = [
                 'criterion_id' => $criterion->id,
+                'applicable' => true,
                 'decision' => $aggregate['decision'],
                 'score' => $score,
+                'weight' => $applicability['weight'],
+                'mandatory' => $applicability['mandatory'],
                 'counts' => $aggregate['counts'],
             ];
 
-            if ($criterion->is_mandatory && ($score === null || $score < 75)) {
+            if ($applicability['mandatory'] && ($score === null || $score < 75)) {
                 $blockers[] = sprintf('Mandatory criterion %s does not meet the 75/100 threshold.', $criterion->code);
             }
 
@@ -108,21 +139,22 @@ class EvaluationDecisionService
                 continue;
             }
 
-            $weight = (float) $criterion->weight;
+            $weight = $applicability['weight'];
+            if ($weight <= 0) {
+                continue;
+            }
+
             $totalWeight += $weight;
             $weightedScore += $score * $weight;
 
-            $dimension = $criterion->category;
-
-            if ($dimension !== null && in_array($dimension, $requiredDimensions, true)) {
+            if ($dimension !== null) {
                 $dimensionTotals[$dimension] = ($dimensionTotals[$dimension] ?? 0.0) + ($score * $weight);
                 $dimensionWeights[$dimension] = ($dimensionWeights[$dimension] ?? 0.0) + $weight;
             }
         }
 
-        foreach ($requiredDimensions as $dimension) {
+        foreach (array_keys($applicableDimensions) as $dimension) {
             if (! isset($dimensionWeights[$dimension]) || $dimensionWeights[$dimension] <= 0) {
-                $blockers[] = sprintf('%s has no applicable scored criteria.', $dimension);
                 continue;
             }
 

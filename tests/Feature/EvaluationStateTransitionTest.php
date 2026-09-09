@@ -44,7 +44,7 @@ function evaluationForTransition(EvaluationStatus $status = EvaluationStatus::Pe
         'complexity' => 'standard',
         'quoted_price' => 100,
         'currency' => 'EUR',
-        'status' => 'ready',
+        'status' => 'draft',
     ]);
 
     $standard = EvaluationStandard::create([

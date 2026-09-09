@@ -50,6 +50,8 @@ final class ProductReleaseStateTransition
                 );
             }
 
+            $publishedAt = $release->published_at;
+
             if ($to === ProductReleaseStatus::Available) {
                 if (blank($release->release_identifier) || blank($release->title_snapshot)) {
                     throw new DomainStateTransitionException(
@@ -57,7 +59,7 @@ final class ProductReleaseStateTransition
                     );
                 }
 
-                $release->published_at ??= now();
+                $publishedAt ??= now();
             }
 
             $before = [
@@ -65,8 +67,15 @@ final class ProductReleaseStateTransition
                 'published_at' => $release->published_at?->toIso8601String(),
             ];
 
-            $release->status = $to;
-            $release->save();
+            ProductRelease::query()
+                ->whereKey($release->getKey())
+                ->update([
+                    'status' => $to->value,
+                    'published_at' => $publishedAt,
+                    'updated_at' => now(),
+                ]);
+
+            $release->refresh();
 
             AuditLogger::record(
                 event: 'product_release.status_changed',
@@ -77,9 +86,10 @@ final class ProductReleaseStateTransition
                     'published_at' => $release->published_at?->toIso8601String(),
                     'actor_id' => $actor->id,
                 ],
+                actor: $actor,
             );
 
-            return $release->refresh();
+            return $release;
         });
     }
 }

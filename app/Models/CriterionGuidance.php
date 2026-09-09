@@ -42,9 +42,7 @@ class CriterionGuidance extends Model
     protected static function booted(): void
     {
         static::deleting(function (self $guidance): void {
-            $status = $guidance->standardVersionStatus();
-
-            if ($status !== StandardVersionStatus::Draft->value) {
+            if ($guidance->standardVersionStatus() !== StandardVersionStatus::Draft->value) {
                 throw new DomainStateTransitionException(
                     'Criterion guidance may only be deleted while its standard version is draft.',
                 );
@@ -54,10 +52,13 @@ class CriterionGuidance extends Model
 
     private function assertVersionContentIsMutable(): void
     {
-        $criterionId = $this->getRawOriginal('criterion_id') ?? $this->criterion_id;
+        if (! $this->exists) {
+            $criterionId = $this->criterion_id;
+        } else {
+            $criterionId = $this->getRawOriginal('criterion_id');
+        }
 
-        $criterion = Criterion::query()->whereKey($criterionId)->firstOrFail();
-        $status = $this->standardVersionStatus($criterion->standard_version_id);
+        $status = $this->standardVersionStatus($criterionId);
 
         if (in_array($status, [
             StandardVersionStatus::Scheduled->value,
@@ -70,10 +71,14 @@ class CriterionGuidance extends Model
         }
     }
 
-    private function standardVersionStatus(?int $standardVersionId = null): ?string
+    private function standardVersionStatus(?int $criterionId = null): ?string
     {
+        $standardVersionId = Criterion::query()
+            ->whereKey($criterionId ?? $this->criterion_id)
+            ->value('standard_version_id');
+
         return StandardVersion::query()
-            ->whereKey($standardVersionId ?? $this->criterion()->value('standard_version_id'))
+            ->whereKey($standardVersionId)
             ->value('status');
     }
 
@@ -81,12 +86,5 @@ class CriterionGuidance extends Model
     public function criterion(): BelongsTo
     {
         return $this->belongsTo(Criterion::class);
-    }
-
-    private function standardVersionStatus(): ?string
-    {
-        return StandardVersion::query()
-            ->whereKey(Criterion::query()->whereKey($this->criterion_id)->value('standard_version_id'))
-            ->value('status');
     }
 }

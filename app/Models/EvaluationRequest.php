@@ -13,7 +13,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
- * @property EvaluationRequestStatus $status
+ * @property EvaluationRequestStatus|null $status
  * @property float|null $quoted_price
  * @property int|null $product_id
  * @property int|null $product_release_id
@@ -50,7 +50,7 @@ class EvaluationRequest extends Model
     protected static function booted(): void
     {
         static::creating(function (self $request): void {
-            if ($request->status !== EvaluationRequestStatus::Draft) {
+            if ($request->status !== null && $request->status !== EvaluationRequestStatus::Draft) {
                 throw new DomainStateTransitionException(
                     'Evaluation requests must be created as drafts and advanced through EvaluationRequestStateTransition.',
                 );

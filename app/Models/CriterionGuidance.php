@@ -35,7 +35,8 @@ class CriterionGuidance extends Model
     protected static function booted(): void
     {
         static::updating(function (self $guidance): void {
-            $status = $guidance->criterion()->firstOrFail()->standardVersion()->value('status');
+            $criterion = $guidance->criterion()->firstOrFail();
+            $status = StandardVersion::query()->whereKey($criterion->standard_version_id)->value('status');
 
             if (in_array($status, [
                 StandardVersionStatus::Scheduled->value,
@@ -49,7 +50,8 @@ class CriterionGuidance extends Model
         });
 
         static::deleting(function (self $guidance): void {
-            $status = $guidance->criterion()->firstOrFail()->standardVersion()->value('status');
+            $criterion = $guidance->criterion()->firstOrFail();
+            $status = StandardVersion::query()->whereKey($criterion->standard_version_id)->value('status');
 
             if ($status !== StandardVersionStatus::Draft->value) {
                 throw new DomainStateTransitionException(

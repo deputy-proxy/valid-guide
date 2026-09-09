@@ -27,3 +27,10 @@
 - An empty `weight_overrides` collection is valid methodology configuration; non-empty overrides must be associative and contain supported product types with non-negative numeric values.
 - Runtime criterion applicability rejects malformed `product_types` collections instead of silently treating them as non-applicable.
 - Evaluation decision rationale remains structured JSON containing the complete assessment, including blocker messages; consumers and tests should inspect the structured `blockers` field rather than treating the JSON as plain prose.
+
+## 2026-09-09 — Persisted-state comparisons in lifecycle guards
+
+- Lifecycle guards that compare enum-backed status fields use the raw persisted value so Eloquent enum casting cannot bypass immutability checks.
+- Conflict declarations are immutable once determined.
+- Clarification request identity and message content become immutable when the request is submitted; workflow fields such as response and resolution metadata remain controlled by the clarification workflow.
+- These changes reinforce the already-decided lifecycle boundaries and do not alter the user-facing workflow states.

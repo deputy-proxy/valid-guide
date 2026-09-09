@@ -50,12 +50,14 @@ class User extends Authenticatable implements PasskeyUser
         ];
     }
 
+    /** @return BelongsToMany<Organization, User> */
     public function organizations(): BelongsToMany
     {
         return $this->belongsToMany(Organization::class, 'organization_memberships')
             ->withPivot('role')->withTimestamps();
     }
 
+    /** @return HasOne<AuditorProfile, User> */
     public function auditorProfile(): HasOne
     {
         return $this->hasOne(AuditorProfile::class, 'auditor_id');

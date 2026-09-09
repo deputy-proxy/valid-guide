@@ -28,22 +28,6 @@ class AuditorProfile extends Model
         ];
     }
 
-    protected static function booted(): void
-    {
-        static::updating(function (self $profile): void {
-            if ($profile->getOriginal('approved_at') !== null) {
-                $immutable = ['approved_by', 'approved_at'];
-
-                if (array_intersect(array_keys($profile->getDirty()), $immutable) !== []) {
-                    // Re-approval is a new governance event. The current approval fields are
-                    // intentionally refreshed by AuditorProfileGovernance, while the complete
-                    // historical provenance lives in immutable review records and the audit log.
-                    return;
-                }
-            }
-        });
-    }
-
     public function auditor(): BelongsTo
     {
         return $this->belongsTo(User::class, 'auditor_id');

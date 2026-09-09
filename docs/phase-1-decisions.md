@@ -128,3 +128,13 @@ The Product therefore carries a normalized `subject_area` used as the matching b
 Assignment creation is a platform-admin-only operation. It rechecks eligibility inside a transaction, prevents duplicate Auditor assignments and duplicate sequence numbers, creates the required assignment-specific Conflict Declaration, and fixes the compensation amount/currency and deadline at assignment time.
 
 The resulting state is intentionally conservative: if the product has no subject area, or the Auditor's competence/format experience has not been verified, the Auditor cannot be assigned. It is better to have a temporarily unassignable evaluation than a trust system that quietly appoints an unqualified reviewer because the dropdown happened to contain their name.
+
+## 17. Methodology rule structure is validated before governance freeze
+
+A criterion's methodology dimension is constrained to `D1` through `D10`, matching the published ten-dimension architecture. Criteria must have a positive sequence and positive weight. A Standard Version cannot be scheduled unless every criterion has a sequence, criterion sequences are unique within the version, and all criterion rules pass structural validation.
+
+Applicability rules use an explicit supported-key set and validated product-type enum values. Inclusion, exclusion and mandatory-product-type rules must be internally consistent, and product-specific weight overrides must use supported product types and non-negative numeric values.
+
+This validation occurs inside `StandardVersionGovernance` immediately before scheduling, so malformed methodology cannot become an effective historical standard. The validator deliberately does not yet enforce the full product-type weight profiles or ten-dimension completeness because those require a separate decision about how criterion weights aggregate into dimension-level thresholds.
+
+The `MethodologyDimension` enum provides a single canonical representation for D1-D10 without prematurely encoding unresolved scoring policy into the database.

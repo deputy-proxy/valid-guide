@@ -11,6 +11,7 @@ use App\Models\ServicePackage;
 use App\Models\User;
 use App\Services\DomainStateTransitionException;
 use App\Services\EvaluationRequestCommercialTerms;
+use App\Services\EvaluationRequestStateTransition;
 
 function commercialTermsRequest(): EvaluationRequest
 {
@@ -73,8 +74,9 @@ it('does not allow commercial terms to change once payment has started', functio
     $request = commercialTermsRequest();
     $package = commercialTermsPackage();
     $request = app(EvaluationRequestCommercialTerms::class)->applyPackage($request, $package, 'standard');
-    $request->status = EvaluationRequestStatus::AwaitingPayment;
-    $request->save();
+    app(EvaluationRequestStateTransition::class)
+        ->transition($request, EvaluationRequestStatus::AwaitingPayment);
+    $request->refresh();
 
     expect(fn () => $request->update(['quoted_price' => 999]))
         ->toThrow(DomainStateTransitionException::class);
@@ -84,8 +86,10 @@ it('preserves the request price when the catalog package changes', function () {
     $request = commercialTermsRequest();
     $package = commercialTermsPackage();
     $request = app(EvaluationRequestCommercialTerms::class)->applyPackage($request, $package, 'standard');
-    $request->status = EvaluationRequestStatus::Paid;
-    $request->save();
+    app(EvaluationRequestStateTransition::class)
+        ->transition($request, EvaluationRequestStatus::AwaitingPayment);
+    app(EvaluationRequestStateTransition::class)
+        ->transition($request->fresh(), EvaluationRequestStatus::Paid);
 
     $package->update(['price' => 750]);
 

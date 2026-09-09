@@ -41,3 +41,9 @@
 - Conflict-declaration decisions remain restricted to platform administrators; the corresponding feature fixture now uses an admin actor rather than weakening the service authorization rule.
 - Report lifecycle fields remain protected by the `Report` model. The delivery fixture establishes `current_version_id` through a direct database update because that state is required as setup for testing the separate `ReportDelivery` service and direct model mutation is intentionally forbidden.
 - Criterion and criterion-guidance lifecycle guards resolve their owning `StandardVersion` through the relationship and compare its enum-cast status. This keeps the immutability boundary tied to the persisted domain state rather than to a potentially stale criterion-side attribute or cached status value.
+
+## 2026-09-09 — Methodology content is guarded at the persistence boundary
+
+- Criterion guidance is protected during Eloquent `saving`, not only `updating`, so the same immutability invariant applies to both creation/update persistence paths and cannot depend on a particular mutation event.
+- The guard resolves the criterion and its owning standard version directly from persisted identifiers, then checks the persisted standard-version status.
+- Scheduled, effective and retired standard versions therefore make their criterion guidance immutable, while draft versions remain editable and deletable according to the existing governance rules.

@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
+use App\Models\AuditorAnnualConflictDeclaration;
 use App\Models\AuditorCompetency;
 use App\Models\AuditorProfile;
-use App\Models\AuditorAnnualConflictDeclaration;
 use App\Models\User;
 use App\Services\AuditorAssignmentCreation;
 use App\Services\DomainStateTransitionException;

@@ -1,7 +1,11 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models;
 
+use App\Enums\AudiencePromiseCoherence;
+use App\Enums\EvidenceSufficiency;
 use App\Services\DomainStateTransitionException;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -13,6 +17,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 /**
  * @property CarbonImmutable|null $submitted_at
  * @property CarbonImmutable|null $locked_at
+ * @property EvidenceSufficiency|null $evidence_sufficiency
+ * @property AudiencePromiseCoherence|null $audience_promise_coherence
  */
 class AuditorEvaluation extends Model
 {
@@ -26,6 +32,8 @@ class AuditorEvaluation extends Model
         'status',
         'submitted_at',
         'locked_at',
+        'evidence_sufficiency',
+        'audience_promise_coherence',
     ];
 
     protected function casts(): array
@@ -33,6 +41,8 @@ class AuditorEvaluation extends Model
         return [
             'submitted_at' => 'datetime',
             'locked_at' => 'datetime',
+            'evidence_sufficiency' => EvidenceSufficiency::class,
+            'audience_promise_coherence' => AudiencePromiseCoherence::class,
         ];
     }
 

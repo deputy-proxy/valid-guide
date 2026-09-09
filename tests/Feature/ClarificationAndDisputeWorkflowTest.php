@@ -60,6 +60,7 @@ test('clarification request content cannot be changed after submission', functio
         ClarificationRequestType::Methodology,
         'What does criterion D1 mean?',
     );
+    $request->refresh();
 
     expect(fn () => $request->update(['message' => 'Changed']))
         ->toThrow(DomainStateTransitionException::class);

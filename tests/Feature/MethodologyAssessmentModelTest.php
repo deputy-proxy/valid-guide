@@ -139,7 +139,7 @@ test('criterion results accept only scores inside the standard version anchor fo
         ]);
 
         expect($result->assessment)->toBe($assessment)
-            ->and($result->score === null ? null : (float) $result->score)->toBe((float) $score);
+            ->and($result->score)->toBe($score === null ? null : (float) $score);
     }
 });
 

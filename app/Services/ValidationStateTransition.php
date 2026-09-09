@@ -64,7 +64,7 @@ class ValidationStateTransition
             $badge = $validation->badge()->lockForUpdate()->first();
             if ($badge !== null) {
                 $badge->status = $to;
-                $badge->save();
+                $badge->saveQuietly();
             }
 
             $validation->refresh();

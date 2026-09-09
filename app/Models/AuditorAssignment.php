@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class AuditorAssignment extends Model
 {
+    /** @use HasFactory<\Illuminate\Database\Eloquent\Factories\Factory> */
     use HasFactory;
 
     protected $fillable = [
@@ -29,26 +30,31 @@ class AuditorAssignment extends Model
         ];
     }
 
+    /** @return BelongsTo<Evaluation, AuditorAssignment> */
     public function evaluation(): BelongsTo
     {
         return $this->belongsTo(Evaluation::class);
     }
 
+    /** @return BelongsTo<User, AuditorAssignment> */
     public function auditor(): BelongsTo
     {
         return $this->belongsTo(User::class, 'auditor_id');
     }
 
+    /** @return HasMany<ConflictDeclaration, AuditorAssignment> */
     public function conflictDeclarations(): HasMany
     {
         return $this->hasMany(ConflictDeclaration::class);
     }
 
+    /** @return HasMany<AuditorEvaluation, AuditorAssignment> */
     public function evaluations(): HasMany
     {
         return $this->hasMany(AuditorEvaluation::class);
     }
 
+    /** @return HasOne<AuditorCompensation, AuditorAssignment> */
     public function compensation(): HasOne
     {
         return $this->hasOne(AuditorCompensation::class);

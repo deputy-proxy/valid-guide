@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models;
 
 use App\Enums\ProductReleaseStatus;
@@ -25,6 +27,29 @@ class ProductRelease extends Model
             'quantitative_metadata' => 'array',
             'status' => ProductReleaseStatus::class,
         ];
+    }
+
+    protected static function booted(): void
+    {
+        static::updating(function (self $release): void {
+            $originalStatus = $release->getOriginal('status');
+
+            if ($originalStatus !== ProductReleaseStatus::Draft->value) {
+                $allowed = ['status', 'published_at'];
+
+                if (array_diff(array_keys($release->getDirty()), $allowed)) {
+                    throw new DomainStateTransitionException(
+                        'A published product release is immutable. Create a new release for material changes.',
+                    );
+                }
+            }
+        });
+
+        static::deleting(function (self $release): void {
+            if ($release->status !== ProductReleaseStatus::Draft) {
+                throw new DomainStateTransitionException('Published product releases cannot be deleted.');
+            }
+        });
     }
 
     public function product(): BelongsTo

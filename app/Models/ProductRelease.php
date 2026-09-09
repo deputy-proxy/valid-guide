@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Enums\ProductReleaseStatus;
+use App\Services\DomainStateTransitionException;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -31,17 +32,37 @@ class ProductRelease extends Model
 
     protected static function booted(): void
     {
+        static::creating(function (self $release): void {
+            $status = $release->status instanceof ProductReleaseStatus
+                ? $release->status
+                : ProductReleaseStatus::tryFrom((string) $release->status);
+
+            if ($status !== null && $status !== ProductReleaseStatus::Draft) {
+                throw new DomainStateTransitionException(
+                    'Product releases must be created as drafts and published through ProductReleaseStateTransition.',
+                );
+            }
+
+            if ($release->published_at !== null) {
+                throw new DomainStateTransitionException(
+                    'A product release publication timestamp can only be set by ProductReleaseStateTransition.',
+                );
+            }
+        });
+
         static::updating(function (self $release): void {
+            if ($release->isDirty('status') || $release->isDirty('published_at')) {
+                throw new DomainStateTransitionException(
+                    'Product release lifecycle fields can only be changed through ProductReleaseStateTransition.',
+                );
+            }
+
             $originalStatus = $release->getOriginal('status');
 
             if ($originalStatus !== ProductReleaseStatus::Draft->value) {
-                $allowed = ['status', 'published_at'];
-
-                if (array_diff(array_keys($release->getDirty()), $allowed)) {
-                    throw new DomainStateTransitionException(
-                        'A published product release is immutable. Create a new release for material changes.',
-                    );
-                }
+                throw new DomainStateTransitionException(
+                    'A published product release is immutable. Create a new release for material changes.',
+                );
             }
         });
 

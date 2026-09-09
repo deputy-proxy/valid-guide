@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Enums\AudiencePromiseCoherence;
 use App\Enums\EvaluationStatus;
+use App\Enums\EvidenceSufficiency;
 use App\Models\AuditorEvaluation;
 use App\Models\Criterion;
 use App\Models\Evaluation;
@@ -62,6 +64,30 @@ class EvaluationDecisionService
             throw new DomainStateTransitionException('Final evaluation decisions require a positive odd number of submitted Auditor evaluations.');
         }
 
+        $blockers = [];
+
+        foreach ($auditorEvaluations as $auditorEvaluation) {
+            if ($auditorEvaluation->evidence_sufficiency !== EvidenceSufficiency::Sufficient) {
+                $value = $auditorEvaluation->evidence_sufficiency?->value ?? 'unresolved';
+                $blockers[] = sprintf('Auditor evaluation %d does not establish sufficient evidence for central product claims (%s).', $auditorEvaluation->id, $value);
+            }
+
+            if ($auditorEvaluation->audience_promise_coherence !== AudiencePromiseCoherence::Coherent) {
+                $value = $auditorEvaluation->audience_promise_coherence?->value ?? 'unresolved';
+                $blockers[] = sprintf('Auditor evaluation %d does not establish coherence with the stated audience and promise (%s).', $auditorEvaluation->id, $value);
+            }
+        }
+
+        if (is_array($product->claimed_outcomes) && $product->claimed_outcomes !== []) {
+            $missingEvidence = $auditorEvaluations->contains(
+                fn (AuditorEvaluation $auditorEvaluation): bool => $auditorEvaluation->evidence()->exists() === false,
+            );
+
+            if ($missingEvidence) {
+                $blockers[] = 'Central product claims do not have evidence coverage from every submitted Auditor evaluation.';
+            }
+        }
+
         $criterionVoting = app(CriterionVoting::class);
 
         foreach ($auditorEvaluations as $auditorEvaluation) {
@@ -84,7 +110,6 @@ class EvaluationDecisionService
         $dimensionTotals = [];
         $dimensionWeights = [];
         $applicableDimensions = [];
-        $blockers = [];
 
         foreach ($criteria as $criterion) {
             $applicability = $criterionApplicability->resolve($criterion, $product);
@@ -151,7 +176,6 @@ class EvaluationDecisionService
 
             $weight = $applicability['weight'];
             if ($weight <= 0) {
-
                 continue;
             }
 

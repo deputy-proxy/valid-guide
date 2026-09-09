@@ -3,9 +3,9 @@
 declare(strict_types=1);
 
 use App\Models\ReportVersion;
-use App\Models\User;
 use App\Services\DomainStateTransitionException;
 use App\Services\EvaluationDecisionService;
+use App\Services\ReportDelivery;
 use App\Services\ReportVersioning;
 
 it('creates the first report version from a completed evaluation and makes it current', function () {
@@ -40,15 +40,15 @@ it('creates immutable sequential report revisions', function () {
 
     $revision = app(ReportVersioning::class)->createRevision(
         $first->report,
-        User::factory()->create(),
+        $decider,
         ['sections' => ['summary' => 'Corrected factual wording.']],
         'Updated factual wording.',
-        'Corrected a material factual error identified after delivery.',
+        'Corrected a material factual error identified before delivery.',
     );
 
     expect($revision->version_number)->toBe(2)
         ->and($revision->report->current_version_id)->toBe($revision->id)
-        ->and($revision->change_reason)->toBe('Corrected a material factual error identified after delivery.');
+        ->and($revision->change_reason)->toBe('Corrected a material factual error identified before delivery.');
 
     $revision->abstract = 'tampered';
 
@@ -73,10 +73,29 @@ it('requires a reason for report revisions', function () {
     ))->toThrow(DomainStateTransitionException::class);
 });
 
-it('protects the report itself from deletion', function () {
+it('refuses to revise a report after delivery', function () {
     [$evaluation, $decider] = decisionFixture();
     app(EvaluationDecisionService::class)->decide($evaluation, $decider);
     $report = app(ReportVersioning::class)->createInitial($evaluation, $decider)->report;
+    app(ReportDelivery::class)->deliver($report, $decider);
+
+    expect(fn () => app(ReportVersioning::class)->createRevision(
+        $report,
+        $decider,
+        ['sections' => ['summary' => 'Changed after delivery.']],
+        null,
+        'Attempted post-delivery correction.',
+    ))->toThrow(DomainStateTransitionException::class);
+});
+
+it('protects the report itself from deletion and direct lifecycle mutation', function () {
+    [$evaluation, $decider] = decisionFixture();
+    app(EvaluationDecisionService::class)->decide($evaluation, $decider);
+    $report = app(ReportVersioning::class)->createInitial($evaluation, $decider)->report;
+
+    $report->current_version_id = null;
+    expect(fn () => $report->save())
+        ->toThrow(DomainStateTransitionException::class);
 
     expect(fn () => $report->delete())
         ->toThrow(DomainStateTransitionException::class);

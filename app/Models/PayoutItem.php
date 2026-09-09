@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Services\DomainStateTransitionException;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -17,6 +18,17 @@ class PayoutItem extends Model
     protected function casts(): array
     {
         return ['amount_minor' => 'integer'];
+    }
+
+    protected static function booted(): void
+    {
+        static::updating(function (self $item): void {
+            throw new DomainStateTransitionException('Payout items are immutable.');
+        });
+
+        static::deleting(function (self $item): void {
+            throw new DomainStateTransitionException('Payout items cannot be deleted.');
+        });
     }
 
     public function payout(): BelongsTo

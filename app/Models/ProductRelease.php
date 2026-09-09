@@ -14,7 +14,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
- * @property ProductReleaseStatus $status
+ * @property ProductReleaseStatus|null $status
  * @property CarbonImmutable|null $published_at
  */
 class ProductRelease extends Model
@@ -32,7 +32,7 @@ class ProductRelease extends Model
     protected static function booted(): void
     {
         static::creating(function (self $release): void {
-            if ($release->status !== ProductReleaseStatus::Draft) {
+            if ($release->status !== null && $release->status !== ProductReleaseStatus::Draft) {
                 throw new DomainStateTransitionException('Product releases must be created as drafts and published through ProductReleaseStateTransition.');
             }
             if ($release->published_at !== null) {
@@ -49,7 +49,7 @@ class ProductRelease extends Model
             }
         });
         static::deleting(function (self $release): void {
-            if ($release->status !== ProductReleaseStatus::Draft) {
+            if ($release->status !== null && $release->status !== ProductReleaseStatus::Draft) {
                 throw new DomainStateTransitionException('Published product releases cannot be deleted.');
             }
         });

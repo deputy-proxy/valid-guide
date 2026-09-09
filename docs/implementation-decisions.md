@@ -49,3 +49,13 @@
 - `CriterionGuidance` enforces this invariant in its `save()` persistence boundary, rather than relying only on a particular Eloquent mutation event. The guard resolves the owning criterion and standard version from persisted identifiers and checks the persisted status before allowing the write.
 - The standard-version lifecycle itself remains mutable through the controlled governance service (`draft → scheduled → effective → retired`); the immutability applies to methodology content, not to legitimate lifecycle transitions.
 - Because `StandardVersion` casts `status` to `StandardVersionStatus`, guidance immutability checks that require a scalar persisted status read it directly from the database query builder. This avoids comparing a cast enum with a string return type and keeps the guard explicitly tied to persisted state.
+
+## 2026-09-09 — Methodology assessment scale and versioned score anchors
+
+- Criterion assessments are a controlled `CriterionAssessment` enum with exactly six values: `exceeds`, `meets`, `partially_meets`, `does_not_meet`, `insufficient_evidence`, and `not_applicable`.
+- Numerical scores remain distinct from categorical assessments. The applicable `StandardVersion` stores immutable `score_anchors` and `decision_thresholds` JSON configuration so the scoring policy is versioned with the methodology rather than hard-coded in the decision engine.
+- The default v1 numerical anchors are Exceeds 90–100, Meets 75–89, Partially Meets 50–74, and Does Not Meet 0–49. Insufficient Evidence and Not Applicable do not accept numerical scores.
+- A scheduled/effective/retired `StandardVersion` cannot have its scoring configuration changed through ordinary Eloquent mutation. New versions receive the default v1 configuration unless explicitly configured before scheduling.
+- `MethodologyRuleValidator` requires complete assessment coverage, continuous 0–100 numerical coverage, and three numeric decision thresholds before a Standard Version can be scheduled.
+- `CriterionResult` enforces the mapping at persistence time: scored assessments require a score inside the applicable versioned anchor, while non-scored assessments require a null score. This prevents categorical/numerical contradictions from entering the evaluation history.
+- `EvaluationDecisionService` consumes the applicable Standard Version's mandatory, dimension and overall thresholds instead of hard-coding those values.

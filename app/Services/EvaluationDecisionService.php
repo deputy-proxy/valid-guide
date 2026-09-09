@@ -18,7 +18,7 @@ class EvaluationDecisionService
     public function assess(Evaluation $evaluation): array
     {
         $evaluation = Evaluation::query()
-            ->with('productRelease.product')
+            ->with(['productRelease.product', 'standardVersion'])
             ->whereKey($evaluation->getKey())
             ->firstOrFail();
 
@@ -30,6 +30,15 @@ class EvaluationDecisionService
         if ($product === null) {
             throw new DomainStateTransitionException('An evaluation cannot be decided without an evaluated product.');
         }
+
+        $standardVersion = $evaluation->standardVersion;
+        if ($standardVersion === null) {
+            throw new DomainStateTransitionException('An evaluation cannot be decided without its methodology standard version.');
+        }
+
+        $mandatoryThreshold = $standardVersion->decisionThreshold('mandatory_minimum');
+        $dimensionThreshold = $standardVersion->decisionThreshold('dimension_minimum');
+        $overallThreshold = $standardVersion->decisionThreshold('overall_minimum');
 
         $auditorEvaluations = AuditorEvaluation::query()
             ->where('evaluation_id', $evaluation->getKey())
@@ -110,7 +119,7 @@ class EvaluationDecisionService
                 ->with('criterionResult')
                 ->get();
 
-            $score = $aggregate['decision'] === 'not_applicable'
+            $score = in_array($aggregate['decision'], ['not_applicable', 'insufficient_evidence'], true)
                 ? null
                 : round((float) $winningVotes->avg(fn ($vote): float => (float) $vote->criterionResult->score), 2);
 
@@ -124,8 +133,12 @@ class EvaluationDecisionService
                 'counts' => $aggregate['counts'],
             ];
 
-            if ($applicability['mandatory'] && ($score === null || $score < 75)) {
-                $blockers[] = sprintf('Mandatory criterion %s does not meet the 75/100 threshold.', $criterion->code);
+            if ($applicability['mandatory'] && ($score === null || $score < $mandatoryThreshold)) {
+                $blockers[] = sprintf(
+                    'Mandatory criterion %s does not meet the %.0f/100 threshold.',
+                    $criterion->code,
+                    $mandatoryThreshold,
+                );
             }
 
             if ($aggregate['decision'] === 'insufficient_evidence') {
@@ -158,8 +171,12 @@ class EvaluationDecisionService
 
             $dimensionScore = round($dimensionTotals[$dimension] / $dimensionWeights[$dimension], 2);
 
-            if ($dimensionScore < 60) {
-                $blockers[] = sprintf('%s is below the 60/100 core-dimension floor.', $dimension);
+            if ($dimensionScore < $dimensionThreshold) {
+                $blockers[] = sprintf(
+                    '%s is below the %.0f/100 core-dimension floor.',
+                    $dimension,
+                    $dimensionThreshold,
+                );
             }
         }
 
@@ -176,8 +193,8 @@ class EvaluationDecisionService
 
         $overallScore = $totalWeight > 0 ? round($weightedScore / $totalWeight, 2) : null;
 
-        if ($overallScore === null || $overallScore < 75) {
-            $blockers[] = 'The weighted overall score is below 75/100.';
+        if ($overallScore === null || $overallScore < $overallThreshold) {
+            $blockers[] = sprintf('The weighted overall score is below %.0f/100.', $overallThreshold);
         }
 
         return [

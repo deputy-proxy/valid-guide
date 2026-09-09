@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Enums\CriterionAssessment;
 use App\Enums\MethodologyDimension;
 use App\Enums\ProductType;
 use App\Models\Criterion;
@@ -43,6 +44,8 @@ final class MethodologyRuleValidator
         foreach ($criteria as $criterion) {
             $this->validateCriterion($criterion);
         }
+
+        $this->validateScoringConfiguration($version);
     }
 
     public function validateCriterion(Criterion $criterion): void
@@ -119,7 +122,72 @@ final class MethodologyRuleValidator
         }
     }
 
-    /** @param array<string, mixed> $rules */
+    private function validateScoringConfiguration(StandardVersion $version): void
+    {
+        $anchors = $version->score_anchors;
+        if (! is_array($anchors)) {
+            throw new DomainStateTransitionException('A standard version must define score anchors before it can be scheduled.');
+        }
+
+        $expected = array_map(static fn (CriterionAssessment $assessment): string => $assessment->value, CriterionAssessment::cases());
+        if (array_keys($anchors) !== $expected) {
+            throw new DomainStateTransitionException('A standard version must define exactly one score anchor for every allowed assessment.');
+        }
+
+        $ranges = [];
+        foreach (CriterionAssessment::cases() as $assessment) {
+            $anchor = $anchors[$assessment->value];
+            if (! is_array($anchor) || ! array_key_exists('min', $anchor) || ! array_key_exists('max', $anchor)) {
+                throw new DomainStateTransitionException(sprintf('Score anchor for %s must define min and max.', $assessment->value));
+            }
+
+            if (! $assessment->isScored()) {
+                if ($anchor['min'] !== null || $anchor['max'] !== null) {
+                    throw new DomainStateTransitionException(sprintf('Assessment %s must not define a numerical score range.', $assessment->value));
+                }
+
+                continue;
+            }
+
+            if (! is_int($anchor['min']) || ! is_int($anchor['max']) || $anchor['min'] < 0 || $anchor['max'] > 100 || $anchor['min'] > $anchor['max']) {
+                throw new DomainStateTransitionException(sprintf('Score anchor for %s must be an ordered integer range within 0-100.', $assessment->value));
+            }
+
+            $ranges[] = ['min' => $anchor['min'], 'max' => $anchor['max'], 'assessment' => $assessment->value];
+        }
+
+        usort($ranges, static fn (array $a, array $b): int => $a['min'] <=> $b['min']);
+        $expectedMinimum = 0;
+        foreach ($ranges as $range) {
+            if ($range['min'] !== $expectedMinimum) {
+                throw new DomainStateTransitionException(sprintf('Score anchors must cover 0-100 continuously; %s starts at %d instead of %d.', $range['assessment'], $range['min'], $expectedMinimum));
+            }
+
+            $expectedMinimum = $range['max'] + 1;
+        }
+
+        if ($expectedMinimum !== 101) {
+            throw new DomainStateTransitionException('Score anchors must cover the complete 0-100 numerical range.');
+        }
+
+        $thresholds = $version->decision_thresholds;
+        $expectedThresholds = ['overall_minimum', 'mandatory_minimum', 'dimension_minimum'];
+        if (! is_array($thresholds) || array_keys($thresholds) !== $expectedThresholds) {
+            throw new DomainStateTransitionException('A standard version must define overall, mandatory and dimension decision thresholds.');
+        }
+
+        foreach ($expectedThresholds as $key) {
+            $threshold = $thresholds[$key];
+            if (! is_int($threshold) && ! is_float($threshold)) {
+                throw new DomainStateTransitionException(sprintf('Decision threshold %s must be numeric.', $key));
+            }
+
+            if ($threshold < 0 || $threshold > 100) {
+                throw new DomainStateTransitionException(sprintf('Decision threshold %s must be between 0 and 100.', $key));
+            }
+        }
+    }
+
     /**
      * @param  array<string, mixed>  $rules
      * @return list<string>

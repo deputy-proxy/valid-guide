@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Models;
 
-use App\Services\DomainStateTransitionException;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -25,15 +24,6 @@ class AuditorProfile extends Model
             'format_experience' => 'array',
             'approved_at' => 'datetime',
         ];
-    }
-
-    protected static function booted(): void
-    {
-        static::updating(function (self $profile): void {
-            if ($profile->getOriginal('status') === 'approved' && array_intersect(array_keys($profile->getDirty()), ['auditor_id', 'status']) !== []) {
-                throw new DomainStateTransitionException('An approved auditor profile cannot change identity or approval status through ordinary mutation.');
-            }
-        });
     }
 
     public function auditor(): BelongsTo

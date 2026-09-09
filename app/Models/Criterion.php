@@ -48,12 +48,12 @@ class Criterion extends Model
     protected static function booted(): void
     {
         static::updating(function (self $criterion): void {
-            $status = StandardVersion::query()->whereKey($criterion->standard_version_id)->value('status');
+            $status = $criterion->standardVersion()->firstOrFail()->status;
 
             if (in_array($status, [
-                StandardVersionStatus::Scheduled->value,
-                StandardVersionStatus::Effective->value,
-                StandardVersionStatus::Retired->value,
+                StandardVersionStatus::Scheduled,
+                StandardVersionStatus::Effective,
+                StandardVersionStatus::Retired,
             ], true)) {
                 throw new DomainStateTransitionException(
                     'Criterion content is immutable once its standard version is scheduled.',
@@ -62,9 +62,9 @@ class Criterion extends Model
         });
 
         static::deleting(function (self $criterion): void {
-            $status = StandardVersion::query()->whereKey($criterion->standard_version_id)->value('status');
+            $status = $criterion->standardVersion()->firstOrFail()->status;
 
-            if ($status !== StandardVersionStatus::Draft->value) {
+            if ($status !== StandardVersionStatus::Draft) {
                 throw new DomainStateTransitionException(
                     'Criteria may only be deleted while their standard version is draft.',
                 );

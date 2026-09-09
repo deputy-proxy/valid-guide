@@ -40,10 +40,11 @@
 - `StandardVersion::standard()` explicitly uses `evaluation_standard_id`; the conventional Eloquent key inference would otherwise look for `standard_id` and leave the relationship unresolved.
 - Conflict-declaration decisions remain restricted to platform administrators; the corresponding feature fixture now uses an admin actor rather than weakening the service authorization rule.
 - Report lifecycle fields remain protected by the `Report` model. The delivery fixture establishes `current_version_id` through a direct database update because that state is required as setup for testing the separate `ReportDelivery` service and direct model mutation is intentionally forbidden.
-- Criterion and criterion-guidance lifecycle guards resolve their owning `StandardVersion` through the relationship and compare its enum-cast status. This keeps the immutability boundary tied to the persisted domain state rather than to a potentially stale criterion-side attribute or cached status value.
+- Criterion and criterion-guidance lifecycle guards resolve their owning `StandardVersion` through persisted identifiers and compare its persisted status. This keeps the immutability boundary tied to the actual domain state rather than to a potentially stale criterion-side attribute or cached status value.
 
-## 2026-09-09 — Methodology content is guarded at the persistence boundary
+## 2026-09-09 — Methodology content is immutable after scheduling
 
-- Criterion guidance is protected during Eloquent `saving`, not only `updating`, so the same immutability invariant applies to both creation/update persistence paths and cannot depend on a particular mutation event.
-- The guard resolves the criterion and its owning standard version directly from persisted identifiers, then checks the persisted standard-version status.
-- Scheduled, effective and retired standard versions therefore make their criterion guidance immutable, while draft versions remain editable and deletable according to the existing governance rules.
+- Methodology content belonging to a `StandardVersion` is editable while that version is draft.
+- Once the version is scheduled, its criteria and criterion guidance are immutable. They also cannot be added or deleted while the version is scheduled, effective or retired.
+- `CriterionGuidance` enforces this invariant in its `save()` persistence boundary, rather than relying only on a particular Eloquent mutation event. The guard resolves the owning criterion and standard version from persisted identifiers and checks the persisted status before allowing the write.
+- The standard-version lifecycle itself remains mutable through the controlled governance service (`draft → scheduled → effective → retired`); the immutability applies to methodology content, not to legitimate lifecycle transitions.

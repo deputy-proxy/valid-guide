@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Policies;
 
 use App\Enums\OrganizationRole;
+use App\Enums\ProductReleaseStatus;
 use App\Models\Product;
 use App\Models\ProductRelease;
 use App\Models\User;
@@ -25,14 +26,16 @@ class ProductReleasePolicy
 
     public function update(User $user, ProductRelease $release): bool
     {
-        return $release->product->organization->hasMemberWithRole($user, OrganizationRole::Owner)
-            || $release->product->organization->hasMemberWithRole($user, OrganizationRole::Admin)
-            || $release->product->organization->hasMemberWithRole($user, OrganizationRole::Editor);
+        return $release->status === ProductReleaseStatus::Draft
+            && ($release->product->organization->hasMemberWithRole($user, OrganizationRole::Owner)
+                || $release->product->organization->hasMemberWithRole($user, OrganizationRole::Admin)
+                || $release->product->organization->hasMemberWithRole($user, OrganizationRole::Editor));
     }
 
     public function delete(User $user, ProductRelease $release): bool
     {
-        return $release->product->organization->hasMemberWithRole($user, OrganizationRole::Owner)
-            || $release->product->organization->hasMemberWithRole($user, OrganizationRole::Admin);
+        return $release->status === ProductReleaseStatus::Draft
+            && ($release->product->organization->hasMemberWithRole($user, OrganizationRole::Owner)
+                || $release->product->organization->hasMemberWithRole($user, OrganizationRole::Admin));
     }
 }

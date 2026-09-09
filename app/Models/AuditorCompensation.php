@@ -8,6 +8,7 @@ use App\Services\DomainStateTransitionException;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class AuditorCompensation extends Model
 {
@@ -30,6 +31,12 @@ class AuditorCompensation extends Model
 
     protected static function booted(): void
     {
+        static::creating(function (self $compensation): void {
+            if ($compensation->status !== null && $compensation->status !== 'pending') {
+                throw new DomainStateTransitionException('Auditor compensation must be created as pending and finalized through AuditorCompensationService.');
+            }
+        });
+
         static::updating(function (self $compensation): void {
             if ($compensation->getOriginal('paid_at') !== null) {
                 throw new DomainStateTransitionException('Paid auditor compensation is immutable.');
@@ -48,5 +55,10 @@ class AuditorCompensation extends Model
     public function assignment(): BelongsTo
     {
         return $this->belongsTo(AuditorAssignment::class, 'auditor_assignment_id');
+    }
+
+    public function payoutItems(): HasMany
+    {
+        return $this->hasMany(PayoutItem::class, 'auditor_compensation_id');
     }
 }

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Enums\EvaluationStatus;
+use App\Services\DomainStateTransitionException;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -29,6 +30,27 @@ class Evaluation extends Model
             'completed_at' => 'datetime',
             'published_at' => 'datetime',
         ];
+    }
+
+    protected static function booted(): void
+    {
+        static::updating(function (self $evaluation): void {
+            if ($evaluation->isDirty('evaluation_request_id') || $evaluation->isDirty('product_release_id') || $evaluation->isDirty('standard_version_id')) {
+                throw new DomainStateTransitionException('Evaluation provenance is immutable after creation.');
+            }
+
+            if ($evaluation->getOriginal('status') === EvaluationStatus::Completed->value) {
+                throw new DomainStateTransitionException('Completed evaluations are immutable.');
+            }
+
+            if ($evaluation->getOriginal('decision') !== null && (
+                $evaluation->isDirty('decision')
+                || $evaluation->isDirty('overall_score')
+                || $evaluation->isDirty('decision_rationale')
+            )) {
+                throw new DomainStateTransitionException('Recorded evaluation decisions are immutable.');
+            }
+        });
     }
 
     public function request(): BelongsTo

@@ -196,7 +196,6 @@ class EvaluationDecisionService
         $this->authorizePlatformAdmin($decidedBy);
 
         return DB::transaction(function () use ($evaluation, $decidedBy): EvaluationDecision {
-
             $evaluation = Evaluation::query()->whereKey($evaluation->getKey())->lockForUpdate()->firstOrFail();
             $assessment = $this->assess($evaluation);
             $rationale = json_encode($assessment, JSON_THROW_ON_ERROR);

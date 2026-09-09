@@ -26,6 +26,13 @@ function standardVersionFixture(): array
         'status' => StandardVersionStatus::Draft,
     ]);
 
+    Criterion::create([
+        'standard_version_id' => $version->id,
+        'code' => 'GOV-BASE-01',
+        'name' => 'Baseline criterion',
+        'weight' => 100,
+    ]);
+
     $admin = User::factory()->create(['platform_role' => PlatformRole::Admin]);
 
     return [$version, $admin];
@@ -130,6 +137,12 @@ it('does not allow overlapping effective versions of the same standard', functio
         'version' => '2.0',
         'effective_at' => now()->addDay(),
         'status' => StandardVersionStatus::Draft,
+    ]);
+    Criterion::create([
+        'standard_version_id' => $second->id,
+        'code' => 'GOV-BASE-02',
+        'name' => 'Second baseline criterion',
+        'weight' => 100,
     ]);
 
     app(StandardVersionGovernance::class)->schedule($second, $admin);

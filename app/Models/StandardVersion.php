@@ -154,6 +154,18 @@ class StandardVersion extends Model
         return $this->belongsTo(EvaluationStandard::class, 'evaluation_standard_id');
     }
 
+    /** @return BelongsTo<User, $this> */
+    public function approver(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'approved_by');
+    }
+
+    /** @return HasMany<Evaluation, $this> */
+    public function evaluations(): HasMany
+    {
+        return $this->hasMany(Evaluation::class);
+    }
+
     /** @return HasMany<Criterion, $this> */
     public function criteria(): HasMany
     {

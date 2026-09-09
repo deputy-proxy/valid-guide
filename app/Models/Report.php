@@ -33,6 +33,12 @@ class Report extends Model
 
     protected static function booted(): void
     {
+        static::creating(function (self $report): void {
+            if ($report->delivered_at !== null) {
+                throw new DomainStateTransitionException('A report must be delivered through ReportDelivery.');
+            }
+        });
+
         static::updating(function (self $report): void {
             if ($report->isDirty('delivered_at')) {
                 throw new DomainStateTransitionException('Report delivery can only be recorded through ReportDelivery.');

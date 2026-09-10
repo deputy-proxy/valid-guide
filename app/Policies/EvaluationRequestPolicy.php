@@ -56,6 +56,7 @@ class EvaluationRequestPolicy
             EvaluationRequestStatus::Intake,
             EvaluationRequestStatus::AwaitingCreator,
             EvaluationRequestStatus::Ready,
+            EvaluationRequestStatus::Refunded,
         ], true) && $this->canManageCreatorResource($user, $evaluationRequest->organization);
     }
 

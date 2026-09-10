@@ -15,7 +15,6 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 
 /**
  * @property EvaluationStatus $status
- * @property int|null $product_id
  */
 class Evaluation extends Model
 {
@@ -44,21 +43,25 @@ class Evaluation extends Model
     protected static function booted(): void
     {
         static::creating(function (self $evaluation): void {
-            if ($evaluation->product_id === null && $evaluation->product_release_id !== null) {
-                $evaluation->product_id = ProductRelease::query()
-                    ->whereKey($evaluation->product_release_id)
+            $productId = $evaluation->getAttribute('product_id');
+            $productReleaseId = $evaluation->getAttribute('product_release_id');
+
+            if ($productId === null && $productReleaseId !== null) {
+                $productId = ProductRelease::query()
+                    ->whereKey($productReleaseId)
                     ->value('product_id');
+                $evaluation->setAttribute('product_id', $productId);
             }
 
-            if ($evaluation->product_id === null) {
+            if ($productId === null) {
                 throw new DomainStateTransitionException('An evaluation must persist the Product that was evaluated.');
             }
 
             $releaseProductId = ProductRelease::query()
-                ->whereKey($evaluation->product_release_id)
+                ->whereKey($productReleaseId)
                 ->value('product_id');
 
-            if ($releaseProductId !== (int) $evaluation->product_id) {
+            if ($releaseProductId !== (int) $productId) {
                 throw new DomainStateTransitionException('An evaluation Product must match its Product Release.');
             }
         });

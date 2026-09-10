@@ -34,8 +34,13 @@ final class StripeWebhookController
             ],
         );
 
-        if ($webhookEvent->wasRecentlyCreated === false) {
+        if ($webhookEvent->processed_at !== null) {
             return response()->json(['received' => true]);
+        }
+
+        $metadata = data_get($event, 'data.object.metadata');
+        if (is_array($metadata) && isset($metadata['payment_id']) && is_numeric($metadata['payment_id'])) {
+            $webhookEvent->forceFill(['payment_id' => (int) $metadata['payment_id']])->save();
         }
 
         try {

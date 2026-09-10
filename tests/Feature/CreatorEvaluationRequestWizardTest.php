@@ -106,7 +106,7 @@ it('completes the creator wizard and reaches the payment handoff', function () {
         ->set('servicePackageId', $package->id)
         ->set('complexity', 'standard')
         ->call('submitForPayment')
-        ->assertSet('currentStep', 6);
+        ->assertSet('currentStep', 5);
 
     $request = EvaluationRequest::query()->where('organization_id', $organization->id)->firstOrFail();
     $notes = app(CreatorEvaluationRequestIntake::class)->intakeNotes($request);

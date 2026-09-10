@@ -7,7 +7,10 @@ namespace App\Services;
 use App\Enums\AuditorProfileStatus;
 use App\Models\Criterion;
 use App\Models\CriterionVote;
+use App\Models\Finding;
 use App\Models\Validation;
+use Carbon\CarbonImmutable;
+use Illuminate\Support\Collection;
 
 class PublicVerificationSnapshotBuilder
 {
@@ -33,6 +36,8 @@ class PublicVerificationSnapshotBuilder
         $product = $release->product;
         $evaluation = $validation->evaluation;
         $standardVersion = $evaluation->standardVersion;
+
+        /** @var Collection<int, Criterion> $criteria */
         $criteria = $standardVersion->criteria->sortBy('sequence')->values();
         $criterionResults = $evaluation->auditorEvaluations
             ->flatMap(static fn ($auditorEvaluation) => $auditorEvaluation->criterionResults);
@@ -54,19 +59,20 @@ class PublicVerificationSnapshotBuilder
             ->values()
             ->all();
 
-        $reportAbstract = $evaluation->report?->currentVersion?->abstract;
+        /** @var Collection<int, Finding> $findings */
+        $findings = $evaluation->findings;
 
         return [
             'schema_version' => 1,
             'verification' => [
                 'identifier' => $validation->verification_identifier,
                 'status' => $validation->status->value,
-                'issued_at' => $validation->issued_at?->toIso8601String(),
+                'issued_at' => $this->formatDate($validation->issued_at),
                 'status_history' => [
-                    'issued_at' => $validation->issued_at?->toIso8601String(),
-                    'suspended_at' => $validation->suspended_at?->toIso8601String(),
-                    'revoked_at' => $validation->revoked_at?->toIso8601String(),
-                    'superseded_at' => $validation->superseded_at?->toIso8601String(),
+                    'issued_at' => $this->formatDate($validation->issued_at),
+                    'suspended_at' => $this->formatDate($validation->suspended_at),
+                    'revoked_at' => $this->formatDate($validation->revoked_at),
+                    'superseded_at' => $this->formatDate($validation->superseded_at),
                     'reason' => $validation->status_reason,
                 ],
             ],
@@ -82,7 +88,7 @@ class PublicVerificationSnapshotBuilder
                 'version' => $standardVersion->version,
             ],
             'scope' => [
-                'complexity' => $evaluation->request?->complexity?->value,
+                'complexity' => $this->enumValue($evaluation->request?->complexity),
                 'criteria' => $criteria->map(static fn (Criterion $criterion): array => [
                     'code' => $criterion->code,
                     'name' => $criterion->name,
@@ -104,12 +110,13 @@ class PublicVerificationSnapshotBuilder
 
                 if ($votes->isNotEmpty()) {
                     $counts = $votes
-                        ->map(static fn (CriterionVote $vote): string => $vote->decision->value)
+                        ->map(fn (CriterionVote $vote): ?string => $this->enumValue($vote->decision))
+                        ->filter()
                         ->countBy()
                         ->sortDesc();
                     $decision = $counts->keys()->first();
                 } elseif ($results->isNotEmpty()) {
-                    $decision = $results->first()->assessment?->value;
+                    $decision = $this->enumValue($results->first()->assessment);
                 }
 
                 return [
@@ -120,7 +127,7 @@ class PublicVerificationSnapshotBuilder
                     'voter_count' => $votes->unique('auditor_id')->count(),
                 ];
             })->all(),
-            'findings' => $evaluation->findings->map(static fn ($finding): array => [
+            'findings' => $findings->map(static fn (Finding $finding): array => [
                 'criterion' => $finding->criterion?->name,
                 'type' => $finding->type,
                 'severity' => $finding->severity,
@@ -128,16 +135,16 @@ class PublicVerificationSnapshotBuilder
                 'description' => $finding->description,
                 'status' => $finding->status,
             ])->values()->all(),
-            'strengths' => $evaluation->findings
-                ->filter(static fn ($finding): bool => $finding->type === 'strength')
-                ->map(static fn ($finding): array => [
+            'strengths' => $findings
+                ->filter(static fn (Finding $finding): bool => $finding->type === 'strength')
+                ->map(static fn (Finding $finding): array => [
                     'title' => $finding->title,
                     'description' => $finding->description,
                     'criterion' => $finding->criterion?->name,
                 ])->values()->all(),
-            'weaknesses' => $evaluation->findings
-                ->filter(static fn ($finding): bool => $finding->type === 'weakness')
-                ->map(static fn ($finding): array => [
+            'weaknesses' => $findings
+                ->filter(static fn (Finding $finding): bool => $finding->type === 'weakness')
+                ->map(static fn (Finding $finding): array => [
                     'title' => $finding->title,
                     'description' => $finding->description,
                     'criterion' => $finding->criterion?->name,
@@ -147,12 +154,26 @@ class PublicVerificationSnapshotBuilder
                 'disclosed' => $publicAuditors,
             ],
             'report' => [
-                'abstract' => $reportAbstract,
+                'abstract' => $evaluation->report?->currentVersion?->abstract,
             ],
             'visibility' => [
                 'directory' => $directoryVisible,
                 'full_report' => $fullReportVisible,
             ],
         ];
+    }
+
+    private function formatDate(?string $value): ?string
+    {
+        return $value === null ? null : CarbonImmutable::parse($value)->toIso8601String();
+    }
+
+    private function enumValue(mixed $value): ?string
+    {
+        if ($value instanceof \BackedEnum) {
+            return (string) $value->value;
+        }
+
+        return is_string($value) ? $value : null;
     }
 }

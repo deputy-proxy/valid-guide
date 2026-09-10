@@ -56,6 +56,7 @@ function completeMethodologyFixture(): array
     $profiles = MethodologyV1::productTypeWeightProfiles();
     $productTypes = array_keys($profiles);
     $dimensions = MethodologyDimension::cases();
+    $baseProductType = $productTypes[0];
 
     foreach ($dimensions as $index => $dimension) {
         $weights = [];
@@ -63,9 +64,9 @@ function completeMethodologyFixture(): array
             $weights[$productType] = $profiles[$productType][$dimension->value];
         }
 
-        $baseWeight = $weights[array_key_first($weights)];
+        $baseWeight = $weights[$baseProductType];
         $overrides = $weights;
-        unset($overrides[array_key_first($overrides)]);
+        unset($overrides[$baseProductType]);
 
         Criterion::create([
             'standard_version_id' => $version->id,

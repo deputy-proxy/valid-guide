@@ -20,7 +20,7 @@ final class OrganizationContextPage extends Page
 
     protected static string|UnitEnum|null $navigationGroup = 'Creator';
 
-    protected static BackedEnum|string|null $navigationIcon = 'heroicon-o-building-office-2';
+    protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-building-office-2';
 
     protected static ?string $navigationLabel = 'Organization';
 

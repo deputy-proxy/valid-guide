@@ -31,6 +31,8 @@ function reportDeliveryFixture(): array
         'slug' => 'example-publisher',
         'status' => 'active',
     ]);
+    $requestActor = User::factory()->create();
+    $organization->users()->attach($requestActor, ['role' => 'owner']);
 
     $product = Product::create([
         'organization_id' => $organization->id,
@@ -64,13 +66,14 @@ function reportDeliveryFixture(): array
         'service_package' => $package->slug,
         'service_package_name_snapshot' => $package->name,
         'service_package_description_snapshot' => $package->description,
+        'service_package_terms_snapshot' => ['price' => '500.00'],
         'complexity' => 'standard',
         'quoted_price' => $package->price,
         'currency' => $package->currency,
     ]);
 
-    app(EvaluationRequestStateTransition::class)->transition($request, EvaluationRequestStatus::AwaitingPayment);
-    app(EvaluationRequestStateTransition::class)->transition($request->fresh(), EvaluationRequestStatus::Paid);
+    app(EvaluationRequestStateTransition::class)->transition($request, EvaluationRequestStatus::AwaitingPayment, $requestActor);
+    app(EvaluationRequestStateTransition::class)->transition($request->fresh(), EvaluationRequestStatus::Paid, $requestActor);
 
     $standard = EvaluationStandard::create([
         'name' => 'Report Standard',

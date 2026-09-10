@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Policies;
 
+use App\Enums\EvaluationRequestStatus;
 use App\Enums\OrganizationRole;
 use App\Models\EvaluationRequest;
 use App\Models\Organization;
@@ -13,31 +14,62 @@ class EvaluationRequestPolicy
 {
     public function viewAny(User $user): bool
     {
-        return $user->organizations()->exists();
+        return $user->organizations()
+            ->wherePivotIn('role', $this->creatorRoles())
+            ->exists();
     }
 
     public function view(User $user, EvaluationRequest $evaluationRequest): bool
     {
-        return $evaluationRequest->organization->users()->whereKey($user->getKey())->exists();
+        return $this->canManageCreatorResource($user, $evaluationRequest->organization);
     }
 
     public function create(User $user, Organization $organization): bool
     {
-        return $organization->hasMemberWithRole($user, OrganizationRole::Owner)
-            || $organization->hasMemberWithRole($user, OrganizationRole::Admin)
-            || $organization->hasMemberWithRole($user, OrganizationRole::Editor);
+        return $this->canManageCreatorResource($user, $organization);
     }
 
     public function update(User $user, EvaluationRequest $evaluationRequest): bool
     {
-        return $evaluationRequest->organization->hasMemberWithRole($user, OrganizationRole::Owner)
-            || $evaluationRequest->organization->hasMemberWithRole($user, OrganizationRole::Admin)
-            || $evaluationRequest->organization->hasMemberWithRole($user, OrganizationRole::Editor);
+        return $evaluationRequest->status === EvaluationRequestStatus::Draft
+            && $this->canManageCreatorResource($user, $evaluationRequest->organization);
+    }
+
+    public function submit(User $user, EvaluationRequest $evaluationRequest): bool
+    {
+        return $evaluationRequest->status === EvaluationRequestStatus::Draft
+            && $this->canManageCreatorResource($user, $evaluationRequest->organization);
+    }
+
+    public function cancel(User $user, EvaluationRequest $evaluationRequest): bool
+    {
+        return in_array($evaluationRequest->status, [
+            EvaluationRequestStatus::AwaitingPayment,
+            EvaluationRequestStatus::AwaitingCreator,
+        ], true) && $this->canManageCreatorResource($user, $evaluationRequest->organization);
     }
 
     public function delete(User $user, EvaluationRequest $evaluationRequest): bool
     {
-        return $this->update($user, $evaluationRequest)
-            && $evaluationRequest->status->value === 'draft';
+        return $evaluationRequest->status === EvaluationRequestStatus::Draft
+            && $this->canManageCreatorResource($user, $evaluationRequest->organization);
+    }
+
+    /** @return list<string> */
+    private function creatorRoles(): array
+    {
+        return [
+            OrganizationRole::Owner->value,
+            OrganizationRole::Admin->value,
+            OrganizationRole::Editor->value,
+        ];
+    }
+
+    private function canManageCreatorResource(User $user, Organization $organization): bool
+    {
+        return $organization->users()
+            ->whereKey($user->getKey())
+            ->wherePivotIn('role', $this->creatorRoles())
+            ->exists();
     }
 }

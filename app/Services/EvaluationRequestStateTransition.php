@@ -6,9 +6,11 @@ namespace App\Services;
 
 use App\Enums\EvaluationRequestStatus;
 use App\Models\EvaluationRequest;
+use App\Models\User;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 
-class EvaluationRequestStateTransition
+final class EvaluationRequestStateTransition
 {
     /** @var array<string, list<EvaluationRequestStatus>> */
     private const TRANSITIONS = [
@@ -22,12 +24,29 @@ class EvaluationRequestStateTransition
         'refunded' => [],
     ];
 
-    public function transition(EvaluationRequest $request, EvaluationRequestStatus $to): EvaluationRequest
+    /**
+     * Transition an evaluation request through its controlled lifecycle.
+     *
+     * Creator-controlled transitions are authorized against the request's
+     * organization. Operational transitions remain controlled by this service
+     * and are intended for payment/intake workflows until platform-admin
+     * authorization is introduced.
+     */
+    public function transition(EvaluationRequest $request, EvaluationRequestStatus $to, User $actor): EvaluationRequest
     {
-        return DB::transaction(function () use ($request, $to): EvaluationRequest {
-            $request = EvaluationRequest::query()->whereKey($request->getKey())->lockForUpdate()->firstOrFail();
+        return DB::transaction(function () use ($request, $to, $actor): EvaluationRequest {
+            $request = EvaluationRequest::query()
+                ->with('product.organization', 'productRelease.product.organization')
+                ->whereKey($request->getKey())
+                ->lockForUpdate()
+                ->firstOrFail();
+
             /** @var EvaluationRequest $request */
             $from = $request->status;
+
+            if ($from === null) {
+                throw new DomainStateTransitionException('An evaluation request must have a lifecycle state before it can transition.');
+            }
 
             if ($from === $to) {
                 throw new DomainStateTransitionException('The evaluation request is already in the requested state.');
@@ -41,12 +60,12 @@ class EvaluationRequestStateTransition
                 ));
             }
 
+            if (in_array($to, [EvaluationRequestStatus::AwaitingPayment, EvaluationRequestStatus::Cancelled], true)) {
+                Gate::forUser($actor)->authorize($this->ability($to), $request);
+            }
+
             if ($to === EvaluationRequestStatus::AwaitingPayment) {
-                if ($request->service_package_id === null || $request->quoted_price === null) {
-                    throw new DomainStateTransitionException(
-                        'An evaluation request must have frozen commercial terms before payment can begin.',
-                    );
-                }
+                $this->assertPaymentBoundary($request);
             }
 
             if ($to === EvaluationRequestStatus::Ready) {
@@ -78,6 +97,7 @@ class EvaluationRequestStateTransition
                 EvaluationRequestStatus::Refunded => $updates['refunded_at'] = $request->refunded_at ?? $now,
                 default => null,
             };
+
             if ($to === EvaluationRequestStatus::AwaitingPayment && $request->submitted_at === null) {
                 $updates['submitted_at'] = $now;
             }
@@ -92,9 +112,55 @@ class EvaluationRequestStateTransition
                 auditable: $request,
                 before: ['status' => $from->value],
                 after: ['status' => $to->value],
+                actor: $actor,
             );
 
             return $request;
         });
+    }
+
+    private function assertPaymentBoundary(EvaluationRequest $request): void
+    {
+        if ($request->organization_id === null || $request->product_id === null || $request->product_release_id === null) {
+            throw new DomainStateTransitionException(
+                'An evaluation request must identify an organization, product and exact product release before payment can begin.',
+            );
+        }
+
+        $product = $request->product;
+        $release = $request->productRelease;
+
+        if ($product === null || $release === null || $product->organization_id !== $request->organization_id) {
+            throw new DomainStateTransitionException(
+                'An evaluation request product must belong to the requested organization.',
+            );
+        }
+
+        if ($release->product_id !== $product->getKey()) {
+            throw new DomainStateTransitionException(
+                'An evaluation request product release must belong to the requested product.',
+            );
+        }
+
+        if ($request->service_package_id === null || $request->quoted_price === null || blank($request->currency)) {
+            throw new DomainStateTransitionException(
+                'An evaluation request must have frozen commercial terms before payment can begin.',
+            );
+        }
+
+        if (blank($request->service_package_name_snapshot) || blank($request->service_package_description_snapshot)) {
+            throw new DomainStateTransitionException(
+                'An evaluation request must retain the service package snapshot before payment can begin.',
+            );
+        }
+    }
+
+    private function ability(EvaluationRequestStatus $to): string
+    {
+        return match ($to) {
+            EvaluationRequestStatus::AwaitingPayment => 'submit',
+            EvaluationRequestStatus::Cancelled => 'cancel',
+            default => throw new DomainStateTransitionException('The requested transition is not creator-controlled.'),
+        };
     }
 }

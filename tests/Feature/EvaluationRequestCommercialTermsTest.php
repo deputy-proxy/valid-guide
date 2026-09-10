@@ -41,8 +41,9 @@ test('does not allow commercial terms to change once payment has started', funct
     $request = commercialTermsRequest();
     $package = commercialTermsPackage();
     $request = app(EvaluationRequestCommercialTerms::class)->applyPackage($request, $package, 'standard');
-    app(EvaluationRequestStateTransition::class)->transition($request, EvaluationRequestStatus::AwaitingPayment);
-    app(EvaluationRequestStateTransition::class)->transition($request->fresh(), EvaluationRequestStatus::Paid);
+    $actor = $request->organization->users()->first();
+    app(EvaluationRequestStateTransition::class)->transition($request, EvaluationRequestStatus::AwaitingPayment, $actor);
+    app(EvaluationRequestStateTransition::class)->transition($request->fresh(), EvaluationRequestStatus::Paid, $actor);
     $request->refresh();
 
     expect(fn () => $request->update(['quoted_price' => 999]))->toThrow(DomainStateTransitionException::class);
@@ -52,8 +53,9 @@ test('preserves the request price when the catalog package changes', function ()
     $request = commercialTermsRequest();
     $package = commercialTermsPackage();
     $request = app(EvaluationRequestCommercialTerms::class)->applyPackage($request, $package, 'standard');
-    app(EvaluationRequestStateTransition::class)->transition($request, EvaluationRequestStatus::AwaitingPayment);
-    app(EvaluationRequestStateTransition::class)->transition($request->fresh(), EvaluationRequestStatus::Paid);
+    $actor = $request->organization->users()->first();
+    app(EvaluationRequestStateTransition::class)->transition($request, EvaluationRequestStatus::AwaitingPayment, $actor);
+    app(EvaluationRequestStateTransition::class)->transition($request->fresh(), EvaluationRequestStatus::Paid, $actor);
     $package->update(['price' => 750]);
     expect($request->refresh()->quoted_price)->toBe('500.00')->and($request->service_package_terms_snapshot['price'])->toBe('500.00');
 });

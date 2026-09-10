@@ -24,8 +24,12 @@ class ProductPolicy
         return $this->canManageCreatorResource($user, $product->organization);
     }
 
-    public function create(User $user): bool
+    public function create(User $user, ?Organization $organization = null): bool
     {
+        if ($organization instanceof Organization) {
+            return $this->canManageCreatorResource($user, $organization);
+        }
+
         return $user->organizations()
             ->wherePivotIn('role', $this->creatorRoles())
             ->exists();

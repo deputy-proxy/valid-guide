@@ -7,6 +7,7 @@ namespace App\Services;
 use App\Models\Product;
 use App\Models\ProductRelease;
 use App\Models\User;
+use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
@@ -42,7 +43,7 @@ final class ProductReleaseManagement
     private function rules(Product $product, ?ProductRelease $release = null): array
     {
         $identifierRule = Rule::unique('product_releases', 'release_identifier')
-            ->where(fn ($query) => $query->where('product_id', $product->getKey()));
+            ->where(fn (Builder $query): Builder => $query->where('product_id', $product->getKey()));
 
         if ($release !== null) {
             $identifierRule = $identifierRule->ignore($release->getKey());

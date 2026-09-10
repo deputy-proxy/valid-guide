@@ -13,6 +13,7 @@ use App\Services\DomainStateTransitionException;
 use App\Services\OrganizationContext;
 use App\Services\ProductManagement;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Validation\ValidationException;
 
 function productManagementOrganization(User $user, OrganizationRole $role, string $slug): Organization
 {
@@ -87,10 +88,10 @@ it('rejects a forged organization context even when the identifier is supplied m
     $organization = productManagementOrganization($user, OrganizationRole::Editor, 'creator-a');
     $otherOrganization = productManagementOrganization($otherUser, OrganizationRole::Owner, 'creator-b');
 
-    expect(fn () => (new OrganizationContext())->resolve($user, $otherOrganization->getKey()))
+    expect(fn () => new OrganizationContext()->resolve($user, $otherOrganization->getKey()))
         ->toThrow(AuthorizationException::class);
 
-    expect((new OrganizationContext())->resolve($user, $organization->getKey())->getKey())
+    expect(new OrganizationContext()->resolve($user, $organization->getKey())->getKey())
         ->toBe($organization->getKey());
 });
 
@@ -122,7 +123,7 @@ it('archives products through the controlled lifecycle service', function () {
         'slug' => 'course',
     ]);
 
-    $archived = (new ProductManagement())->archive($user, $product);
+    $archived = new ProductManagement()->archive($user, $product);
 
     expect($archived->status)->toBe(ProductStatus::Archived);
 
@@ -154,7 +155,7 @@ it('rejects incomplete product data at the application boundary', function () {
     $user = User::factory()->create();
     $organization = productManagementOrganization($user, OrganizationRole::Editor, 'creator-a');
 
-    expect(fn () => (new ProductManagement())->create($user, $organization, [
+    expect(fn () => new ProductManagement()->create($user, $organization, [
         'title' => 'Incomplete',
-    ]))->toThrow(\Illuminate\Validation\ValidationException::class);
+    ]))->toThrow(ValidationException::class);
 });

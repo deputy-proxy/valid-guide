@@ -51,6 +51,10 @@ class EvaluationRequestPolicy
 
     public function refund(User $user, EvaluationRequest $evaluationRequest): bool
     {
+        if ($user->isPlatformAdmin()) {
+            return true;
+        }
+
         return in_array($evaluationRequest->status, [
             EvaluationRequestStatus::Paid,
             EvaluationRequestStatus::Intake,

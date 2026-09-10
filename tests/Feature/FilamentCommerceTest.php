@@ -11,9 +11,9 @@ use App\Models\Payment;
 use App\Models\Refund;
 use App\Models\User;
 use App\Services\CreatorRefundService;
+use App\Services\DomainStateTransitionException;
 use App\Services\ReportDelivery;
 use Filament\Actions\Testing\TestAction;
-use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
 use Livewire\Livewire;
@@ -128,14 +128,13 @@ it('refunds an eligible request through the Filament action', function () {
         ->and(User::query()->whereKey($user->id)->exists())->toBeTrue();
 });
 
-it('does not expose or offer refund after report delivery', function () {
+it('does not offer or process a refund after report delivery', function () {
     [$request, $report] = reportDeliveryFixture();
     $admin = User::factory()->create(['platform_role' => 'admin']);
 
     $organization = $request->organization()->firstOrFail();
     $owner = $organization->users()->wherePivot('role', 'owner')->firstOrFail();
 
-    $request->forceFill([]);
     $request->getConnection()->table('evaluation_requests')->where('id', $request->id)->update([
         'status' => EvaluationRequestStatus::Paid->value,
         'quoted_amount_minor' => 50000,
@@ -165,12 +164,13 @@ it('does not expose or offer refund after report delivery', function () {
     app(ReportDelivery::class)->deliver($report, $admin);
 
     expect(fn () => app(CreatorRefundService::class)->refund($request, $owner))
-        ->toThrow(AuthorizationException::class);
+        ->toThrow(DomainStateTransitionException::class);
 
     Livewire::actingAs($admin)
         ->test(ListEvaluationRequests::class)
         ->assertSuccessful()
-        ->assertCanSeeTableRecords([$request]);
+        ->assertCanSeeTableRecords([$request])
+        ->assertDontSee('Refund');
 
     expect(Refund::query()->count())->toBe(0);
 });

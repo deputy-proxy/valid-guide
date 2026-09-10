@@ -102,3 +102,15 @@
 - Prior participation is resolved from persisted database state rather than loaded Eloquent relationship collections, so stale in-memory state cannot bypass the rule.
 - A detected conflict is recorded in the audit log with the Evaluation, Auditor and determination actor before assignment is rejected. No assignment, assignment-level ConflictDeclaration or compensation record is created for the rejected Auditor.
 - Feature coverage includes creator/contributor membership, billing-only membership, prior participation on the same Product, different Product participation, and stale relationship state.
+
+## 2026-09-10 — Standard Version methodology completeness is validated before scheduling
+
+- Methodology v1 defines seven fixed product-type weighting profiles: course, cohort course, guide, ebook, workshop, program and membership. `other` remains intentionally outside the fixed profiles because the methodology requires Admin to select and document an appropriate applicability profile for it.
+- The canonical v1 profiles are represented as data in `MethodologyV1`; `MethodologyRuleValidator` consumes those profiles rather than embedding product-specific conditional branches.
+- Criterion `weight` is treated as the base contribution to its methodology dimension. A product-specific `weight_overrides` value replaces that base contribution for the named product type. Effective criterion weights are summed by D1-D10 for each fixed v1 product type.
+- Every fixed v1 product type must have positive coverage for all ten methodology dimensions, and its effective dimension weights must exactly match the approved v1 profile and total 100.
+- A weight override cannot target a product type for which the criterion is not applicable. Mandatory product types cannot simultaneously be excluded, and the existing inclusion/must-be-applicable rule remains enforced.
+- Criterion voting configuration remains versioned on the criterion. The validator accepts only the controlled `individual` and `majority` voting modes and does not duplicate the voting aggregation algorithm.
+- These completeness checks run in `StandardVersionGovernance` immediately before `draft → scheduled`, so malformed methodology cannot be frozen into a published standard.
+- Validation is version-specific: only criteria belonging to the Standard Version being scheduled contribute to its profile, and changing another Standard Version cannot affect the result.
+- Feature coverage includes a complete valid v1 profile, missing D10 coverage, invalid product-type weights, invalid total weighting, and rejection at the scheduling boundary.

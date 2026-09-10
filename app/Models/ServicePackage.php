@@ -57,13 +57,13 @@ class ServicePackage extends Model
             }
 
             foreach ($productTypes as $productType) {
-                if (! is_string($productType) || ProductType::tryFrom($productType) === null) {
+                if (ProductType::tryFrom($productType) === null) {
                     throw new DomainStateTransitionException('Service package product types must use the controlled product taxonomy.');
                 }
             }
 
             foreach ($complexityLevels as $complexityLevel) {
-                if (! is_string($complexityLevel) || EvaluationComplexity::tryFrom($complexityLevel) === null) {
+                if (EvaluationComplexity::tryFrom($complexityLevel) === null) {
                     throw new DomainStateTransitionException('Service package complexity levels must use the controlled complexity taxonomy.');
                 }
             }

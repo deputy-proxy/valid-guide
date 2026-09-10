@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Enums\OrganizationRole;
 use App\Enums\ProductReleaseStatus;
 use App\Enums\ProductType;
+use App\Filament\Resources\ProductReleases\Pages\ListProductReleases;
 use App\Models\Organization;
 use App\Models\Product;
 use App\Models\ProductRelease;
@@ -12,11 +13,11 @@ use App\Models\User;
 use App\Services\DomainStateTransitionException;
 use App\Services\ProductReleaseManagement;
 use App\Services\ProductReleaseStateTransition;
-use App\Filament\Resources\ProductReleases\Pages\ListProductReleases;
 use Filament\Actions\Testing\TestAction;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Gate;
+
 use function Pest\Livewire\livewire;
 
 uses(RefreshDatabase::class);

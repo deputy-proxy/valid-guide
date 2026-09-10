@@ -20,4 +20,31 @@ class OrganizationContext
 
         return $organization;
     }
+
+    public function current(User $user): Organization
+    {
+        $organizationId = session('creator.organization_id');
+
+        if (is_int($organizationId) || is_string($organizationId)) {
+            return $this->resolve($user, $organizationId);
+        }
+
+        $organization = $user->organizations()->orderBy('organizations.name')->first();
+
+        if ($organization === null) {
+            throw new AuthorizationException('The user is not a member of an organization.');
+        }
+
+        session(['creator.organization_id' => $organization->getKey()]);
+
+        return $organization;
+    }
+
+    public function select(User $user, int|string $organizationId): Organization
+    {
+        $organization = $this->resolve($user, $organizationId);
+        session(['creator.organization_id' => $organization->getKey()]);
+
+        return $organization;
+    }
 }

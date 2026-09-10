@@ -127,6 +127,21 @@ final class CreatorRefundService
             throw $exception;
         }
 
+        if ($providerResult['status'] === 'pending') {
+            return DB::transaction(function () use ($refund, $providerResult): Refund {
+                $refund = Refund::query()->whereKey($refund->getKey())->lockForUpdate()->firstOrFail();
+                if ($refund->status !== RefundStatus::Succeeded) {
+                    $refund->forceFill([
+                        'status' => RefundStatus::Processing,
+                        'provider_refund_id' => $providerResult['provider_refund_id'],
+                        'provider_metadata' => $providerResult['metadata'],
+                    ])->save();
+                }
+
+                return $refund;
+            });
+        }
+
         if ($providerResult['status'] !== 'succeeded') {
             $this->markFailed($refund, 'Stripe returned refund status: '.$providerResult['status'].'.');
 
@@ -154,6 +169,21 @@ final class CreatorRefundService
 
             $payment = Payment::query()->whereKey($refund->payment_id)->lockForUpdate()->firstOrFail();
             $order = Order::query()->whereKey($refund->order_id)->lockForUpdate()->firstOrFail();
+            $fromStatus = $request->status;
+            if (! $fromStatus instanceof EvaluationRequestStatus) {
+                throw new DomainStateTransitionException('The evaluation request must have a lifecycle state before it can be refunded.');
+            }
+
+            if (! in_array($fromStatus, [
+                EvaluationRequestStatus::Paid,
+                EvaluationRequestStatus::Intake,
+                EvaluationRequestStatus::AwaitingCreator,
+                EvaluationRequestStatus::Ready,
+                EvaluationRequestStatus::Refunded,
+            ], true)) {
+                throw new DomainStateTransitionException('The evaluation request is not in a refundable lifecycle state.');
+            }
+
             $now = now();
 
             $refund->forceFill([
@@ -174,16 +204,7 @@ final class CreatorRefundService
                 'updated_at' => $now,
             ]);
 
-            if ($request->status !== EvaluationRequestStatus::Refunded) {
-                if (! in_array($request->status, [
-                    EvaluationRequestStatus::Paid,
-                    EvaluationRequestStatus::Intake,
-                    EvaluationRequestStatus::AwaitingCreator,
-                    EvaluationRequestStatus::Ready,
-                ], true)) {
-                    throw new DomainStateTransitionException('The evaluation request is not in a refundable lifecycle state.');
-                }
-
+            if ($fromStatus !== EvaluationRequestStatus::Refunded) {
                 EvaluationRequest::query()->whereKey($request->getKey())->update([
                     'status' => EvaluationRequestStatus::Refunded->value,
                     'refunded_at' => $now,
@@ -193,14 +214,14 @@ final class CreatorRefundService
                 AuditLogger::record(
                     event: 'evaluation_request.status_changed',
                     auditable: $request,
-                    before: ['status' => $request->status->value],
+                    before: ['status' => $fromStatus->value],
                     after: ['status' => EvaluationRequestStatus::Refunded->value],
                     metadata: [
                         'refund_id' => $refund->getKey(),
                         'payment_id' => $payment->getKey(),
                         'order_id' => $order->getKey(),
                     ],
-                    actor: $refund->actor,
+                    actor: $refund->actor()->first(),
                 );
             }
 
@@ -213,7 +234,7 @@ final class CreatorRefundService
                     'currency' => $refund->currency,
                     'provider_refund_id' => $refund->provider_refund_id,
                 ],
-                actor: $refund->actor,
+                actor: $refund->actor()->first(),
             );
 
             return $refund;
@@ -243,7 +264,7 @@ final class CreatorRefundService
                     'status' => RefundStatus::Failed->value,
                     'error' => $message,
                 ],
-                actor: $refund->actor,
+                actor: $refund->actor()->first(),
             );
         });
     }

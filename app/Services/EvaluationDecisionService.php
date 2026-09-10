@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Enums\CriterionVotingMode;
-use App\Exceptions\DomainStateTransitionException;
 use App\Models\AuditorEvaluation;
 use App\Models\Criterion;
 use App\Models\Evaluation;

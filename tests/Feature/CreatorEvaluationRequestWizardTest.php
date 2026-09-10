@@ -121,7 +121,7 @@ it('resumes an existing draft without creating another request', function () {
     [$user, $organization, $product] = creatorWizardFixture();
     $this->actingAs($user);
     $request = app(CreatorEvaluationRequestIntake::class)->start($user, $organization->id);
-    app(CreatorEvaluationRequestIntake::class)->selectProduct($user, $request, $product);
+    $request = app(CreatorEvaluationRequestIntake::class)->selectProduct($user, $request, $product);
 
     Livewire::test(CreateEvaluationRequest::class, [
         'organizationId' => $organization->id,
@@ -152,8 +152,7 @@ it('preserves state while navigating backwards', function () {
 
 it('rejects cross-tenant products and releases server-side', function () {
     [$user, $organization, $product] = creatorWizardFixture();
-    [$otherUser, $otherOrganization, $otherProduct, $otherRelease] = creatorWizardFixture();
-    unset($otherUser, $otherOrganization, $otherProduct);
+    [, , , $otherRelease] = creatorWizardFixture();
     $this->actingAs($user);
 
     Livewire::test(CreateEvaluationRequest::class, ['organizationId' => $organization->id])
@@ -161,10 +160,7 @@ it('rejects cross-tenant products and releases server-side', function () {
         ->call('next')
         ->assertHasErrors('form');
 
-    $request = EvaluationRequest::query()->where('organization_id', $organization->id)->first();
-    expect($request)->not->toBeNull();
-    $request = $request instanceof EvaluationRequest ? $request : throw new RuntimeException('Expected evaluation request.');
-
+    $request = EvaluationRequest::query()->where('organization_id', $organization->id)->firstOrFail();
     $validRequest = app(CreatorEvaluationRequestIntake::class)->selectProduct($user, $request, $product);
 
     expect(fn () => app(CreatorEvaluationRequestIntake::class)->selectRelease($user, $validRequest, $otherRelease))

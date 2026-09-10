@@ -28,6 +28,14 @@ function creatorRefundFixture(): array
 {
     [$user, , $request] = stripePaymentFixture();
 
+    EvaluationRequest::query()->whereKey($request->id)->update([
+        'status' => EvaluationRequestStatus::Paid->value,
+        'quoted_amount_minor' => 25000,
+        'currency' => 'EUR',
+        'paid_at' => now(),
+    ]);
+    $request->refresh();
+
     $order = Order::query()->create([
         'organization_id' => $request->organization_id,
         'evaluation_request_id' => $request->id,
@@ -48,7 +56,7 @@ function creatorRefundFixture(): array
         'paid_at' => now(),
     ]);
 
-    return [$user, $request->fresh(), $order, $payment];
+    return [$user, $request, $order, $payment];
 }
 
 test('a paid creator request can receive a full refund before report delivery', function () {
@@ -93,6 +101,14 @@ test('a paid creator request can receive a full refund before report delivery', 
 test('a delivered report permanently closes the creator refund boundary', function () {
     [$request, $report] = reportDeliveryFixture();
     $user = $request->organization()->firstOrFail()->users()->wherePivot('role', 'owner')->firstOrFail();
+
+    EvaluationRequest::query()->whereKey($request->id)->update([
+        'status' => EvaluationRequestStatus::Paid->value,
+        'quoted_amount_minor' => 50000,
+        'currency' => 'EUR',
+        'paid_at' => now(),
+    ]);
+    $request->refresh();
 
     $order = Order::query()->create([
         'organization_id' => $request->organization_id,
@@ -173,7 +189,7 @@ test('repeated refund requests do not create a second provider refund', function
 });
 
 test('billing-only members cannot request a creator refund', function () {
-    [$user, $request] = creatorRefundFixture();
+    [, $request] = creatorRefundFixture();
     $billingUser = User::factory()->create();
     $request->organization()->firstOrFail()->users()->attach($billingUser, ['role' => 'billing']);
 

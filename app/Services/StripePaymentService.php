@@ -6,6 +6,7 @@ namespace App\Services;
 
 use App\Enums\EvaluationRequestStatus;
 use App\Enums\OrderStatus;
+use App\Enums\OrganizationRole;
 use App\Enums\PaymentStatus;
 use App\Models\EvaluationRequest;
 use App\Models\Order;
@@ -199,7 +200,7 @@ final class StripePaymentService
 
             $order->forceFill(['status' => OrderStatus::Paid])->save();
 
-            $request = EvaluationRequest::query()->lockForUpdate()->find($order->evaluation_request_id);
+            $request = EvaluationRequest::query()->with('organization')->lockForUpdate()->find($order->evaluation_request_id);
             if ($request === null || $request->status !== EvaluationRequestStatus::AwaitingPayment) {
 
                 return;
@@ -211,13 +212,20 @@ final class StripePaymentService
                 'updated_at' => $paidAt,
             ]);
 
-            AuditLogger::record(
-                event: 'evaluation_request.payment_confirmed',
-                auditable: $request,
-                before: ['status' => EvaluationRequestStatus::AwaitingPayment->value],
-                after: ['status' => EvaluationRequestStatus::Paid->value],
-                metadata: ['payment_id' => $payment->getKey(), 'order_id' => $order->getKey()],
-            );
+            $actor = $request->organization?->users()
+                ->wherePivot('role', OrganizationRole::Owner->value)
+                ->first();
+
+            if ($actor instanceof User) {
+                AuditLogger::record(
+                    event: 'evaluation_request.payment_confirmed',
+                    auditable: $request,
+                    before: ['status' => EvaluationRequestStatus::AwaitingPayment->value],
+                    after: ['status' => EvaluationRequestStatus::Paid->value],
+                    metadata: ['payment_id' => $payment->getKey(), 'order_id' => $order->getKey()],
+                    actor: $actor,
+                );
+            }
         });
     }
 

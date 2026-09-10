@@ -134,7 +134,7 @@ final class CreatorEvaluationRequestIntake
             throw new DomainStateTransitionException('A valid organization product is required before confirming claims and audience.');
         }
 
-        if (blank($product->target_audience) || ! is_array($product->claimed_outcomes) || $product->claimed_outcomes === []) {
+        if (blank($product->target_audience) || is_array($product->claimed_outcomes) === false || $product->claimed_outcomes === []) {
             throw new DomainStateTransitionException('The product must have a target audience and claimed outcomes before they can be confirmed.');
         }
 

@@ -84,7 +84,7 @@ final class StripePaymentService
     private function requestCheckoutSession(EvaluationRequest $request, Order $order, Payment $payment): array
     {
         $secret = config('stripe.secret');
-        if (! is_string($secret) || $secret === '') {
+        if (is_string($secret) === false || $secret === '') {
             throw new RuntimeException('Stripe secret is not configured.');
         }
 
@@ -113,7 +113,10 @@ final class StripePaymentService
         }
 
         $data = $response->json();
-        if (! is_array($data) || ! isset($data['id'], $data['url']) || ! is_string($data['id']) || ! is_string($data['url'])) {
+        if (is_array($data) === false
+            || isset($data['id'], $data['url']) === false
+            || is_string($data['id']) === false
+            || is_string($data['url']) === false) {
             throw new RuntimeException('Stripe returned an invalid checkout session.');
         }
 
@@ -146,18 +149,18 @@ final class StripePaymentService
     public function confirmCheckoutPayment(array $event): void
     {
         $session = $event['data']['object'] ?? null;
-        if (! is_array($session)) {
+        if (is_array($session) === false) {
             return;
         }
 
         $metadata = $session['metadata'] ?? null;
-        if (! is_array($metadata) || ! isset($metadata['payment_id'], $metadata['order_id'])) {
+        if (is_array($metadata) === false || isset($metadata['payment_id'], $metadata['order_id']) === false) {
             return;
         }
 
         $paymentId = filter_var($metadata['payment_id'], FILTER_VALIDATE_INT);
         $orderId = filter_var($metadata['order_id'], FILTER_VALIDATE_INT);
-        if (! is_int($paymentId) || ! is_int($orderId)) {
+        if (is_int($paymentId) === false || is_int($orderId) === false) {
             return;
         }
 
@@ -227,18 +230,18 @@ final class StripePaymentService
     private function updatePaymentFromCheckoutEvent(array $event, PaymentStatus $paymentStatus, OrderStatus $orderStatus): void
     {
         $session = $event['data']['object'] ?? null;
-        if (! is_array($session)) {
+        if (is_array($session) === false) {
             return;
         }
 
         $metadata = $session['metadata'] ?? null;
-        if (! is_array($metadata)) {
+        if (is_array($metadata) === false) {
             return;
         }
 
         $paymentId = filter_var($metadata['payment_id'] ?? null, FILTER_VALIDATE_INT);
         $orderId = filter_var($metadata['order_id'] ?? null, FILTER_VALIDATE_INT);
-        if (! is_int($paymentId) || ! is_int($orderId)) {
+        if (is_int($paymentId) === false || is_int($orderId) === false) {
             return;
         }
 

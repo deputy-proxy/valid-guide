@@ -156,12 +156,17 @@ it('rejects an auditor who is a creator or contributor on the product organizati
             Carbon::now()->addDays(3),
         ))->toThrow(DomainStateTransitionException::class, 'previously participated in this product');
 
-        expect(AuditLog::query()
+        $audit = AuditLog::query()
             ->where('event', 'auditor_assignment.conflict_detected')
             ->where('auditable_type', Evaluation::class)
             ->where('auditable_id', $evaluation->id)
-            ->whereJsonContains('after->auditor_id', $auditor->id)
-            ->exists())->toBeTrue();
+            ->latest('created_at')
+            ->first();
+
+        expect($audit)->not->toBeNull()
+            ->and($audit?->after['auditor_id'])->toBe($auditor->id)
+            ->and($audit?->after['conflict'])->toBe('prior_product_participation')
+            ->and($audit?->metadata['determined_by'])->toBe($admin->id);
     }
 });
 

@@ -169,7 +169,7 @@ it('renders the Filament product list only for the active organization', functio
     $otherProduct = app(ProductManagement::class)->create($otherUser, $otherOrganization, issue52ValidProductAttributes('other-ui-product'));
 
     session(['creator.organization_id' => $organization->getKey()]);
-    actingAs($user);
+    $this->actingAs($user);
 
     livewire(ListProducts::class)
         ->assertSuccessful()
@@ -183,7 +183,7 @@ it('allows an authorized editor to archive through the Filament action', functio
     $product = app(ProductManagement::class)->create($user, $organization, issue52ValidProductAttributes('ui-archive'));
 
     session(['creator.organization_id' => $organization->getKey()]);
-    actingAs($user);
+    $this->actingAs($user);
 
     livewire(ListProducts::class)
         ->callAction(TestAction::make('archive')->table($product))

@@ -33,7 +33,7 @@ class EvaluationRequest extends Model
         'organization_id', 'product_id', 'product_release_id', 'service_package_id', 'service_package',
         'service_package_name_snapshot', 'service_package_description_snapshot', 'service_package_terms_snapshot',
         'complexity', 'quoted_price', 'quoted_amount_minor', 'currency', 'status', 'submitted_at', 'payment_started_at', 'paid_at',
-        'evaluation_started_at', 'cancelled_at', 'refunded_at', 'intake_notes',
+        'evaluation_started_at', 'evaluation_started_at', 'cancelled_at', 'refunded_at', 'intake_notes',
     ];
 
     protected function casts(): array
@@ -177,19 +177,21 @@ class EvaluationRequest extends Model
 
     private function assertCommercialAmountConsistency(): void
     {
-        if ($this->quoted_amount_minor === null && $this->quoted_price !== null) {
-            $this->quoted_amount_minor = (int) round((float) $this->quoted_price * 100);
+        $quotedAmountMinor = $this->quoted_amount_minor;
+
+        if ($quotedAmountMinor === null && $this->quoted_price !== null) {
+            $quotedAmountMinor = (int) round((float) $this->quoted_price * 100);
         }
 
-        if ($this->quoted_amount_minor === null) {
+        if ($quotedAmountMinor === null) {
             return;
         }
 
-        if ($this->quoted_amount_minor <= 0) {
+        if ($quotedAmountMinor <= 0) {
             throw new DomainStateTransitionException('A quoted amount must be positive.');
         }
 
-        if ($this->quoted_price !== null && (int) round((float) $this->quoted_price * 100) !== $this->quoted_amount_minor) {
+        if ($this->quoted_price !== null && (int) round((float) $this->quoted_price * 100) !== $quotedAmountMinor) {
             throw new DomainStateTransitionException('The quoted price must match the integer minor-unit amount.');
         }
 
@@ -202,7 +204,7 @@ class EvaluationRequest extends Model
             throw new DomainStateTransitionException('A quoted amount requires an existing service package.');
         }
 
-        if ($this->quoted_amount_minor !== $package->price_minor) {
+        if ($quotedAmountMinor !== $package->price_minor) {
             throw new DomainStateTransitionException('The quoted amount must match the selected service package price.');
         }
 

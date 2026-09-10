@@ -69,6 +69,7 @@ it('allows owner admin and editor to create products but denies billing', functi
         $product = $management->create($user, $organization, issue52ValidProductAttributes());
         expect($product->organization_id)->toBe($organization->getKey())
             ->and($product->status)->toBe(ProductStatus::Active);
+
         return;
     }
 

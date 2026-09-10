@@ -177,16 +177,20 @@ class EvaluationRequest extends Model
 
     private function assertCommercialAmountConsistency(): void
     {
-        if ($this->quoted_amount_minor === null) {
-            if ($this->quoted_price !== null) {
-                throw new DomainStateTransitionException('A quoted price must be represented by an integer minor-unit amount.');
-            }
+        if ($this->quoted_amount_minor === null && $this->quoted_price !== null) {
+            $this->quoted_amount_minor = (int) round((float) $this->quoted_price * 100);
+        }
 
+        if ($this->quoted_amount_minor === null) {
             return;
         }
 
         if ($this->quoted_amount_minor <= 0) {
             throw new DomainStateTransitionException('A quoted amount must be positive.');
+        }
+
+        if ($this->quoted_price !== null && (int) round((float) $this->quoted_price * 100) !== $this->quoted_amount_minor) {
+            throw new DomainStateTransitionException('The quoted price must match the integer minor-unit amount.');
         }
 
         if ($this->service_package_id === null) {

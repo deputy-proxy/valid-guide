@@ -8,8 +8,10 @@ use App\Enums\EvidenceSufficiency;
 use App\Models\AuditorAssignment;
 use App\Models\AuditorEvaluation;
 use App\Models\ConflictDeclaration;
+use App\Models\Criterion;
 use App\Models\CriterionResult;
 use App\Models\CriterionVote;
+use App\Models\Evaluation;
 use App\Models\User;
 use App\Services\AuditorEvaluationSubmission;
 use App\Services\CriterionVoting;
@@ -29,7 +31,7 @@ it('records a criterion vote only when the methodology designates collective det
 });
 
 it('does not create votes for non-collective criteria', function () {
-    [$auditorEvaluation, $result] = auditorEvaluationFixture();
+    [$auditorEvaluation] = auditorEvaluationFixture();
 
     app(AuditorEvaluationSubmission::class)->submit($auditorEvaluation);
     $votes = app(CriterionVoting::class)->record($auditorEvaluation);
@@ -137,8 +139,12 @@ it('keeps recorded criterion votes immutable', function () {
         ->toThrow(DomainStateTransitionException::class);
 });
 
-function addSubmittedAuditorEvaluation($evaluation, $criterion, string $assessment, int $sequence): AuditorEvaluation
-{
+function addSubmittedAuditorEvaluation(
+    Evaluation $evaluation,
+    Criterion $criterion,
+    string $assessment,
+    int $sequence,
+): AuditorEvaluation {
     $auditor = User::factory()->create();
     $assignment = AuditorAssignment::create([
         'evaluation_id' => $evaluation->id,

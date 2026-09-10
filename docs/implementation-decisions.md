@@ -23,7 +23,7 @@
 
 ## 2026-09-09 — Controlled service writes and methodology rule validation
 
-- Domain services may use locked query updates for lifecycle fields when the model intentionally rejects direct Eloquent mutation. This preserves the public invariant while keeping the controlled service path functional.
+- Domain services may use locked query updates for lifecycle fields when the model intentionally rejects direct Eloquent mutation. This preserves the public invariant while keeping the public invariant while keeping the controlled service path functional.
 - An empty `weight_overrides` collection is valid methodology configuration; non-empty overrides must be associative and contain supported product types with non-negative numeric values.
 - Runtime criterion applicability rejects malformed `product_types` collections instead of silently treating them as non-applicable.
 - Evaluation decision rationale remains structured JSON containing the complete assessment, including blocker messages; consumers and tests should inspect the structured `blockers` field rather than treating the JSON as plain prose.
@@ -92,3 +92,13 @@
 - Final decision assessment requires exactly the methodology-defined number of distinct submitted and locked Auditor evaluations. The previous positive-odd check remains as a defensive invariant, but oddness alone is no longer sufficient.
 - Standard evaluations remain a one-Auditor panel. The agreed second-review capability must not turn the primary evaluation panel into an even two-Auditor decision; review/replacement semantics are therefore separate from the required panel count.
 - Staffing configuration is validated before use, including missing and even counts, so malformed methodology data fails closed instead of silently changing the evaluation standard.
+
+## 2026-09-10 — Prior Product participation is an Auditor conflict
+
+- An Auditor is ineligible for a Product when they are an owner, administrator or editor of the Product's creator Organization, because those roles represent direct creator/contributor participation in the existing domain model.
+- Prior Auditor participation is also a conflict when the same Auditor has previously been assigned to an Evaluation of the same enduring Product, including another Product Release.
+- Billing-only organization membership does not constitute creator/contributor participation.
+- The conflict check is performed by the domain-level Auditor assignment service during the existing transaction, after the Evaluation is reloaded under lock and before an assignment is created.
+- Prior participation is resolved from persisted database state rather than loaded Eloquent relationship collections, so stale in-memory state cannot bypass the rule.
+- A detected conflict is recorded in the audit log with the Evaluation, Auditor and determination actor before assignment is rejected. No assignment, assignment-level ConflictDeclaration or compensation record is created for the rejected Auditor.
+- Feature coverage includes creator/contributor membership, billing-only membership, prior participation on the same Product, different Product participation, and stale relationship state.

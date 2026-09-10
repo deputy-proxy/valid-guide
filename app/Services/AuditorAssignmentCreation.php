@@ -173,7 +173,7 @@ class AuditorAssignmentCreation
 
         if ($this->hasPriorProductParticipation($evaluation, $auditor)) {
             if ($determinedBy === null) {
-                return;
+                throw new DomainStateTransitionException('The Auditor cannot be assigned because they previously participated in this product.');
             }
 
             throw new PriorProductParticipationException($evaluation, $auditor, $determinedBy);

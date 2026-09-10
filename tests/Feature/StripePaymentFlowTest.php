@@ -16,8 +16,8 @@ use App\Models\User;
 use App\Services\CreatorEvaluationRequestIntake;
 use App\Services\DomainStateTransitionException;
 use App\Services\StripePaymentService;
-use Illuminate\Http\Client\Request as HttpRequest;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Http\Client\Request as HttpRequest;
 use Illuminate\Testing\TestResponse;
 
 /** @return array{0: User, 1: Organization, 2: EvaluationRequest, 3: ServicePackage} */

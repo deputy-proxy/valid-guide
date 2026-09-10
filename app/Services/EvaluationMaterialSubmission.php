@@ -87,7 +87,7 @@ final class EvaluationMaterialSubmission
 
     private function assertSubmissionAllowed(EvaluationRequest $request): void
     {
-        if (!in_array($request->status, [
+        if (! in_array($request->status, [
             EvaluationRequestStatus::Paid,
             EvaluationRequestStatus::Intake,
             EvaluationRequestStatus::AwaitingCreator,

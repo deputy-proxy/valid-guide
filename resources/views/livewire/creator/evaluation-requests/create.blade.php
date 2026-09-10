@@ -143,17 +143,79 @@
                 @error('audienceConfirmed') <p class="text-sm text-red-600">{{ $message }}</p> @enderror
             </section>
         @elseif ($currentStep === 5)
+            @php
+                $notes = $this->intakeNotes($request);
+                $material = $notes['material'] ?? null;
+                $quote = $this->quotePreview($request);
+            @endphp
             <section class="space-y-6 rounded-xl border border-zinc-200 p-6 dark:border-zinc-700">
                 <div>
                     <h2 class="text-xl font-semibold">5. Review</h2>
-                    <p class="mt-1 text-sm text-zinc-600 dark:text-zinc-300">Review the complete request and choose the applicable package and complexity.</p>
+                    <p class="mt-1 text-sm text-zinc-600 dark:text-zinc-300">Review the complete request and confirm the package and complexity before payment.</p>
                 </div>
                 <dl class="grid gap-4 sm:grid-cols-2">
-                    <div><dt class="text-sm text-zinc-500">Product</dt><dd class="font-medium">{{ $request->product?->title }}</dd></div>
-                    <div><dt class="text-sm text-zinc-500">Exact release</dt><dd class="font-medium">{{ $request->productRelease?->release_identifier ?: $request->productRelease?->version }}</dd></div>
-                    <div class="sm:col-span-2"><dt class="text-sm text-zinc-500">Scope</dt><dd class="whitespace-pre-wrap">{{ data_get($this->intakeNotes($request), 'scope') }}</dd></div>
-                    <div><dt class="text-sm text-zinc-500">Materials</dt><dd class="font-medium">{{ $request->materials->count() }}</dd></div>
-                    <div><dt class="text-sm text-zinc-500">Audience</dt><dd class="font-medium">Confirmed</dd></div>
+                    <div>
+                        <dt class="text-sm text-zinc-500">Product</dt>
+                        <dd class="font-medium">{{ $request->product?->title }}</dd>
+                    </div>
+                    <div>
+                        <dt class="text-sm text-zinc-500">Exact release</dt>
+                        <dd class="font-medium">
+                            {{ $request->productRelease?->release_identifier ?: 'Current release' }}
+                            @if ($request->productRelease?->version)
+                                · v{{ $request->productRelease->version }}
+                            @endif
+                            @if ($request->productRelease?->edition)
+                                · {{ $request->productRelease->edition }}
+                            @endif
+                        </dd>
+                    </div>
+                    <div class="sm:col-span-2">
+                        <dt class="text-sm text-zinc-500">Scope</dt>
+                        <dd class="whitespace-pre-wrap">{{ data_get($notes, 'scope') }}</dd>
+                    </div>
+                    <div>
+                        <dt class="text-sm text-zinc-500">Access & materials</dt>
+                        <dd class="font-medium">
+                            {{ is_array($material) ? '1 intake item' : 'Not supplied' }}
+                        </dd>
+                        @if (is_array($material))
+                            <p class="mt-1 text-sm text-zinc-600 dark:text-zinc-300">
+                                {{ data_get($material, 'label') }}
+                                @if (data_get($material, 'location'))
+                                    · {{ data_get($material, 'location') }}
+                                @endif
+                            </p>
+                        @endif
+                    </div>
+                    <div>
+                        <dt class="text-sm text-zinc-500">Claims & audience</dt>
+                        <dd class="font-medium">Confirmed</dd>
+                    </div>
+                    <div>
+                        <dt class="text-sm text-zinc-500">Evaluation package</dt>
+                        <dd class="font-medium">{{ $quote?->servicePackageName ?? $request->service_package_name_snapshot ?? 'Select a package' }}</dd>
+                    </div>
+                    <div>
+                        <dt class="text-sm text-zinc-500">Complexity</dt>
+                        <dd class="font-medium">{{ \Illuminate\Support\Str::headline($quote?->complexity->value ?? $complexity) }}</dd>
+                    </div>
+                    <div>
+                        <dt class="text-sm text-zinc-500">Amount</dt>
+                        <dd class="font-medium">
+                            @if ($quote)
+                                {{ number_format($quote->amountMinor / 100, 2) }} {{ $quote->currency }}
+                            @elseif ($request->quoted_amount_minor !== null)
+                                {{ $request->quoted_price }} {{ $request->currency }}
+                            @else
+                                Select a valid package and complexity
+                            @endif
+                        </dd>
+                    </div>
+                    <div>
+                        <dt class="text-sm text-zinc-500">Refund boundary</dt>
+                        <dd class="font-medium">Before an evaluation report is delivered</dd>
+                    </div>
                 </dl>
                 <div class="grid gap-5 sm:grid-cols-2">
                     <div>
@@ -173,20 +235,13 @@
                                 <option value="{{ $value }}">{{ $label }}</option>
                             @endforeach
                         </select>
-                        @error('complexity') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
+                        @error('complexity') <p class="text-sm text-red-600">{{ $message }}</p> @enderror
                     </div>
                 </div>
-                @if ($request->quoted_amount_minor !== null)
-                    <div class="rounded-lg border border-zinc-200 p-4 dark:border-zinc-700">
-                        <p class="text-sm text-zinc-500">Quoted evaluation price</p>
-                        <p class="mt-1 text-2xl font-semibold">{{ $request->quoted_price }} {{ $request->currency }}</p>
-                        <p class="mt-2 text-sm text-zinc-600 dark:text-zinc-300">100% refundable before substantive evaluation work starts. A failed validation result is not refundable.</p>
-                    </div>
-                @else
-                    <div class="rounded-lg bg-zinc-50 p-4 text-sm text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300">
-                        The price will be calculated server-side from the selected package and complexity when you submit this step.
-                    </div>
-                @endif
+                <div class="rounded-lg border border-zinc-200 p-4 text-sm dark:border-zinc-700">
+                    <p class="font-medium">Refund policy</p>
+                    <p class="mt-1 text-zinc-600 dark:text-zinc-300">A paid evaluation may be refunded before an evaluation report is delivered, subject to the applicable refund workflow. A validation result is never refundable merely because the result is negative.</p>
+                </div>
             </section>
         @elseif ($currentStep === 6)
             <section class="space-y-6 rounded-xl border border-zinc-200 p-6 dark:border-zinc-700">

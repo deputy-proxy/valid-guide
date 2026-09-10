@@ -62,12 +62,20 @@ class PublicVerificationSnapshotBuilder
 
         /** @var Collection<int, Finding> $findings */
         $findings = $evaluation->findings;
+        $status = $validation->status->value;
+        $decision = $evaluation->decision;
+        $overallScore = $evaluation->overall_score;
 
         return [
             'schema_version' => 1,
+            'verification_identifier' => $validation->verification_identifier,
+            'status' => $status,
+            'issued_at' => $this->formatDate($validation->issued_at),
+            'decision' => $decision,
+            'overall_score' => $overallScore,
             'verification' => [
                 'identifier' => $validation->verification_identifier,
-                'status' => $validation->status->value,
+                'status' => $status,
                 'issued_at' => $this->formatDate($validation->issued_at),
                 'status_history' => [
                     'issued_at' => $this->formatDate($validation->issued_at),
@@ -99,8 +107,8 @@ class PublicVerificationSnapshotBuilder
                 ])->all(),
             ],
             'result' => [
-                'decision' => $evaluation->decision,
-                'overall_score' => $evaluation->overall_score,
+                'decision' => $decision,
+                'overall_score' => $overallScore,
                 'decision_rationale' => $evaluation->decision_rationale,
             ],
             'criteria' => $criteria->map(function (Criterion $criterion) use ($criterionResults, $criterionVotes): array {
@@ -124,7 +132,7 @@ class PublicVerificationSnapshotBuilder
                     'code' => $criterion->code,
                     'name' => $criterion->name,
                     'assessment' => $decision,
-                    'score' => $scores->isNotEmpty() ? round($scores->avg(), 2) : null,
+                    'score' => $scores->isNotEmpty() ? (float) round($scores->avg(), 2) : null,
                     'voter_count' => $votes->unique('auditor_id')->count(),
                 ];
             })->all(),

@@ -5,13 +5,12 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Enums\EvaluationRequestStatus;
-use App\Enums\OrganizationRole;
 use App\Models\EvaluationRequest;
 use App\Models\Organization;
 use App\Models\Product;
 use App\Models\ProductRelease;
+use App\Models\ServicePackage;
 use App\Models\User;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
 use RuntimeException;
@@ -67,15 +66,7 @@ final class CreatorEvaluationRequestIntake
 
         $request->product_id = $product->getKey();
         $request->product_release_id = null;
-        $request->service_package_id = null;
-        $request->service_package = null;
-        $request->service_package_name_snapshot = null;
-        $request->service_package_description_snapshot = null;
-        $request->service_package_terms_snapshot = null;
-        $request->complexity = null;
-        $request->quoted_price = null;
-        $request->quoted_amount_minor = null;
-        $request->currency = null;
+        $this->clearCommercialTerms($request);
         $request->save();
 
         return $request->refresh()->load(['product', 'productRelease', 'materials', 'servicePackage']);
@@ -147,9 +138,10 @@ final class CreatorEvaluationRequestIntake
             throw new DomainStateTransitionException('Select a product and exact current release before choosing commercial terms.');
         }
 
-        $package = $product->organization_id === $request->organization_id
-            ? $request->servicePackage()->getRelated()::query()->whereKey($packageId)->where('status', 'active')->first()
-            : null;
+        $package = ServicePackage::query()
+            ->whereKey($packageId)
+            ->where('status', 'active')
+            ->first();
 
         if ($package === null) {
             throw new DomainStateTransitionException('The selected service package is not available.');

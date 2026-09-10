@@ -124,7 +124,6 @@ final class CreateEvaluationRequest extends Component
             ->where('status', 'active')
             ->whereJsonContains('product_types', $product->product_type->value)
             ->orderBy('name')
-            ->get(['id', 'name'])
             ->pluck('name', 'id')
             ->mapWithKeys(fn (mixed $name, mixed $id): array => [(int) $id => (string) $name])
             ->all();

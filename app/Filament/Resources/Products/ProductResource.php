@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace App\Filament\Resources\Products;
 
-use BackedEnum;
-use UnitEnum;
 use App\Enums\ProductStatus;
 use App\Enums\ProductType;
 use App\Filament\Resources\Products\Pages\CreateProduct;
@@ -15,6 +13,7 @@ use App\Models\Product;
 use App\Models\User;
 use App\Services\OrganizationContext;
 use App\Services\ProductManagement;
+use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\Repeater;
@@ -29,6 +28,7 @@ use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
+use UnitEnum;
 
 class ProductResource extends Resource
 {

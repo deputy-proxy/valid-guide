@@ -150,3 +150,36 @@ it('does not let billing members create evaluation requests', function () {
 
     expect(Gate::forUser($billing)->allows('create', [EvaluationRequest::class, $organization]))->toBeFalse();
 });
+
+it('enforces the complete product role matrix', function () {
+    $owner = User::factory()->create();
+    $admin = User::factory()->create();
+    $editor = User::factory()->create();
+    $billing = User::factory()->create();
+    $organization = authorizationOrganization('matrix-learning', $owner, OrganizationRole::Owner);
+    $organization->users()->attach([
+        $admin->getKey() => ['role' => OrganizationRole::Admin->value],
+        $editor->getKey() => ['role' => OrganizationRole::Editor->value],
+        $billing->getKey() => ['role' => OrganizationRole::Billing->value],
+    ]);
+
+    $product = Product::create([
+        'organization_id' => $organization->id,
+        'title' => 'Course',
+        'slug' => 'course',
+    ]);
+
+    foreach ([$owner, $admin, $editor] as $creator) {
+        expect(Gate::forUser($creator)->allows('view', $product))->toBeTrue()
+            ->and(Gate::forUser($creator)->allows('update', $product))->toBeTrue()
+            ->and(Gate::forUser($creator)->allows('archive', $product))->toBeTrue();
+    }
+
+    expect(Gate::forUser($owner)->allows('delete', $product))->toBeTrue()
+        ->and(Gate::forUser($admin)->allows('delete', $product))->toBeTrue()
+        ->and(Gate::forUser($editor)->allows('delete', $product))->toBeFalse()
+        ->and(Gate::forUser($billing)->allows('view', $product))->toBeFalse()
+        ->and(Gate::forUser($billing)->allows('update', $product))->toBeFalse()
+        ->and(Gate::forUser($billing)->allows('archive', $product))->toBeFalse()
+        ->and(Gate::forUser($billing)->allows('delete', $product))->toBeFalse();
+});

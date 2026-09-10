@@ -16,7 +16,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property list<string>|null $complexity_levels
  * @property list<string>|null $product_types
  * @property int $price_minor
- * @property string $price
+ * @property string|null $price
  * @property string $currency
  */
 class ServicePackage extends Model

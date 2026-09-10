@@ -87,6 +87,7 @@ it('completes the creator wizard and reaches the payment handoff', function () {
     Livewire::test(CreateEvaluationRequest::class, ['organizationId' => $organization->id])
         ->set('productId', $product->id)
         ->call('next')
+        ->assertHasNoErrors()
         ->assertSet('currentStep', 2)
         ->set('productReleaseId', $release->id)
         ->set('scope', 'Evaluate the complete learning experience and its practical applicability.')

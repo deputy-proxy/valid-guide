@@ -109,13 +109,20 @@ it('completes the creator wizard and reaches the payment handoff', function () {
         ->assertSet('currentStep', 6);
 
     $request = EvaluationRequest::query()->where('organization_id', $organization->id)->firstOrFail();
+    $notes = app(CreatorEvaluationRequestIntake::class)->intakeNotes($request);
 
     expect($request->status)->toBe(EvaluationRequestStatus::AwaitingPayment)
         ->and($request->product_id)->toBe($product->id)
         ->and($request->product_release_id)->toBe($release->id)
         ->and($request->quoted_amount_minor)->toBe(25000)
         ->and($request->currency)->toBe('EUR')
-        ->and($request->materials()->count())->toBe(1);
+        ->and($request->materials()->count())->toBe(0)
+        ->and($notes['material'])->toMatchArray([
+            'type' => 'url',
+            'label' => 'Course landing page',
+            'description' => null,
+            'location' => 'https://example.test/course',
+        ]);
 });
 
 it('resumes an existing draft without creating another request', function () {

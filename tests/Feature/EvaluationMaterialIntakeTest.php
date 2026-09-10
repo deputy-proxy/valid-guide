@@ -119,6 +119,24 @@ it('prevents unauthorized members from submitting material', function () {
     ))->toThrow(DomainStateTransitionException::class);
 });
 
+it('does not allow creator mutation or deletion after submission', function () {
+    $request = materialIntakeRequest();
+    $user = $request->organization->users()->first();
+    $material = app(EvaluationMaterialIntake::class)->submit(
+        $request,
+        $user,
+        EvaluationMaterialType::Url,
+        'Course page',
+        null,
+        'https://example.test/course',
+    );
+
+    expect(fn () => $material->update(['location' => 'https://example.test/changed']))
+        ->toThrow(DomainStateTransitionException::class)
+        ->and(fn () => $material->delete())
+        ->toThrow(DomainStateTransitionException::class);
+});
+
 it('allows only platform administrators to verify material', function () {
     $request = materialIntakeRequest();
     $user = $request->organization->users()->first();
@@ -157,6 +175,36 @@ it('verifies material and then makes its identity immutable', function () {
 
     expect(fn () => $verified->update(['location' => 'https://example.test/changed']))
         ->toThrow(DomainStateTransitionException::class);
+});
+
+it('requires verified evidence before readiness and closes the evidence set', function () {
+    $request = materialIntakeRequest();
+    $user = $request->organization->users()->first();
+    $transition = app(EvaluationRequestStateTransition::class);
+    $transition->transition($request, EvaluationRequestStatus::Intake, $user);
+
+    $material = app(EvaluationMaterialIntake::class)->submit(
+        $request->fresh(),
+        $user,
+        EvaluationMaterialType::Note,
+        'Evidence note',
+    );
+
+    expect(fn () => $transition->transition($request->fresh(), EvaluationRequestStatus::Ready, $user))
+        ->toThrow(DomainStateTransitionException::class);
+
+    $admin = User::factory()->create(['platform_role' => 'admin']);
+    app(EvaluationMaterialIntake::class)->verify($material, $admin, 'Evidence confirmed.');
+
+    $ready = $transition->transition($request->fresh(), EvaluationRequestStatus::Ready, $user);
+    expect($ready->status)->toBe(EvaluationRequestStatus::Ready);
+
+    expect(fn () => app(EvaluationMaterialIntake::class)->submit(
+        $ready,
+        $user,
+        EvaluationMaterialType::Note,
+        'Late evidence',
+    ))->toThrow(DomainStateTransitionException::class);
 });
 
 it('does not accept material after intake is ready', function () {

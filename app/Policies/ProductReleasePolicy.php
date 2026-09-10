@@ -18,9 +18,15 @@ class ProductReleasePolicy
         return $this->canManageCreatorResource($user, $release->product->organization);
     }
 
-    public function create(User $user, Product $product): bool
+    public function create(User $user, ?Product $product = null): bool
     {
-        return $this->canManageCreatorResource($user, $product->organization);
+        if ($product instanceof Product) {
+            return $this->canManageCreatorResource($user, $product->organization);
+        }
+
+        return $user->organizations()
+            ->wherePivotIn('role', $this->creatorRoles())
+            ->exists();
     }
 
     public function update(User $user, ProductRelease $release): bool

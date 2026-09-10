@@ -57,7 +57,7 @@ final class CreatorDashboard
     }
 
     /**
-     * @return list<array{id: int|string, title: string, slug: string, status: string, releases: list<array{id: int|string, identifier: string, version: string|null, status: string, published_at: string|null}>}>
+     * @return list<array{id: int|string, title: string, slug: string, status: string, releases: list<array{id: int|string, identifier: string, version: string|null, status: string, published_at: string|null}>>}
      */
     private function products(User $actor, Organization $organization): array
     {
@@ -250,7 +250,7 @@ final class CreatorDashboard
         ?RefundStatus $refundStatus,
         bool $hasDeliveredReport,
     ): bool {
-        if (!Gate::forUser($actor)->allows('refund', $request)) {
+        if (! Gate::forUser($actor)->allows('refund', $request)) {
             return false;
         }
 

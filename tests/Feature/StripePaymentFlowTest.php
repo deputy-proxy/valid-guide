@@ -65,9 +65,18 @@ function postSignedStripeWebhook(string $payload): TestResponse
     $timestamp = time();
     $signature = hash_hmac('sha256', $timestamp.'.'.$payload, 'whsec_test');
 
-    return test()->withHeaders([
-        'Stripe-Signature' => 't='.$timestamp.',v1='.$signature,
-    ])->postJson('/webhooks/stripe', json_decode($payload, true, 512, JSON_THROW_ON_ERROR));
+    return test()->call(
+        'POST',
+        '/webhooks/stripe',
+        [],
+        [],
+        [],
+        [
+            'CONTENT_TYPE' => 'application/json',
+            'HTTP_STRIPE_SIGNATURE' => 't='.$timestamp.',v1='.$signature,
+        ],
+        $payload,
+    );
 }
 
 it('creates a Stripe checkout with the frozen amount and currency', function () {

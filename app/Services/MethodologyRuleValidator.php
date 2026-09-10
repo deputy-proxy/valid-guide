@@ -5,10 +5,12 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Enums\CriterionAssessment;
+use App\Enums\CriterionVotingMode;
 use App\Enums\MethodologyDimension;
 use App\Enums\ProductType;
 use App\Models\Criterion;
 use App\Models\StandardVersion;
+use Illuminate\Support\Collection;
 
 final class MethodologyRuleValidator
 {
@@ -45,6 +47,7 @@ final class MethodologyRuleValidator
             $this->validateCriterion($criterion);
         }
 
+        $this->validateMethodologyProfiles($criteria);
         $this->validateScoringConfiguration($version);
     }
 
@@ -69,7 +72,15 @@ final class MethodologyRuleValidator
             throw new DomainStateTransitionException(sprintf('Criterion %s must have a positive weight.', $criterion->code));
         }
 
+        if (! $criterion->voting_mode instanceof CriterionVotingMode) {
+            throw new DomainStateTransitionException(sprintf('Criterion %s must have a valid voting mode.', $criterion->code));
+        }
+
         $rules = $criterion->applicability_rules ?? [];
+        if (! is_array($rules)) {
+            throw new DomainStateTransitionException(sprintf('Criterion %s has invalid applicability rules.', $criterion->code));
+        }
+
         $unknownKeys = array_diff(array_keys($rules), self::APPLICABILITY_KEYS);
         if ($unknownKeys !== []) {
             throw new DomainStateTransitionException(sprintf(
@@ -103,6 +114,16 @@ final class MethodologyRuleValidator
             }
         }
 
+        foreach ($mandatoryTypes as $type) {
+            if (in_array($type, $excludedTypes, true)) {
+                throw new DomainStateTransitionException(sprintf(
+                    'Criterion %s cannot make excluded product type %s mandatory.',
+                    $criterion->code,
+                    $type,
+                ));
+            }
+        }
+
         $overrides = $rules['weight_overrides'] ?? [];
         if ($overrides !== []) {
             if (! is_array($overrides) || array_is_list($overrides)) {
@@ -110,6 +131,10 @@ final class MethodologyRuleValidator
             }
 
             foreach ($overrides as $type => $weight) {
+                if (! is_string($type)) {
+                    throw new DomainStateTransitionException(sprintf('Criterion %s has an invalid product type in weight overrides.', $criterion->code));
+                }
+
                 $this->assertProductType($type, $criterion, 'weight override');
                 if (! is_int($weight) && ! is_float($weight) && ! (is_string($weight) && is_numeric($weight))) {
                     throw new DomainStateTransitionException(sprintf('Criterion %s has a non-numeric weight override for %s.', $criterion->code, $type));
@@ -118,8 +143,129 @@ final class MethodologyRuleValidator
                 if ((float) $weight < 0) {
                     throw new DomainStateTransitionException(sprintf('Criterion %s cannot have a negative weight override for %s.', $criterion->code, $type));
                 }
+
+                if (! $this->isApplicableTo($criterion, $type)) {
+                    throw new DomainStateTransitionException(sprintf(
+                        'Criterion %s cannot define a weight override for non-applicable product type %s.',
+                        $criterion->code,
+                        $type,
+                    ));
+                }
             }
         }
+    }
+
+    /**
+     * @param  Collection<int, Criterion>  $criteria
+     */
+    private function validateMethodologyProfiles(Collection $criteria): void
+    {
+        foreach (MethodologyV1::productTypeWeightProfiles() as $productType => $expectedProfile) {
+            $actualProfile = array_fill_keys(
+                array_map(
+                    static fn (MethodologyDimension $dimension): string => $dimension->value,
+                    MethodologyDimension::cases(),
+                ),
+                0,
+            );
+
+            $applicableCriteria = $criteria->filter(fn (Criterion $criterion): bool => $this->isApplicableTo($criterion, $productType));
+
+            if ($applicableCriteria->isEmpty()) {
+                throw new DomainStateTransitionException(sprintf(
+                    'A Standard Version must define methodology criteria for product type %s.',
+                    $productType,
+                ));
+            }
+
+            foreach ($applicableCriteria as $criterion) {
+                $dimension = MethodologyDimension::tryFrom((string) $criterion->category);
+                if ($dimension === null) {
+                    throw new DomainStateTransitionException(sprintf(
+                        'Criterion %s has an invalid methodology dimension for product type %s.',
+                        $criterion->code,
+                        $productType,
+                    ));
+                }
+
+                $actualProfile[$dimension->value] += $this->effectiveWeight($criterion, $productType);
+            }
+
+            foreach ($expectedProfile as $dimension => $expectedWeight) {
+                $actualWeight = $actualProfile[$dimension] ?? 0;
+                if ($actualWeight <= 0) {
+                    throw new DomainStateTransitionException(sprintf(
+                        'Product type %s is missing required methodology dimension %s.',
+                        $productType,
+                        $dimension,
+                    ));
+                }
+
+                if (abs($actualWeight - $expectedWeight) > 0.0001) {
+                    throw new DomainStateTransitionException(sprintf(
+                        'Product type %s has invalid weight for %s: expected %s, got %s.',
+                        $productType,
+                        $dimension,
+                        $expectedWeight,
+                        $this->formatWeight($actualWeight),
+                    ));
+                }
+            }
+
+            $total = array_sum($actualProfile);
+            if (abs($total - 100) > 0.0001) {
+                throw new DomainStateTransitionException(sprintf(
+                    'Product type %s methodology weights must total 100, got %s.',
+                    $productType,
+                    $this->formatWeight($total),
+                ));
+            }
+        }
+    }
+
+    private function effectiveWeight(Criterion $criterion, string $productType): float
+    {
+        $rules = $criterion->applicability_rules ?? [];
+        $overrides = is_array($rules) ? ($rules['weight_overrides'] ?? []) : [];
+        $weight = is_array($overrides) && array_key_exists($productType, $overrides)
+            ? $overrides[$productType]
+            : $criterion->weight;
+
+        if (! is_int($weight) && ! is_float($weight) && ! (is_string($weight) && is_numeric($weight))) {
+            throw new DomainStateTransitionException(sprintf(
+                'Criterion %s has an invalid effective weight for product type %s.',
+                $criterion->code,
+                $productType,
+            ));
+        }
+
+        return (float) $weight;
+    }
+
+    private function isApplicableTo(Criterion $criterion, string $productType): bool
+    {
+        $rules = $criterion->applicability_rules ?? [];
+        if (! is_array($rules)) {
+            return false;
+        }
+
+        $productTypes = $rules['product_types'] ?? [];
+        $excludedTypes = $rules['excluded_product_types'] ?? [];
+
+        if (is_array($productTypes) && $productTypes !== [] && ! in_array($productType, $productTypes, true)) {
+            return false;
+        }
+
+        if (is_array($excludedTypes) && in_array($productType, $excludedTypes, true)) {
+            return false;
+        }
+
+        return true;
+    }
+
+    private function formatWeight(float $weight): string
+    {
+        return rtrim(rtrim(number_format($weight, 2, '.', ''), '0'), '.');
     }
 
     private function validateScoringConfiguration(StandardVersion $version): void

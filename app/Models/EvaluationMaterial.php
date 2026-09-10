@@ -62,7 +62,7 @@ class EvaluationMaterial extends Model
             }
 
             $request = EvaluationRequest::query()->find($material->evaluation_request_id);
-            if ($request === null || !in_array($request->status, self::CREATOR_SUBMISSION_STATUSES, true)) {
+            if ($request === null || ! in_array($request->status, self::CREATOR_SUBMISSION_STATUSES, true)) {
                 throw new DomainStateTransitionException('Evaluation materials can only be submitted during the paid intake workflow.');
             }
 

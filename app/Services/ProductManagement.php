@@ -17,9 +17,7 @@ use Illuminate\Validation\Rule;
 
 class ProductManagement
 {
-    /**
-     * @param array<string, mixed> $attributes
-     */
+    /** @phpstan-param array<string, mixed> $attributes */
     public function create(User $user, Organization $organization, array $attributes): Product
     {
         Gate::forUser($user)->authorize('create', [Product::class, $organization]);
@@ -32,9 +30,7 @@ class ProductManagement
         return Product::query()->create($validated);
     }
 
-    /**
-     * @param array<string, mixed> $attributes
-     */
+    /** @phpstan-param array<string, mixed> $attributes */
     public function update(User $user, Product $product, array $attributes): Product
     {
         Gate::forUser($user)->authorize('update', $product);
@@ -68,7 +64,7 @@ class ProductManagement
         return $product->refresh();
     }
 
-    /** @return array<string, array<int, mixed>> */
+    /** @phpstan-return array<string, array<int, mixed>> */
     private function rules(Organization $organization, ?Product $product = null): array
     {
         $slugRule = Rule::unique('products', 'slug')

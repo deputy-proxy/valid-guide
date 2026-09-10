@@ -170,7 +170,7 @@ it('does not offer or process a refund after report delivery', function () {
         ->test(ListEvaluationRequests::class)
         ->assertSuccessful()
         ->assertCanSeeTableRecords([$request])
-        ->assertDontSee('Refund');
+        ->assertTableActionHidden('refund', $request);
 
     expect(Refund::query()->count())->toBe(0);
 });

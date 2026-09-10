@@ -13,12 +13,13 @@ use App\Models\Refund;
 use App\Models\User;
 use App\Services\CreatorRefundService;
 use App\Services\DomainStateTransitionException;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request;
+use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Carbon;
-use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
+use Illuminate\Support\Facades\Gate;
+use Illuminate\Auth\Access\AuthorizationException;
 
 uses(RefreshDatabase::class);
 
@@ -52,6 +53,8 @@ function creatorRefundFixture(): array
 
 test('a paid creator request can receive a full refund before report delivery', function () {
     [$user, $request, $order, $payment] = creatorRefundFixture();
+    $paymentIntent = $payment->provider_payment_id;
+    $amount = (string) $payment->amount_minor;
 
     Http::fake([
         'https://api.stripe.com/v1/refunds' => Http::response([
@@ -76,10 +79,10 @@ test('a paid creator request can receive a full refund before report delivery', 
         ->and($payment->fresh()->status)->toBe(PaymentStatus::Refunded)
         ->and($order->fresh()->status)->toBe(OrderStatus::Refunded);
 
-    Http::assertSent(function (Request $request): bool {
+    Http::assertSent(function (Request $request) use ($paymentIntent, $amount): bool {
         return $request->url() === 'https://api.stripe.com/v1/refunds'
-            && $request['payment_intent'] === 'pi_refund_1'
-            && $request['amount'] === '25000'
+            && $request['payment_intent'] === $paymentIntent
+            && $request['amount'] === $amount
             && $request->header('Idempotency-Key') === ['refund_1'];
     });
 });
@@ -128,7 +131,7 @@ test('a Stripe failure leaves the payment paid and the refund retryable', functi
     config(['stripe.secret' => 'sk_test_secret']);
 
     expect(fn () => app(CreatorRefundService::class)->refund($request, $user))
-        ->toThrow(\Illuminate\Http\Client\RequestException::class);
+        ->toThrow(RequestException::class);
 
     $failedRefund = Refund::query()->firstOrFail();
     expect($failedRefund->status)->toBe(RefundStatus::Failed)
@@ -172,7 +175,7 @@ test('billing-only members cannot request a creator refund', function () {
     $request->organization()->firstOrFail()->users()->attach($billingUser, ['role' => 'billing']);
 
     expect(fn () => app(CreatorRefundService::class)->refund($request, $billingUser))
-        ->toThrow(AccessDeniedHttpException::class);
+        ->toThrow(AuthorizationException::class);
 
     expect(Refund::query()->count())->toBe(0);
 });
@@ -202,7 +205,7 @@ test('refund records cannot be duplicated for one payment', function () {
         'status' => RefundStatus::Pending,
         'provider' => 'stripe',
         'requested_at' => now(),
-    ]))->toThrow(\Illuminate\Database\UniqueConstraintViolationException::class);
+    ]))->toThrow(UniqueConstraintViolationException::class);
 
     expect($refund->exists)->toBeTrue();
 });

@@ -22,8 +22,9 @@ class Evaluation extends Model
     use HasFactory;
 
     protected $fillable = [
-        'evaluation_request_id', 'product_release_id', 'standard_version_id', 'status',
-        'decision', 'overall_score', 'started_at', 'completed_at', 'published_at', 'decision_rationale',
+        'evaluation_request_id', 'product_id', 'product_release_id', 'standard_version_id', 'status',
+        'decision', 'overall_score', 'started_at', 'submitted_at', 'internal_reviewed_at', 'completed_at',
+        'published_at', 'decision_rationale',
     ];
 
     protected function casts(): array
@@ -32,6 +33,8 @@ class Evaluation extends Model
             'status' => EvaluationStatus::class,
             'overall_score' => 'decimal:2',
             'started_at' => 'datetime',
+            'submitted_at' => 'datetime',
+            'internal_reviewed_at' => 'datetime',
             'completed_at' => 'datetime',
             'published_at' => 'datetime',
         ];
@@ -39,8 +42,32 @@ class Evaluation extends Model
 
     protected static function booted(): void
     {
+        static::creating(function (self $evaluation): void {
+            $productId = $evaluation->getAttribute('product_id');
+            $productReleaseId = $evaluation->getAttribute('product_release_id');
+
+            if ($productId === null && $productReleaseId !== null) {
+                $productId = ProductRelease::query()
+                    ->whereKey($productReleaseId)
+                    ->value('product_id');
+                $evaluation->setAttribute('product_id', $productId);
+            }
+
+            if ($productId === null) {
+                throw new DomainStateTransitionException('An evaluation must persist the Product that was evaluated.');
+            }
+
+            $releaseProductId = ProductRelease::query()
+                ->whereKey($productReleaseId)
+                ->value('product_id');
+
+            if ($releaseProductId !== (int) $productId) {
+                throw new DomainStateTransitionException('An evaluation Product must match its Product Release.');
+            }
+        });
+
         static::updating(function (self $evaluation): void {
-            if ($evaluation->isDirty('evaluation_request_id') || $evaluation->isDirty('product_release_id') || $evaluation->isDirty('standard_version_id')) {
+            if ($evaluation->isDirty('evaluation_request_id') || $evaluation->isDirty('product_id') || $evaluation->isDirty('product_release_id') || $evaluation->isDirty('standard_version_id')) {
                 throw new DomainStateTransitionException('Evaluation provenance is immutable after creation.');
             }
 
@@ -62,6 +89,12 @@ class Evaluation extends Model
     public function request(): BelongsTo
     {
         return $this->belongsTo(EvaluationRequest::class, 'evaluation_request_id');
+    }
+
+    /** @return BelongsTo<Product, $this> */
+    public function product(): BelongsTo
+    {
+        return $this->belongsTo(Product::class);
     }
 
     /** @return BelongsTo<ProductRelease, $this> */

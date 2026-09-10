@@ -38,6 +38,7 @@ class EvaluationStateTransition
                     $to->value,
                 ));
             }
+
             if ($to === EvaluationStatus::Completed && blank($evaluation->decision)) {
                 throw new DomainStateTransitionException(
                     'An evaluation cannot be completed before an evaluation decision has been recorded.',
@@ -49,13 +50,23 @@ class EvaluationStateTransition
                 'status' => $to->value,
                 'updated_at' => $now,
             ];
+
             if ($to === EvaluationStatus::InProgress && $evaluation->started_at === null) {
                 $updates['started_at'] = $now;
+            }
+
+            if ($to === EvaluationStatus::InternalReview && $evaluation->submitted_at === null) {
+                $updates['submitted_at'] = $now;
+            }
+
+            if ($to === EvaluationStatus::ReadyForDecision && $evaluation->internal_reviewed_at === null) {
+                $updates['internal_reviewed_at'] = $now;
             }
 
             if ($to === EvaluationStatus::Completed) {
                 $updates['completed_at'] = $now;
             }
+
             Evaluation::query()->whereKey($evaluation->getKey())->update($updates);
             $evaluation->refresh();
 

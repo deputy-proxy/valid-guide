@@ -39,7 +39,7 @@ class CriterionVoting
                 $criterion = Criterion::query()->findOrFail($result->criterion_id);
 
                 if ($criterion->voting_mode !== CriterionVotingMode::Majority) {
-                    
+
                     continue;
                 }
 

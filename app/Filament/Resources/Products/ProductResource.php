@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Filament\Resources\Products;
 
+use BackedEnum;
+use UnitEnum;
 use App\Enums\ProductStatus;
 use App\Enums\ProductType;
 use App\Filament\Resources\Products\Pages\CreateProduct;
@@ -12,6 +14,7 @@ use App\Filament\Resources\Products\Pages\ListProducts;
 use App\Models\Product;
 use App\Models\User;
 use App\Services\OrganizationContext;
+use App\Services\ProductManagement;
 use Filament\Actions\Action;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\Repeater;
@@ -26,8 +29,6 @@ use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
-use BackedEnum;
-use UnitEnum;
 
 class ProductResource extends Resource
 {
@@ -89,7 +90,7 @@ class ProductResource extends Resource
                     ->visible(fn (Product $record): bool => $record->status === ProductStatus::Active && self::canArchiveProduct($record))
                     ->action(function (Product $record): void {
                         $user = self::authenticatedUser();
-                        app(\App\Services\ProductManagement::class)->archive($user, $record);
+                        app(ProductManagement::class)->archive($user, $record);
                         Notification::make()->success()->title('Product archived')->send();
                     }),
             ]);

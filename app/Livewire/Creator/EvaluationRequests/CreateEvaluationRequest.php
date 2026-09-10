@@ -10,12 +10,13 @@ use App\Enums\EvaluationRequestStatus;
 use App\Models\EvaluationRequest;
 use App\Models\Product;
 use App\Models\ProductRelease;
+use App\Models\ServicePackage;
+use App\Models\User;
 use App\Services\CreatorEvaluationRequestIntake;
 use App\Services\DomainStateTransitionException;
 use App\Services\EvaluationMaterialIntake;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Contracts\View\View;
-use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 use Livewire\Component;
@@ -58,11 +59,7 @@ final class CreateEvaluationRequest extends Component
         int|string|null $evaluationRequestId = null,
     ): void {
         $this->organizationId = (int) $organizationId;
-        $actor = Auth::user();
-
-        if ($actor === null) {
-            throw new AuthorizationException('Authentication is required.');
-        }
+        $actor = $this->authenticatedUser();
 
         $this->request = app(CreatorEvaluationRequestIntake::class)->start(
             $actor,
@@ -120,20 +117,18 @@ final class CreateEvaluationRequest extends Component
     public function packageOptions(): array
     {
         $product = $this->request->product;
-        if ($product === null) {
+        if ($product === null || $product->organization_id !== $this->organizationId) {
             return [];
         }
 
-        return $product->organization_id === $this->organizationId
-            ? app('App\\Models\\ServicePackage')::query()
-                ->where('status', 'active')
-                ->whereJsonContains('product_types', $product->product_type->value)
-                ->orderBy('name')
-                ->get(['id', 'name'])
-                ->pluck('name', 'id')
-                ->mapWithKeys(fn (mixed $name, mixed $id): array => [(int) $id => (string) $name])
-                ->all()
-            : [];
+        return ServicePackage::query()
+            ->where('status', 'active')
+            ->whereJsonContains('product_types', $product->product_type->value)
+            ->orderBy('name')
+            ->get(['id', 'name'])
+            ->pluck('name', 'id')
+            ->mapWithKeys(fn (mixed $name, mixed $id): array => [(int) $id => (string) $name])
+            ->all();
     }
 
     /** @return array<string, string> */
@@ -155,7 +150,6 @@ final class CreateEvaluationRequest extends Component
                 2 => $this->saveReleaseAndScope(),
                 3 => $this->saveMaterials(),
                 4 => $this->saveClaimsAndAudience(),
-                5 => $this->saveCommercialTerms(),
                 default => null,
             };
 
@@ -185,12 +179,20 @@ final class CreateEvaluationRequest extends Component
         $this->clearErrorBag();
 
         try {
-            $actor = Auth::user();
-            if ($actor === null) {
-                throw new AuthorizationException('Authentication is required.');
-            }
+            $this->validate([
+                'servicePackageId' => ['required', 'integer'],
+                'complexity' => ['required', 'string'],
+            ]);
 
-            $this->request = app(CreatorEvaluationRequestIntake::class)->validateForPayment($actor, $this->request);
+            $actor = $this->authenticatedUser();
+            $intake = app(CreatorEvaluationRequestIntake::class);
+            $this->request = $intake->applyCommercialTerms(
+                $actor,
+                $this->request,
+                $this->servicePackageId,
+                $this->complexity,
+            );
+            $this->request = $intake->validateForPayment($actor, $this->request);
             $this->currentStep = 6;
         } catch (AuthorizationException|DomainStateTransitionException $exception) {
             $this->addError('form', $exception->getMessage());
@@ -221,8 +223,9 @@ final class CreateEvaluationRequest extends Component
 
         $actor = $this->authenticatedUser();
         $release = ProductRelease::query()->findOrFail($this->productReleaseId);
-        $this->request = app(CreatorEvaluationRequestIntake::class)->selectRelease($actor, $this->request, $release);
-        $this->request = app(CreatorEvaluationRequestIntake::class)->updateScope(
+        $intake = app(CreatorEvaluationRequestIntake::class);
+        $this->request = $intake->selectRelease($actor, $this->request, $release);
+        $this->request = $intake->updateScope(
             $actor,
             $this->request,
             $this->scope,
@@ -269,7 +272,6 @@ final class CreateEvaluationRequest extends Component
             'audienceConfirmed' => ['accepted'],
         ]);
 
-        $actor = $this->authenticatedUser();
         $intake = app(CreatorEvaluationRequestIntake::class);
         $notes = $intake->intakeNotes($this->request);
         $notes['claims_confirmed'] = true;
@@ -277,24 +279,6 @@ final class CreateEvaluationRequest extends Component
         $this->request->intake_notes = json_encode($notes, JSON_THROW_ON_ERROR);
         $this->request->save();
         $this->request = $this->request->refresh()->load(['product', 'productRelease', 'materials', 'servicePackage']);
-        unset($actor);
-    }
-
-    private function saveCommercialTerms(): void
-    {
-        $this->validate([
-            'servicePackageId' => ['required', 'integer'],
-            'complexity' => ['required', 'string'],
-        ]);
-
-        $actor = $this->authenticatedUser();
-        $this->request = app(CreatorEvaluationRequestIntake::class)->applyCommercialTerms(
-            $actor,
-            $this->request,
-            $this->servicePackageId,
-            $this->complexity,
-        );
-        $this->currentStep = 5;
     }
 
     private function hydrateFromRequest(): void
@@ -317,11 +301,11 @@ final class CreateEvaluationRequest extends Component
         }
     }
 
-    private function authenticatedUser(): \App\Models\User
+    private function authenticatedUser(): User
     {
         $user = Auth::user();
 
-        if ($user === null) {
+        if (! $user instanceof User) {
             throw new AuthorizationException('Authentication is required.');
         }
 

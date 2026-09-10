@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 /**
  * @property EvaluationRequestStatus|null $status
@@ -142,6 +143,18 @@ class EvaluationRequest extends Model
     public function evaluations(): HasMany
     {
         return $this->hasMany(Evaluation::class);
+    }
+
+    /** @return HasOne<Order, $this> */
+    public function order(): HasOne
+    {
+        return $this->hasOne(Order::class);
+    }
+
+    /** @return HasOne<Refund, $this> */
+    public function refund(): HasOne
+    {
+        return $this->hasOne(Refund::class);
     }
 
     private function assertTenantConsistency(): void

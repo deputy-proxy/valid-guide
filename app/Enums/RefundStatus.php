@@ -4,11 +4,10 @@ declare(strict_types=1);
 
 namespace App\Enums;
 
-enum PaymentStatus: string
+enum RefundStatus: string
 {
     case Pending = 'pending';
-    case Paid = 'paid';
+    case Processing = 'processing';
+    case Succeeded = 'succeeded';
     case Failed = 'failed';
-    case Expired = 'expired';
-    case Refunded = 'refunded';
 }

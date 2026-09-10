@@ -14,8 +14,10 @@ use App\Models\ServicePackage;
 use App\Models\User;
 use App\Services\CreatorEvaluationRequestIntake;
 use App\Services\DomainStateTransitionException;
+use App\Services\StripePaymentService;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Contracts\View\View;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 use Livewire\Component;
@@ -185,7 +187,7 @@ final class CreateEvaluationRequest extends Component
         $this->currentStep = max(1, $this->currentStep - 1);
     }
 
-    public function submitForPayment(): void
+    public function submitForPayment(): ?RedirectResponse
     {
         $this->resetValidation();
 
@@ -204,13 +206,18 @@ final class CreateEvaluationRequest extends Component
                 $this->complexity,
             );
             $intake->validateForPayment($actor, $request);
-            $this->currentStep = 6;
+
+            $checkout = app(StripePaymentService::class)->createCheckout($request, $actor);
+
+            return redirect()->away($checkout['url']);
         } catch (AuthorizationException|DomainStateTransitionException $exception) {
             $this->addError('form', $exception->getMessage());
         } catch (Throwable $exception) {
             report($exception);
             $this->addError('form', 'The request could not be submitted for payment. Please review the information and try again.');
         }
+
+        return null;
     }
 
     private function saveProduct(): void

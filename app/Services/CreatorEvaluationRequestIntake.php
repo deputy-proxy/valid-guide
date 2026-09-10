@@ -241,7 +241,8 @@ final class CreatorEvaluationRequestIntake
             throw new DomainStateTransitionException('Claims and audience must be confirmed before payment.');
         }
 
-        if (! isset($notes['scope']) || ! is_string($notes['scope']) || trim($notes['scope']) === '') {
+        $scope = $notes['scope'] ?? null;
+        if (is_string($scope) === false || trim($scope) === '') {
             throw new DomainStateTransitionException('Evaluation scope is required before payment.');
         }
 

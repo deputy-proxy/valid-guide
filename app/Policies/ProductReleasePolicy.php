@@ -7,6 +7,7 @@ namespace App\Policies;
 use App\Enums\OrganizationRole;
 use App\Enums\ProductReleaseStatus;
 use App\Models\Organization;
+use App\Models\Product;
 use App\Models\ProductRelease;
 use App\Models\User;
 
@@ -17,8 +18,12 @@ class ProductReleasePolicy
         return $this->canManageCreatorResource($user, $release->product->organization);
     }
 
-    public function create(User $user): bool
+    public function create(User $user, ?Product $product = null): bool
     {
+        if ($product instanceof Product) {
+            return $this->canManageCreatorResource($user, $product->organization);
+        }
+
         return $user->organizations()
             ->wherePivotIn('role', $this->creatorRoles())
             ->exists();

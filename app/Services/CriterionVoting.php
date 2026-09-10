@@ -99,12 +99,7 @@ class CriterionVoting
 
         $counts = [];
         foreach ($votes as $vote) {
-            $decision = $vote->decision;
-
-            if (! $decision instanceof CriterionAssessment) {
-                throw new DomainStateTransitionException('A criterion vote contains an invalid methodology assessment.');
-            }
-
+            $decision = CriterionAssessment::from((string) $vote->getRawOriginal('decision'));
             $decisionValue = $decision->value;
             $counts[$decisionValue] = ($counts[$decisionValue] ?? 0) + 1;
         }

@@ -17,8 +17,7 @@ use Filament\Actions\Testing\TestAction;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
-
-use function Pest\Livewire\livewire;
+use Livewire\Livewire;
 
 function issue52ProductOrganization(User $user, OrganizationRole $role, string $slug): Organization
 {
@@ -171,7 +170,7 @@ it('renders the Filament product list only for the active organization', functio
     session(['creator.organization_id' => $organization->getKey()]);
     $this->actingAs($user);
 
-    livewire(ListProducts::class)
+    Livewire::test(ListProducts::class)
         ->assertSuccessful()
         ->assertCanSeeTableRecords([$product])
         ->assertCanNotSeeTableRecords([$otherProduct]);
@@ -185,7 +184,7 @@ it('allows an authorized editor to archive through the Filament action', functio
     session(['creator.organization_id' => $organization->getKey()]);
     $this->actingAs($user);
 
-    livewire(ListProducts::class)
+    Livewire::test(ListProducts::class)
         ->callAction(TestAction::make('archive')->table($product))
         ->assertNotified();
 

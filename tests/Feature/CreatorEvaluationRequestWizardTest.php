@@ -2,9 +2,10 @@
 
 declare(strict_types=1);
 
+use App\Livewire\Creator\EvaluationRequests\CreateEvaluationRequest;
+use App\Enums\EvaluationRequestStatus;
 use App\Enums\OrganizationRole;
 use App\Enums\ProductType;
-use App\Enums\EvaluationRequestStatus;
 use App\Models\EvaluationRequest;
 use App\Models\Organization;
 use App\Models\Product;
@@ -16,7 +17,6 @@ use App\Services\DomainStateTransitionException;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
 use Livewire\Livewire;
-use App\Livewire\Creator\EvaluationRequests\CreateEvaluationRequest;
 
 function creatorWizardFixture(string $role = 'owner'): array
 {
@@ -148,24 +148,20 @@ it('preserves state while navigating backwards', function () {
 });
 
 it('rejects cross-tenant products and releases server-side', function () {
-    [$user, $organization] = creatorWizardFixture();
+    [$user, $organization, $product] = creatorWizardFixture();
     [$otherUser, $otherOrganization, $otherProduct, $otherRelease] = creatorWizardFixture();
-    unset($otherUser, $otherOrganization);
+    unset($otherUser, $otherOrganization, $otherProduct);
     $this->actingAs($user);
 
     Livewire::test(CreateEvaluationRequest::class, ['organizationId' => $organization->id])
-        ->set('productId', $otherProduct->id)
+        ->set('productId', $otherRelease->product_id)
         ->call('next')
         ->assertHasErrors('form');
 
     $request = EvaluationRequest::query()->where('organization_id', $organization->id)->firstOrFail();
     expect($request->product_id)->toBeNull();
 
-    $validRequest = app(CreatorEvaluationRequestIntake::class)->selectProduct(
-        $user,
-        $request,
-        $organization->products()->firstOrFail(),
-    );
+    $validRequest = app(CreatorEvaluationRequestIntake::class)->selectProduct($user, $request, $product);
 
     expect(fn () => app(CreatorEvaluationRequestIntake::class)->selectRelease($user, $validRequest, $otherRelease))
         ->toThrow(DomainStateTransitionException::class);
@@ -195,24 +191,21 @@ it('does not reach payment with incomplete intake', function () {
     [$user, $organization, $product, $release, $package] = creatorWizardFixture();
     $this->actingAs($user);
 
-    Livewire::test(CreateEvaluationRequest::class, ['organizationId' => $organization->id])
+    $component = Livewire::test(CreateEvaluationRequest::class, ['organizationId' => $organization->id])
         ->set('productId', $product->id)
         ->call('next')
         ->set('productReleaseId', $release->id)
         ->set('scope', 'Evaluate the product.')
-        ->call('next')
-        ->set('materialType', 'url')
-        ->set('materialLabel', 'Course page')
-        ->set('materialLocation', 'https://example.test/course')
-        ->call('next')
-        ->set('claimsConfirmed', true)
-        ->set('audienceConfirmed', true)
-        ->call('next')
+        ->call('next');
+
+    $component
+        ->set('currentStep', 5)
         ->set('servicePackageId', $package->id)
         ->set('complexity', 'standard')
         ->call('submitForPayment')
-        ->assertSet('currentStep', 6);
+        ->assertSet('currentStep', 5)
+        ->assertHasErrors('form');
 
     expect(EvaluationRequest::query()->where('organization_id', $organization->id)->firstOrFail()->status)
-        ->toBe(EvaluationRequestStatus::AwaitingPayment);
+        ->toBe(EvaluationRequestStatus::Draft);
 });

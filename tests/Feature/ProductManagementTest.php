@@ -55,7 +55,6 @@ it('resolves only organizations the user belongs to', function () {
         'slug' => 'creator-b',
         'status' => 'active',
     ]);
-
     $context = new OrganizationContext;
 
     expect($context->resolve($user, $organization->getKey())->is($organization))->toBeTrue();
@@ -65,14 +64,12 @@ it('resolves only organizations the user belongs to', function () {
 it('allows owner admin and editor to create products but denies billing', function (OrganizationRole $role, bool $allowed) {
     $user = User::factory()->create();
     $organization = issue52ProductOrganization($user, $role, 'creator-'.strtolower($role->value));
-    $management = new ProductManagement;
+    $management = app(ProductManagement::class);
 
     if ($allowed) {
         $product = $management->create($user, $organization, issue52ValidProductAttributes());
-
         expect($product->organization_id)->toBe($organization->getKey())
             ->and($product->status)->toBe(ProductStatus::Active);
-
         return;
     }
 
@@ -108,6 +105,7 @@ it('does not allow a product to change organizations', function () {
         'organization_id' => $organization->getKey(),
         'title' => 'Course',
         'slug' => 'course',
+        'product_type' => ProductType::Course,
     ]);
 
     $product->organization_id = $otherOrganization->getKey();
@@ -122,9 +120,10 @@ it('archives products through the controlled lifecycle service', function () {
         'organization_id' => $organization->getKey(),
         'title' => 'Course',
         'slug' => 'course',
+        'product_type' => ProductType::Course,
     ]);
 
-    $archived = (new ProductManagement)->archive($user, $product);
+    $archived = app(ProductManagement::class)->archive($user, $product);
 
     expect($archived->status)->toBe(ProductStatus::Archived);
     $archived->title = 'Changed';
@@ -138,6 +137,7 @@ it('does not allow historical products to be deleted', function () {
         'organization_id' => $organization->getKey(),
         'title' => 'Course',
         'slug' => 'course',
+        'product_type' => ProductType::Course,
     ]);
 
     ProductRelease::query()->create([
@@ -154,7 +154,7 @@ it('rejects incomplete product data at the application boundary', function () {
     $user = User::factory()->create();
     $organization = issue52ProductOrganization($user, OrganizationRole::Editor, 'creator-a');
 
-    expect(fn () => (new ProductManagement)->create($user, $organization, ['title' => 'Incomplete']))
+    expect(fn () => app(ProductManagement::class)->create($user, $organization, ['title' => 'Incomplete']))
         ->toThrow(ValidationException::class);
 });
 

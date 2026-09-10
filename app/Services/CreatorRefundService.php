@@ -19,10 +19,7 @@ use Throwable;
 
 final class CreatorRefundService
 {
-    public function __construct(
-        private readonly StripeRefundService $stripe,
-    ) {
-    }
+    public function __construct(private readonly StripeRefundService $stripe) {}
 
     public function refund(EvaluationRequest $request, User $actor, ?string $reason = null): Refund
     {

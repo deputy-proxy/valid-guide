@@ -8,7 +8,7 @@ use Filament\Pages\Page;
 
 final class UiFoundation extends Page
 {
-    protected static string $view = 'filament.pages.ui-foundation';
+    protected string $view = 'filament.pages.ui-foundation';
 
     protected static ?string $slug = 'ui-foundation';
 

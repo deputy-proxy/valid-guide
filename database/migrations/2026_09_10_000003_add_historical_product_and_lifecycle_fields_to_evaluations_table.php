@@ -18,11 +18,20 @@ return new class extends Migration
         });
 
         DB::table('evaluations')
-            ->join('product_releases', 'product_releases.id', '=', 'evaluations.product_release_id')
-            ->whereNull('evaluations.product_id')
-            ->update([
-                'evaluations.product_id' => DB::raw('product_releases.product_id'),
-            ]);
+            ->select(['id', 'product_release_id'])
+            ->whereNull('product_id')
+            ->orderBy('id')
+            ->eachById(function (object $evaluation): void {
+                $productId = DB::table('product_releases')
+                    ->where('id', $evaluation->product_release_id)
+                    ->value('product_id');
+
+                if ($productId !== null) {
+                    DB::table('evaluations')
+                        ->where('id', $evaluation->id)
+                        ->update(['product_id' => $productId]);
+                }
+            });
     }
 
     public function down(): void

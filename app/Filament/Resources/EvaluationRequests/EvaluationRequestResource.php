@@ -17,10 +17,10 @@ use App\Services\StripePaymentService;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Actions\ViewAction;
+use Filament\Infolists\Components\Section;
+use Filament\Infolists\Components\TextEntry;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
-use Filament\Schemas\Components\Section;
-use Filament\Schemas\Components\TextEntry;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
@@ -187,6 +187,7 @@ final class EvaluationRequestResource extends Resource
     }
 
     /** @param list<BackedEnum> $cases */
+    /** @return array<string, string> */
     private static function enumOptions(array $cases): array
     {
         $options = [];

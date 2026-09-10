@@ -4,18 +4,18 @@ declare(strict_types=1);
 
 namespace App\Services;
 
-use App\Enums\OrganizationRole;
 use App\Enums\ProductReleaseStatus;
 use App\Models\ProductRelease;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 
 final class ProductReleaseStateTransition
 {
     private const TRANSITIONS = [
-        'draft' => [ProductReleaseStatus::Available],
-        'available' => [ProductReleaseStatus::Withdrawn, ProductReleaseStatus::Superseded],
-        'withdrawn' => [ProductReleaseStatus::Available, ProductReleaseStatus::Superseded],
+        'draft' => ['current'],
+        'current' => ['withdrawn', 'superseded'],
+        'withdrawn' => [],
         'superseded' => [],
     ];
 
@@ -28,35 +28,66 @@ final class ProductReleaseStateTransition
                 ->lockForUpdate()
                 ->firstOrFail();
 
-            $organization = $release->product->organization;
-
-            if (! $organization->hasMemberWithRole($actor, OrganizationRole::Owner)
-                && ! $organization->hasMemberWithRole($actor, OrganizationRole::Admin)
-                && ! $organization->hasMemberWithRole($actor, OrganizationRole::Editor)) {
-                throw new DomainStateTransitionException('The actor is not authorized to change this product release state.');
-            }
-
             $from = $release->status->value;
 
             if ($from === $to->value) {
-                throw new DomainStateTransitionException('A product release cannot transition to its current state.');
+                throw new DomainStateTransitionException(
+                    'A product release cannot transition to its current state.',
+                );
             }
 
-            if (! in_array($to, self::TRANSITIONS[$from], true)) {
+            if (! in_array($to->value, self::TRANSITIONS[$from], true)) {
                 throw new DomainStateTransitionException(
                     sprintf('Product release cannot transition from [%s] to [%s].', $from, $to->value),
                 );
             }
 
-            $publishedAt = $release->published_at;
+            Gate::forUser($actor)->authorize($this->ability($to), $release);
 
-            if ($to === ProductReleaseStatus::Available) {
+            if ($to === ProductReleaseStatus::Current) {
                 if (blank($release->release_identifier) || blank($release->title_snapshot)) {
                     throw new DomainStateTransitionException(
                         'A product release requires a release identifier and title before publication.',
                     );
                 }
 
+                $existingCurrent = ProductRelease::query()
+                    ->where('product_id', $release->product_id)
+                    ->where('status', ProductReleaseStatus::Current->value)
+                    ->whereKeyNot($release->getKey())
+                    ->lockForUpdate()
+                    ->first();
+
+                if ($existingCurrent !== null) {
+                    $previous = [
+                        'status' => $existingCurrent->status->value,
+                        'published_at' => $existingCurrent->published_at?->toIso8601String(),
+                    ];
+
+                    ProductRelease::query()
+                        ->whereKey($existingCurrent->getKey())
+                        ->update([
+                            'status' => ProductReleaseStatus::Superseded->value,
+                            'updated_at' => now(),
+                        ]);
+
+                    $existingCurrent->refresh();
+
+                    AuditLogger::record(
+                        event: 'product_release.status_changed',
+                        auditable: $existingCurrent,
+                        before: $previous,
+                        after: [
+                            'status' => ProductReleaseStatus::Superseded->value,
+                            'published_at' => $existingCurrent->published_at?->toIso8601String(),
+                            'actor_id' => $actor->getKey(),
+                        ],
+                    );
+                }
+            }
+
+            $publishedAt = $release->published_at;
+            if ($to === ProductReleaseStatus::Current) {
                 $publishedAt ??= now();
             }
 
@@ -82,11 +113,36 @@ final class ProductReleaseStateTransition
                 after: [
                     'status' => $to->value,
                     'published_at' => $release->published_at?->toIso8601String(),
-                    'actor_id' => $actor->id,
+                    'actor_id' => $actor->getKey(),
                 ],
             );
 
             return $release;
         });
+    }
+
+    public function publish(ProductRelease $release, User $actor): ProductRelease
+    {
+        return $this->transition($release, ProductReleaseStatus::Current, $actor);
+    }
+
+    public function supersede(ProductRelease $release, User $actor): ProductRelease
+    {
+        return $this->transition($release, ProductReleaseStatus::Superseded, $actor);
+    }
+
+    public function withdraw(ProductRelease $release, User $actor): ProductRelease
+    {
+        return $this->transition($release, ProductReleaseStatus::Withdrawn, $actor);
+    }
+
+    private function ability(ProductReleaseStatus $to): string
+    {
+        return match ($to) {
+            ProductReleaseStatus::Current => 'publish',
+            ProductReleaseStatus::Superseded => 'supersede',
+            ProductReleaseStatus::Withdrawn => 'withdraw',
+            ProductReleaseStatus::Draft => 'update',
+        };
     }
 }

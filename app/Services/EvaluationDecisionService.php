@@ -18,6 +18,11 @@ class EvaluationDecisionService
         private readonly CriterionVoting $criterionVoting,
     ) {}
 
+    /**
+     * Resolve the final decision for an evaluation.
+     *
+     * @return array{decision:string, overall_score:float|null, blockers:list<string>, criterion_decisions:array<string, array{decision:string, score:float|null, counts:array<string,int>, blocker:string|null, voting_mode:string}>, voter_count:int}
+     */
     public function decide(Evaluation $evaluation): array
     {
         $auditorEvaluations = $evaluation->auditorEvaluations()
@@ -26,29 +31,24 @@ class EvaluationDecisionService
             ->get();
 
         $auditorCount = $auditorEvaluations->count();
+
         if ($auditorCount < 1 || $auditorCount % 2 === 0) {
-            throw new DomainStateTransitionException('A final evaluation requires a positive odd number of submitted Auditor evaluations.');
+            throw new DomainStateTransitionException('A final decision requires a positive odd number of submitted Auditor evaluations.');
         }
 
         $standardVersion = $evaluation->standardVersion;
-        $criteria = $standardVersion->criteria()->orderBy('id')->get();
+        $criteria = $standardVersion->criteria()->get();
 
         $criterionDecisions = [];
+        $blockers = [];
+        $weightedScore = 0.0;
+        $totalWeight = 0.0;
         $dimensionTotals = [];
         $dimensionWeights = [];
-        $blockers = [];
-        $totalWeight = 0.0;
-        $weightedScore = 0.0;
-        $voterCount = 0;
-
-        foreach ($auditorEvaluations as $auditorEvaluation) {
-            foreach ($auditorEvaluation->criterionResults as $result) {
-                $this->criterionVoting->record($auditorEvaluation, $result->criterion, $result);
-            }
-        }
+        $dimensionThreshold = 0.0;
 
         foreach ($criteria as $criterion) {
-            $resolved = $this->resolveCriterionAssessment(
+            $criterionDecision = $this->resolveCriterionAssessment(
                 $evaluation,
                 $criterion,
                 $auditorEvaluations,
@@ -56,40 +56,28 @@ class EvaluationDecisionService
                 $this->criterionVoting,
             );
 
-            $criterionDecisions[] = [
-                'criterion_id' => $criterion->id,
-                'criterion_code' => $criterion->code,
+            $criterionDecisions[$criterion->code] = [
+                ...$criterionDecision,
                 'voting_mode' => $criterion->voting_mode->value,
-                'decision' => $resolved['decision'],
-                'score' => $resolved['score'],
-                'counts' => $resolved['counts'],
-                'blocker' => $resolved['blocker'],
             ];
 
-            if ($resolved['blocker'] !== null) {
-                $blockers[] = $resolved['blocker'];
+            if ($criterionDecision['blocker'] !== null) {
+                $blockers[] = $criterionDecision['blocker'];
             }
 
-            if ($resolved['score'] === null) {
-                continue;
-            }
+            if ($criterionDecision['score'] !== null && $criterion->weight > 0) {
+                $weightedScore += $criterionDecision['score'] * $criterion->weight;
+                $totalWeight += $criterion->weight;
 
-            $dimension = $criterion->dimension;
-            $weight = (float) $criterion->weight;
-            $dimensionTotals[$dimension] = ($dimensionTotals[$dimension] ?? 0.0) + ($resolved['score'] * $weight);
-            $dimensionWeights[$dimension] = ($dimensionWeights[$dimension] ?? 0.0) + $weight;
-            $weightedScore += $resolved['score'] * $weight;
-            $totalWeight += $weight;
+                $dimension = $criterion->category;
+                $dimensionTotals[$dimension] = ($dimensionTotals[$dimension] ?? 0.0) + ($criterionDecision['score'] * $criterion->weight);
+                $dimensionWeights[$dimension] = ($dimensionWeights[$dimension] ?? 0.0) + $criterion->weight;
+            }
         }
 
-        $applicableDimensions = $standardVersion->dimensions()
-            ->where('is_applicable', true)
-            ->pluck('code')
-            ->all();
-        $dimensionThreshold = (float) $standardVersion->dimension_threshold;
-        $overallThreshold = (float) $standardVersion->overall_threshold;
+        $dimensionThreshold = (float) ($standardVersion->dimension_threshold ?? 0);
 
-        foreach (array_keys($applicableDimensions) as $dimension) {
+        foreach (array_keys($dimensionTotals) as $dimension) {
             if (isset($dimensionWeights[$dimension]) === false || $dimensionWeights[$dimension] <= 0) {
                 continue;
             }
@@ -116,6 +104,7 @@ class EvaluationDecisionService
             $blockers[] = 'An active disqualifying finding exists.';
         }
 
+        $overallThreshold = (float) ($standardVersion->overall_threshold ?? 0);
         $overallScore = $totalWeight > 0 ? round($weightedScore / $totalWeight, 2) : null;
 
         if ($overallScore === null || $overallScore < $overallThreshold) {
@@ -178,20 +167,21 @@ class EvaluationDecisionService
                     'decision' => 'insufficient_evidence',
                     'score' => null,
                     'counts' => [],
-                    'blocker' => sprintf('Criterion %s is missing an independent Auditor result.', $criterion->code),
+                    'blocker' => sprintf('Criterion %s is missing an Auditor result.', $criterion->code),
                 ];
             }
 
             $results->push($result);
         }
 
-        $decisions = $results->map(fn ($result): string => $result->assessment->value)->unique()->values();
+        $decisions = $results->map(fn ($result): string => $result->decision->value)->unique()->values();
+
         if ($decisions->count() !== 1) {
             return [
                 'decision' => 'insufficient_evidence',
                 'score' => null,
-                'counts' => $results->groupBy(fn ($result): string => $result->assessment->value)->map->count()->all(),
-                'blocker' => sprintf('Criterion %s has conflicting independent Auditor assessments.', $criterion->code),
+                'counts' => $results->countBy(fn ($result): string => $result->decision->value)->all(),
+                'blocker' => sprintf('Criterion %s has conflicting Auditor assessments.', $criterion->code),
             ];
         }
 
@@ -203,7 +193,7 @@ class EvaluationDecisionService
         return [
             'decision' => $decision,
             'score' => $score,
-            'counts' => [$decision => $results->count()],
+            'counts' => $results->countBy(fn ($result): string => $result->decision->value)->all(),
             'blocker' => $decision === 'insufficient_evidence'
                 ? sprintf('Criterion %s has insufficient evidence.', $criterion->code)
                 : null,

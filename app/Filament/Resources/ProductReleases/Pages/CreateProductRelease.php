@@ -6,7 +6,6 @@ namespace App\Filament\Resources\ProductReleases\Pages;
 
 use App\Filament\Resources\ProductReleases\ProductReleaseResource;
 use App\Models\Product;
-use App\Models\ProductRelease;
 use App\Models\User;
 use App\Services\OrganizationContext;
 use App\Services\ProductReleaseManagement;

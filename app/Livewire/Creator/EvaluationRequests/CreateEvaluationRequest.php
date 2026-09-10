@@ -117,7 +117,7 @@ final class CreateEvaluationRequest extends Component
     public function packageOptions(): array
     {
         $product = $this->request->product;
-        if ($product === null || $product->organization_id !== $this->organizationId) {
+        if ($product === null || $product->organization_id !== $this->organizationId || $product->product_type === null) {
             return [];
         }
 
@@ -272,13 +272,8 @@ final class CreateEvaluationRequest extends Component
             'audienceConfirmed' => ['accepted'],
         ]);
 
-        $intake = app(CreatorEvaluationRequestIntake::class);
-        $notes = $intake->intakeNotes($this->request);
-        $notes['claims_confirmed'] = true;
-        $notes['audience_confirmed'] = true;
-        $this->request->intake_notes = json_encode($notes, JSON_THROW_ON_ERROR);
-        $this->request->save();
-        $this->request = $this->request->refresh()->load(['product', 'productRelease', 'materials', 'servicePackage']);
+        $actor = $this->authenticatedUser();
+        $this->request = app(CreatorEvaluationRequestIntake::class)->confirmClaimsAndAudience($actor, $this->request);
     }
 
     private function hydrateFromRequest(): void

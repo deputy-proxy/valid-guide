@@ -250,7 +250,7 @@ final class CreatorDashboard
         ?RefundStatus $refundStatus,
         bool $hasDeliveredReport,
     ): bool {
-        if (! Gate::forUser($actor)->allows('refund', $request)) {
+        if (Gate::forUser($actor)->denies('refund', $request)) {
             return false;
         }
 

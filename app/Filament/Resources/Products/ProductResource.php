@@ -33,7 +33,9 @@ use UnitEnum;
 class ProductResource extends Resource
 {
     protected static ?string $model = Product::class;
+
     protected static string|UnitEnum|null $navigationGroup = 'Creator';
+
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-academic-cap';
 
     public static function form(Schema $schema): Schema

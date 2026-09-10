@@ -44,6 +44,7 @@ function creatorWizardFixture(string $role = 'owner'): array
     $release = ProductRelease::create([
         'product_id' => $product->id,
         'release_identifier' => 'release-'.$user->id,
+        'edition' => 'Professional Edition',
         'title_snapshot' => $product->title,
         'version' => '1.0',
         'status' => 'draft',
@@ -123,6 +124,34 @@ it('completes the creator wizard and reaches the payment handoff', function () {
             'description' => null,
             'location' => 'https://example.test/course',
         ]);
+});
+
+it('shows the exact pre-payment review summary and server-side quote', function () {
+    [$user, $organization, $product, $release, $package] = creatorWizardFixture();
+    $this->actingAs($user);
+
+    Livewire::test(CreateEvaluationRequest::class, ['organizationId' => $organization->id])
+        ->set('productId', $product->id)
+        ->call('next')
+        ->set('productReleaseId', $release->id)
+        ->set('scope', 'Evaluate the published learning experience.')
+        ->call('next')
+        ->set('materialType', 'url')
+        ->set('materialLabel', 'Course landing page')
+        ->set('materialLocation', 'https://example.test/course')
+        ->call('next')
+        ->set('claimsConfirmed', true)
+        ->set('audienceConfirmed', true)
+        ->call('next')
+        ->set('servicePackageId', $package->id)
+        ->set('complexity', 'standard')
+        ->assertSee('release-'.$user->id)
+        ->assertSee('v1.0')
+        ->assertSee('Professional Edition')
+        ->assertSee('1 intake item')
+        ->assertSee('Standard Evaluation')
+        ->assertSee('250.00 EUR')
+        ->assertSee('Before an evaluation report is delivered');
 });
 
 it('resumes an existing draft without creating another request', function () {

@@ -161,7 +161,7 @@ function publicVerificationFixture(): Validation
         'auditor_id' => $auditor->id,
         'status' => AuditorProfileStatus::Approved,
         'bio' => 'Independent evaluator.',
-        'credentials' => ['certification' => 'Certified Reviewer'],
+        'credentials' => 'Certified Reviewer',
     ]);
 
     $request = EvaluationRequest::create([

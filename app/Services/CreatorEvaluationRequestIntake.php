@@ -49,7 +49,7 @@ final class CreatorEvaluationRequestIntake
     public function selectProduct(User $actor, EvaluationRequest $request, Product $product): EvaluationRequest
     {
         $organizationId = $request->organization_id;
-        if ($organizationId === null || $product->organization_id !== $organizationId) {
+        if ($organizationId === null || (int) $product->organization_id !== (int) $organizationId) {
             throw new DomainStateTransitionException('The selected product does not belong to the request organization.');
         }
 
@@ -94,7 +94,7 @@ final class CreatorEvaluationRequestIntake
         $this->authorizeDraft($actor, $request);
 
         $product = $request->product;
-        if ($product === null || $release->product_id !== $product->getKey()) {
+        if ($product === null || (int) $release->product_id !== (int) $product->getKey()) {
             throw new DomainStateTransitionException('The selected product release does not belong to the request product.');
         }
 
@@ -147,7 +147,7 @@ final class CreatorEvaluationRequestIntake
         $this->authorizeDraft($actor, $request);
 
         $product = $request->product;
-        if ($product === null || $product->organization_id !== $request->organization_id) {
+        if ($product === null || (int) $product->organization_id !== (int) $request->organization_id) {
             throw new DomainStateTransitionException('A valid organization product is required before confirming claims and audience.');
         }
 
@@ -247,8 +247,8 @@ final class CreatorEvaluationRequestIntake
             throw new DomainStateTransitionException('The selected product and release could not be resolved.');
         }
 
-        if ($request->product->organization_id !== $request->organization_id
-            || $request->productRelease->product_id !== $request->product_id
+        if ((int) $request->product->organization_id !== (int) $request->organization_id
+            || (int) $request->productRelease->product_id !== (int) $request->product_id
             || $request->productRelease->status->value !== 'current') {
             throw new DomainStateTransitionException('The selected product release is no longer eligible for evaluation.');
         }

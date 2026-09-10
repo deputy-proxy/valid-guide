@@ -125,6 +125,28 @@ final class CreatorEvaluationRequestIntake
         return $request->refresh()->load(['product', 'productRelease', 'materials', 'servicePackage']);
     }
 
+    public function confirmClaimsAndAudience(User $actor, EvaluationRequest $request): EvaluationRequest
+    {
+        $this->authorizeDraft($actor, $request);
+
+        $product = $request->product;
+        if ($product === null || $product->organization_id !== $request->organization_id) {
+            throw new DomainStateTransitionException('A valid organization product is required before confirming claims and audience.');
+        }
+
+        if (blank($product->target_audience) || ! is_array($product->claimed_outcomes) || $product->claimed_outcomes === []) {
+            throw new DomainStateTransitionException('The product must have a target audience and claimed outcomes before they can be confirmed.');
+        }
+
+        $notes = $this->intakeNotes($request);
+        $notes['claims_confirmed'] = true;
+        $notes['audience_confirmed'] = true;
+        $request->intake_notes = json_encode($notes, JSON_THROW_ON_ERROR);
+        $request->save();
+
+        return $request->refresh()->load(['product', 'productRelease', 'materials', 'servicePackage']);
+    }
+
     public function applyCommercialTerms(
         User $actor,
         EvaluationRequest $request,
@@ -164,7 +186,7 @@ final class CreatorEvaluationRequestIntake
         return $this->stateTransition->transition($request, EvaluationRequestStatus::AwaitingPayment, $actor);
     }
 
-    /** @return array{scope?: string, requested_completion_window?: string|null} */
+    /** @return array<string, mixed> */
     public function intakeNotes(EvaluationRequest $request): array
     {
         if ($request->intake_notes === null || trim($request->intake_notes) === '') {
@@ -215,6 +237,10 @@ final class CreatorEvaluationRequestIntake
         }
 
         $notes = $this->intakeNotes($request);
+        if (($notes['claims_confirmed'] ?? false) !== true || ($notes['audience_confirmed'] ?? false) !== true) {
+            throw new DomainStateTransitionException('Claims and audience must be confirmed before payment.');
+        }
+
         if (! isset($notes['scope']) || ! is_string($notes['scope']) || trim($notes['scope']) === '') {
             throw new DomainStateTransitionException('Evaluation scope is required before payment.');
         }

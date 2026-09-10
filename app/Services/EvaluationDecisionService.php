@@ -123,7 +123,7 @@ class EvaluationDecisionService
     }
 
     /**
-     * @param  Collection<int, AuditorEvaluation> $auditorEvaluations
+     * @phpstan-param Collection<int, AuditorEvaluation> $auditorEvaluations
      * @return array{decision:string, score:float|null, counts:array<string,int>, blocker:string|null}
      */
     private function resolveCriterionAssessment(

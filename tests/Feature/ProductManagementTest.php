@@ -51,7 +51,7 @@ it('resolves only organizations the user belongs to', function () {
         'status' => 'active',
     ]);
 
-    $context = new OrganizationContext();
+    $context = new OrganizationContext;
 
     expect($context->resolve($user, $organization->getKey())->is($organization))->toBeTrue();
 
@@ -62,7 +62,7 @@ it('resolves only organizations the user belongs to', function () {
 it('allows owner admin and editor to create products but denies billing', function (OrganizationRole $role, bool $allowed) {
     $user = User::factory()->create();
     $organization = productManagementOrganization($user, $role, 'creator-'.strtolower($role->value));
-    $management = new ProductManagement();
+    $management = new ProductManagement;
 
     if ($allowed) {
         $product = $management->create($user, $organization, validProductAttributes());
@@ -87,11 +87,12 @@ it('rejects a forged organization context even when the identifier is supplied m
     $otherUser = User::factory()->create();
     $organization = productManagementOrganization($user, OrganizationRole::Editor, 'creator-a');
     $otherOrganization = productManagementOrganization($otherUser, OrganizationRole::Owner, 'creator-b');
+    $context = new OrganizationContext;
 
-    expect(fn () => new OrganizationContext()->resolve($user, $otherOrganization->getKey()))
+    expect(fn () => $context->resolve($user, $otherOrganization->getKey()))
         ->toThrow(AuthorizationException::class);
 
-    expect(new OrganizationContext()->resolve($user, $organization->getKey())->getKey())
+    expect($context->resolve($user, $organization->getKey())->getKey())
         ->toBe($organization->getKey());
 });
 
@@ -122,8 +123,9 @@ it('archives products through the controlled lifecycle service', function () {
         'title' => 'Course',
         'slug' => 'course',
     ]);
+    $management = new ProductManagement;
 
-    $archived = new ProductManagement()->archive($user, $product);
+    $archived = $management->archive($user, $product);
 
     expect($archived->status)->toBe(ProductStatus::Archived);
 
@@ -154,8 +156,9 @@ it('does not allow historical products to be deleted', function () {
 it('rejects incomplete product data at the application boundary', function () {
     $user = User::factory()->create();
     $organization = productManagementOrganization($user, OrganizationRole::Editor, 'creator-a');
+    $management = new ProductManagement;
 
-    expect(fn () => new ProductManagement()->create($user, $organization, [
+    expect(fn () => $management->create($user, $organization, [
         'title' => 'Incomplete',
     ]))->toThrow(ValidationException::class);
 });

@@ -40,7 +40,7 @@ final class ServicePackageManagement
     {
         Gate::forUser($user)->authorize('update', $package);
 
-        $validated = Validator::make($attributes, $this->rules())->validate();
+        $validated = Validator::make($attributes, $this->rules($package))->validate();
         $validated['currency'] = strtoupper((string) $validated['currency']);
         unset($validated['status']);
 
@@ -79,11 +79,17 @@ final class ServicePackageManagement
     }
 
     /** @phpstan-return array<string, array<int, mixed>> */
-    private function rules(): array
+    private function rules(?ServicePackage $package = null): array
     {
+        $slugRule = Rule::unique('service_packages', 'slug');
+
+        if ($package !== null) {
+            $slugRule = $slugRule->ignore($package->getKey());
+        }
+
         return [
             'name' => ['required', 'string', 'max:255'],
-            'slug' => ['required', 'string', 'max:255', Rule::unique('service_packages', 'slug')],
+            'slug' => ['required', 'string', 'max:255', $slugRule],
             'description' => ['required', 'string'],
             'product_types' => ['required', 'array', 'min:1'],
             'product_types.*' => ['required', Rule::enum(ProductType::class)],

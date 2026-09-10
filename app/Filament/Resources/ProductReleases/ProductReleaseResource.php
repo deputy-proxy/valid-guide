@@ -25,6 +25,7 @@ use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
+use BackedEnum;
 use UnitEnum;
 
 class ProductReleaseResource extends Resource
@@ -33,7 +34,7 @@ class ProductReleaseResource extends Resource
 
     protected static string|UnitEnum|null $navigationGroup = 'Creator';
 
-    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static BackedEnum|string|null $navigationIcon = 'heroicon-o-rectangle-stack';
 
     protected static ?string $navigationLabel = 'Product Releases';
 

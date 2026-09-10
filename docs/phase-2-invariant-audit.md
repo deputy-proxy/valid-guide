@@ -18,22 +18,22 @@ This is the final Phase 2 specification-to-code regression matrix. Each Phase 2 
 | Product Release | Releases belong to the selected Product and remain immutable after leaving draft | `ProductReleaseLifecycleTest` |
 | Product Release | Evaluation Requests retain the exact selected Product Release | `EvaluationRequestLifecycleIntegrityTest`, `CreatorEvaluationRequestWizardTest` |
 | Evaluation Request | Lifecycle transitions reject invalid, unauthorized and cross-tenant operations | `EvaluationRequestLifecycleIntegrityTest`, `CreatorEvaluationRequestWizardTest` |
-| Commercial snapshot | Package, complexity, quoted amount and currency are calculated server-side and frozen before payment | `CommercialCatalogTest`, `EvaluationRequestLifecycleIntegrityTest`, `CreatorEvaluationRequestWizardTest` |
-| Price integrity | Client input cannot replace the authoritative quote used for payment | `CommercialCatalogTest`, `StripePaymentServiceTest` |
-| Payment | Payment is separate from Evaluation creation and Validation | `StripePaymentServiceTest`, `EvaluationRequestLifecycleIntegrityTest` |
-| Stripe | Webhook confirmation requires provider verification and is idempotent | `StripePaymentServiceTest` |
-| Stripe | Duplicate or ineligible payment attempts cannot advance the request twice | `StripePaymentServiceTest`, `EvaluationRequestLifecycleIntegrityTest` |
+| Commercial snapshot | Package, complexity, quoted amount and currency are calculated server-side and frozen before payment | `EvaluationRequestCommercialTermsTest`, `EvaluationQuoteServiceTest`, `CreatorEvaluationRequestWizardTest` |
+| Price integrity | Client input cannot replace the authoritative quote used for payment | `EvaluationRequestCommercialTermsTest`, `StripePaymentFlowTest` |
+| Payment | Payment is separate from Evaluation creation and Validation | `StripePaymentFlowTest`, `EvaluationRequestLifecycleIntegrityTest` |
+| Stripe | Webhook confirmation requires provider verification and is idempotent | `StripePaymentFlowTest` |
+| Stripe | Duplicate or ineligible payment attempts cannot advance the request twice | `StripePaymentFlowTest`, `EvaluationRequestLifecycleIntegrityTest` |
 | Refund | Refund eligibility ends at `reports.delivered_at`, not at evaluation outcome | `CreatorRefundServiceTest`, `ReportDeliveryTest` |
 | Refund | Duplicate/concurrent refund attempts cannot create duplicate internal/provider refunds | `CreatorRefundServiceTest` |
 | Refund | Provider failure does not falsely mark an internal refund as completed | `CreatorRefundServiceTest` |
-| Submitted Material | Creator material submission is tenant-scoped, validated and provenance-aware | `EvaluationIntakeMaterialsTest` |
-| Submitted Material | Verified material is required for readiness | `EvaluationIntakeMaterialsTest` |
-| Submitted Material | Material records become immutable at the defined readiness boundary | `EvaluationIntakeMaterialsTest` |
+| Submitted Material | Creator material submission is tenant-scoped, validated and provenance-aware | `EvaluationMaterialIntakeTest` |
+| Submitted Material | Verified material is required for readiness | `EvaluationMaterialIntakeTest` |
+| Submitted Material | Material records become immutable at the defined readiness boundary | `EvaluationMaterialIntakeTest` |
 | Privacy | Creator surfaces do not expose private Auditor evidence, deliberation or internal decisions | `CreatorDashboardTest`, `CreatorEvaluationRequestWizardTest` |
 | Dashboard | Dashboard state and permitted next actions are derived from backend contracts | `CreatorDashboardTest` |
 | Wizard | Draft intake can resume without bypassing tenancy, release, commercial or readiness rules | `CreatorEvaluationRequestWizardTest` |
 | Raw/bulk writes | Application workflows do not use uncontrolled raw/bulk mutation outside controlled services | `Phase2InvariantAuditTest` |
-| Historical integrity | Later catalog/product changes do not rewrite frozen request terms or release identity | `EvaluationRequestLifecycleIntegrityTest`, `ProductReleaseLifecycleTest`, `CommercialCatalogTest` |
+| Historical integrity | Later catalog/product changes do not rewrite frozen request terms or release identity | `EvaluationRequestLifecycleIntegrityTest`, `ProductReleaseLifecycleTest`, `EvaluationRequestCommercialTermsTest` |
 | Concurrency | Locking and uniqueness protect payment/refund/readiness boundaries | Service-level transactions and database constraints; SQLite limitation documented below |
 | Quality | Formatting, PHPStan and complete Pest suite are mandatory CI gates | `.github/workflows/tests.yml`, `composer.json` |
 

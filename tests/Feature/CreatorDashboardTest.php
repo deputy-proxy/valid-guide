@@ -15,6 +15,7 @@ use App\Models\ProductRelease;
 use App\Models\ServicePackage;
 use App\Models\User;
 use App\Services\CreatorDashboard;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
 
 function creatorDashboardFixture(string $role = 'owner'): array
@@ -160,7 +161,7 @@ it('rejects users outside the organization', function () {
     $otherUser = User::factory()->create();
 
     expect(fn () => app(CreatorDashboard::class)->forOrganization($otherUser, $organization->id))
-        ->toThrow(\Illuminate\Auth\Access\AuthorizationException::class);
+        ->toThrow(AuthorizationException::class);
 });
 
 it('does not leak another organizations products or requests', function () {

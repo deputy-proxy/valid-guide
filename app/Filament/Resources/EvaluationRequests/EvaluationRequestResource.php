@@ -220,7 +220,7 @@ final class EvaluationRequestResource extends Resource
             return '—';
         }
 
-        return number_format(((int) $amount) / 100).' '.strtoupper((string) $currency);
+        return number_format(((int) $amount) / 100, 2).' '.strtoupper((string) $currency);
     }
 
     private static function retryPayment(EvaluationRequest $record): RedirectResponse

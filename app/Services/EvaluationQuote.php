@@ -20,7 +20,8 @@ final readonly class EvaluationQuote
         /** @var list<string> */
         public array $complexityLevels,
         public EvaluationComplexity $complexity,
-    ) {}
+    ) {
+    }
 
     public static function fromPackage(
         ServicePackage $package,

@@ -14,7 +14,7 @@ final class EvaluationMaterialVerification
 {
     public function verify(User $actor, EvaluationMaterial $material, ?string $notes = null): EvaluationMaterial
     {
-        if (! $actor->isPlatformAdmin()) {
+        if ($actor->isPlatformAdmin() === false) {
             throw new AuthorizationException('Only platform administrators can verify evaluation materials.');
         }
 

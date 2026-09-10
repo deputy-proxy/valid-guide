@@ -52,17 +52,19 @@ class EvaluationRequestPolicy
 
     public function refund(User $user, EvaluationRequest $evaluationRequest): bool
     {
-        if ($user->isPlatformAdmin()) {
-            return true;
-        }
-
-        return in_array($evaluationRequest->status, [
+        $eligibleLifecycle = in_array($evaluationRequest->status, [
             EvaluationRequestStatus::Paid,
             EvaluationRequestStatus::Intake,
             EvaluationRequestStatus::AwaitingCreator,
             EvaluationRequestStatus::Ready,
-            EvaluationRequestStatus::Refunded,
-        ], true) && $this->canManageCreatorResource($user, $evaluationRequest->organization);
+        ], true);
+
+        if (! $eligibleLifecycle) {
+            return false;
+        }
+
+        return $user->isPlatformAdmin()
+            || $this->canManageCreatorResource($user, $evaluationRequest->organization);
     }
 
     public function delete(User $user, EvaluationRequest $evaluationRequest): bool

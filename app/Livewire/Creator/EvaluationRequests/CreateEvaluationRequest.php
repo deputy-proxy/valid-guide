@@ -138,6 +138,12 @@ final class CreateEvaluationRequest extends Component
             ])->all();
     }
 
+    /** @return array<string, mixed> */
+    public function intakeNotes(EvaluationRequest $request): array
+    {
+        return app(CreatorEvaluationRequestIntake::class)->intakeNotes($request);
+    }
+
     public function next(): void
     {
         $this->resetValidation();

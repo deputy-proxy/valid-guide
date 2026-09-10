@@ -150,17 +150,20 @@ final class StripePaymentService
     {
         $session = $event['data']['object'] ?? null;
         if (is_array($session) === false) {
+
             return;
         }
 
         $metadata = $session['metadata'] ?? null;
         if (is_array($metadata) === false || isset($metadata['payment_id'], $metadata['order_id']) === false) {
+
             return;
         }
 
         $paymentId = filter_var($metadata['payment_id'], FILTER_VALIDATE_INT);
         $orderId = filter_var($metadata['order_id'], FILTER_VALIDATE_INT);
         if (is_int($paymentId) === false || is_int($orderId) === false) {
+
             return;
         }
 
@@ -169,10 +172,12 @@ final class StripePaymentService
             $order = Order::query()->lockForUpdate()->find($orderId);
 
             if ($payment === null || $order === null || $payment->order_id !== $order->getKey()) {
+
                 return;
             }
 
             if ($payment->status === PaymentStatus::Paid && $order->status === OrderStatus::Paid) {
+
                 return;
             }
 
@@ -196,6 +201,7 @@ final class StripePaymentService
 
             $request = EvaluationRequest::query()->lockForUpdate()->find($order->evaluation_request_id);
             if ($request === null || $request->status !== EvaluationRequestStatus::AwaitingPayment) {
+
                 return;
             }
 
@@ -232,17 +238,20 @@ final class StripePaymentService
     {
         $session = $event['data']['object'] ?? null;
         if (is_array($session) === false) {
+
             return;
         }
 
         $metadata = $session['metadata'] ?? null;
         if (is_array($metadata) === false) {
+
             return;
         }
 
         $paymentId = filter_var($metadata['payment_id'] ?? null, FILTER_VALIDATE_INT);
         $orderId = filter_var($metadata['order_id'] ?? null, FILTER_VALIDATE_INT);
         if (is_int($paymentId) === false || is_int($orderId) === false) {
+
             return;
         }
 
@@ -250,10 +259,12 @@ final class StripePaymentService
             $payment = Payment::query()->lockForUpdate()->find($paymentId);
             $order = Order::query()->lockForUpdate()->find($orderId);
             if ($payment === null || $order === null || $payment->order_id !== $order->getKey()) {
+
                 return;
             }
 
             if ($payment->status === PaymentStatus::Paid || $order->status === OrderStatus::Paid) {
+
                 return;
             }
 

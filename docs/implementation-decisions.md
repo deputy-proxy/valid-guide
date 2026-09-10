@@ -23,7 +23,7 @@
 
 ## 2026-09-09 — Controlled service writes and methodology rule validation
 
-- Domain services may use locked query updates for lifecycle fields when the model intentionally rejects direct Eloquent mutation. This preserves the public invariant while keeping the public invariant while keeping the controlled service path functional.
+- Domain services may use locked query updates for lifecycle fields when the model intentionally rejects direct Eloquent mutation. This preserves the public invariant while keeping the controlled service path functional.
 - An empty `weight_overrides` collection is valid methodology configuration; non-empty overrides must be associative and contain supported product types with non-negative numeric values.
 - Runtime criterion applicability rejects malformed `product_types` collections instead of silently treating them as non-applicable.
 - Evaluation decision rationale remains structured JSON containing the complete assessment, including blocker messages; consumers and tests should inspect the structured `blockers` field rather than treating the JSON as plain prose.

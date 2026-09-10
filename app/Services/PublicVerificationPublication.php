@@ -28,7 +28,12 @@ class PublicVerificationPublication
 
         $record->public_slug ??= Str::lower($validation->verification_identifier);
         $record->directory_visible ??= true;
-        $record->snapshot = $this->snapshotBuilder->build($validation);
+        $record->full_report_visible ??= false;
+        $record->snapshot = $this->snapshotBuilder->build(
+            $validation,
+            $record->directory_visible,
+            $record->full_report_visible,
+        );
         $record->published_at ??= now();
         $record->save();
 
@@ -55,7 +60,11 @@ class PublicVerificationPublication
             return null;
         }
 
-        $record->snapshot = $this->snapshotBuilder->build($validation);
+        $record->snapshot = $this->snapshotBuilder->build(
+            $validation,
+            $record->directory_visible,
+            $record->full_report_visible,
+        );
         $record->save();
 
         return $record->refresh();

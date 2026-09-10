@@ -65,10 +65,6 @@ class EvaluationMaterial extends Model
             if ($request === null || in_array($request->status, self::CREATOR_SUBMISSION_STATUSES, true) === false) {
                 throw new DomainStateTransitionException('Evaluation materials can only be submitted during the paid intake workflow.');
             }
-
-            if ($request->status === EvaluationRequestStatus::Ready) {
-                throw new DomainStateTransitionException('The evidence set is closed once an evaluation request is ready.');
-            }
         });
 
         static::updating(function (): void {

@@ -116,7 +116,7 @@ final class CreateEvaluationRequest extends Component
     public function packageOptions(): array
     {
         $product = $this->request->product;
-        if ($product === null || $product->organization_id !== $this->organizationId) {
+        if ($product === null || (int) $product->organization_id !== (int) $this->organizationId) {
             return [];
         }
 

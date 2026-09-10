@@ -6,16 +6,21 @@ use App\Enums\EvaluationMaterialType;
 use App\Enums\EvaluationRequestStatus;
 use App\Enums\OrderStatus;
 use App\Enums\PaymentStatus;
+use App\Models\EvaluationRequest;
+use App\Models\Organization;
 use App\Models\Order;
 use App\Models\Payment;
 use App\Models\PaymentWebhookEvent;
+use App\Models\ServicePackage;
+use App\Models\User;
 use App\Services\CreatorEvaluationRequestIntake;
 use App\Services\DomainStateTransitionException;
 use App\Services\StripePaymentService;
+use Illuminate\Http\Client\Request as HttpRequest;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Testing\TestResponse;
 
-/** @return array{0: \App\Models\User, 1: \App\Models\Organization, 2: \App\Models\EvaluationRequest, 3: \App\Models\ServicePackage} */
+/** @return array{0: User, 1: Organization, 2: EvaluationRequest, 3: ServicePackage} */
 function stripePaymentFixture(): array
 {
     [$user, $organization, $product, $release, $package] = creatorWizardFixture();
@@ -82,7 +87,7 @@ it('creates a Stripe checkout with the frozen amount and currency', function () 
         ->and(Order::query()->count())->toBe(1)
         ->and(Payment::query()->count())->toBe(1);
 
-    Http::assertSent(function ($request) {
+    Http::assertSent(function (HttpRequest $request): bool {
         return $request->url() === 'https://api.stripe.com/v1/checkout/sessions'
             && $request['line_items[0][price_data][unit_amount]'] === '25000'
             && $request['line_items[0][price_data][currency]'] === 'eur'

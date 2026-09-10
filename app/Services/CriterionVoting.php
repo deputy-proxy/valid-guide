@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Enums\CriterionVotingMode;
 use App\Models\AuditorEvaluation;
+use App\Models\Criterion;
 use App\Models\CriterionVote;
 use App\Models\Evaluation;
 use Illuminate\Support\Collection;
@@ -34,6 +36,12 @@ class CriterionVoting
             $votes = collect();
 
             foreach ($auditorEvaluation->criterionResults()->get() as $result) {
+                $criterion = Criterion::query()->findOrFail($result->criterion_id);
+
+                if ($criterion->voting_mode !== CriterionVotingMode::Majority) {
+                    continue;
+                }
+
                 $existing = CriterionVote::query()
                     ->where('evaluation_id', $auditorEvaluation->evaluation_id)
                     ->where('criterion_id', $result->criterion_id)
@@ -42,7 +50,6 @@ class CriterionVoting
 
                 if ($existing !== null) {
                     $votes->push($existing);
-
                     continue;
                 }
 
@@ -62,6 +69,16 @@ class CriterionVoting
     /** @return array{decision: string, counts: array<string, int>, voter_count: int} */
     public function aggregate(Evaluation $evaluation, int $criterionId): array
     {
+        $criterion = Criterion::query()->findOrFail($criterionId);
+
+        if ($criterion->standard_version_id !== $evaluation->standard_version_id) {
+            throw new DomainStateTransitionException('A criterion can only be aggregated within the evaluation standard version.');
+        }
+
+        if ($criterion->voting_mode !== CriterionVotingMode::Majority) {
+            throw new DomainStateTransitionException('Only methodology-designated collective criteria can be aggregated by majority vote.');
+        }
+
         $votes = CriterionVote::query()
             ->where('evaluation_id', $evaluation->getKey())
             ->where('criterion_id', $criterionId)
@@ -79,7 +96,7 @@ class CriterionVoting
 
         $counts = [];
         foreach ($votes as $vote) {
-            $decision = (string) $vote->decision;
+            $decision = $vote->decision->value;
             $counts[$decision] = ($counts[$decision] ?? 0) + 1;
         }
         arsort($counts);

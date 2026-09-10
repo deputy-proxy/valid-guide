@@ -111,10 +111,8 @@ final class EvaluationRequestStateTransition
                 event: 'evaluation_request.status_changed',
                 auditable: $request,
                 before: ['status' => $from->value],
-                after: [
-                    'status' => $to->value,
-                    'actor_id' => $actor->getKey(),
-                ],
+                after: ['status' => $to->value],
+                actor: $actor,
             );
 
             return $request;

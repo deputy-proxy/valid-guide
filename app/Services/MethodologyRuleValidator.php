@@ -72,15 +72,12 @@ final class MethodologyRuleValidator
             throw new DomainStateTransitionException(sprintf('Criterion %s must have a positive weight.', $criterion->code));
         }
 
-        if (! $criterion->voting_mode instanceof CriterionVotingMode) {
+        $rawVotingMode = $criterion->getRawOriginal('voting_mode');
+        if (! is_string($rawVotingMode) || CriterionVotingMode::tryFrom($rawVotingMode) === null) {
             throw new DomainStateTransitionException(sprintf('Criterion %s must have a valid voting mode.', $criterion->code));
         }
 
         $rules = $criterion->applicability_rules ?? [];
-        if (! is_array($rules)) {
-            throw new DomainStateTransitionException(sprintf('Criterion %s has invalid applicability rules.', $criterion->code));
-        }
-
         $unknownKeys = array_diff(array_keys($rules), self::APPLICABILITY_KEYS);
         if ($unknownKeys !== []) {
             throw new DomainStateTransitionException(sprintf(
@@ -126,7 +123,7 @@ final class MethodologyRuleValidator
 
         $overrides = $rules['weight_overrides'] ?? [];
         if ($overrides !== []) {
-            if (! is_array($overrides) || array_is_list($overrides)) {
+            if (array_is_list($overrides)) {
                 throw new DomainStateTransitionException(sprintf('Criterion %s has invalid weight overrides.', $criterion->code));
             }
 
@@ -226,8 +223,8 @@ final class MethodologyRuleValidator
     private function effectiveWeight(Criterion $criterion, string $productType): float
     {
         $rules = $criterion->applicability_rules ?? [];
-        $overrides = is_array($rules) ? ($rules['weight_overrides'] ?? []) : [];
-        $weight = is_array($overrides) && array_key_exists($productType, $overrides)
+        $overrides = $rules['weight_overrides'] ?? [];
+        $weight = array_key_exists($productType, $overrides)
             ? $overrides[$productType]
             : $criterion->weight;
 
@@ -245,18 +242,14 @@ final class MethodologyRuleValidator
     private function isApplicableTo(Criterion $criterion, string $productType): bool
     {
         $rules = $criterion->applicability_rules ?? [];
-        if (! is_array($rules)) {
-            return false;
-        }
-
         $productTypes = $rules['product_types'] ?? [];
         $excludedTypes = $rules['excluded_product_types'] ?? [];
 
-        if (is_array($productTypes) && $productTypes !== [] && ! in_array($productType, $productTypes, true)) {
+        if ($productTypes !== [] && ! in_array($productType, $productTypes, true)) {
             return false;
         }
 
-        if (is_array($excludedTypes) && in_array($productType, $excludedTypes, true)) {
+        if (in_array($productType, $excludedTypes, true)) {
             return false;
         }
 

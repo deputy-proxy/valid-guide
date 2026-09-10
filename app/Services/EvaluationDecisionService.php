@@ -37,6 +37,10 @@ class EvaluationDecisionService
             throw new DomainStateTransitionException('A final decision requires a positive odd number of submitted Auditor evaluations.');
         }
 
+        foreach ($auditorEvaluations as $auditorEvaluation) {
+            $this->criterionVoting->record($auditorEvaluation);
+        }
+
         $standardVersion = $evaluation->standardVersion;
         $criteria = $standardVersion->criteria()->get();
 

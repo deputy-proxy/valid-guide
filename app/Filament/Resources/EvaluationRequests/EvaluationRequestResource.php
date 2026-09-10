@@ -186,7 +186,10 @@ final class EvaluationRequestResource extends Resource
         ];
     }
 
-    /** @param list<BackedEnum> $cases @return array<string, string> */
+    /**
+     * @param list<BackedEnum> $cases
+     * @return array<string, string>
+     */
     private static function enumOptions(array $cases): array
     {
         $options = [];

@@ -161,7 +161,7 @@ it('records the actor on successful lifecycle audit entries', function () {
         ->where('auditable_type', EvaluationRequest::class)
         ->where('auditable_id', $request->id)
         ->where('event', 'evaluation_request.status_changed')
-        ->whereJsonContains('after', ['actor_id' => $actor->getKey()])
+        ->where('actor_id', $actor->getKey())
         ->exists())->toBeTrue();
 });
 

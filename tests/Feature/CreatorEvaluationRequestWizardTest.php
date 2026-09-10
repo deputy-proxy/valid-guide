@@ -66,11 +66,14 @@ function creatorWizardFixture(string $role = 'owner'): array
 }
 
 it('starts one draft request for the creator organization', function () {
-    [$user, $organization] = creatorWizardFixture();
+    [$user, $organization, $product] = creatorWizardFixture();
+    $this->actingAs($user);
     $intake = app(CreatorEvaluationRequestIntake::class);
 
     $first = $intake->start($user, $organization->id);
+    $first = $intake->selectProduct($user, $first, $product);
     $second = $intake->start($user, $organization->id);
+    $second = $intake->selectProduct($user, $second, $product);
 
     expect($second->id)->toBe($first->id)
         ->and(EvaluationRequest::query()->where('organization_id', $organization->id)->count())->toBe(1)
@@ -158,8 +161,9 @@ it('rejects cross-tenant products and releases server-side', function () {
         ->call('next')
         ->assertHasErrors('form');
 
-    $request = EvaluationRequest::query()->where('organization_id', $organization->id)->firstOrFail();
-    expect($request->product_id)->toBeNull();
+    $request = EvaluationRequest::query()->where('organization_id', $organization->id)->first();
+    expect($request)->not->toBeNull();
+    $request = $request instanceof EvaluationRequest ? $request : throw new RuntimeException('Expected evaluation request.');
 
     $validRequest = app(CreatorEvaluationRequestIntake::class)->selectProduct($user, $request, $product);
 

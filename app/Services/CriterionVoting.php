@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Enums\CriterionAssessment;
 use App\Enums\CriterionVotingMode;
 use App\Models\AuditorEvaluation;
 use App\Models\Criterion;
@@ -98,8 +99,14 @@ class CriterionVoting
 
         $counts = [];
         foreach ($votes as $vote) {
-            $decision = $vote->decision->value;
-            $counts[$decision] = ($counts[$decision] ?? 0) + 1;
+            $decision = $vote->decision;
+
+            if (! $decision instanceof CriterionAssessment) {
+                throw new DomainStateTransitionException('A criterion vote contains an invalid methodology assessment.');
+            }
+
+            $decisionValue = $decision->value;
+            $counts[$decisionValue] = ($counts[$decisionValue] ?? 0) + 1;
         }
         arsort($counts);
         $winner = array_key_first($counts);

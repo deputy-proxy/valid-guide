@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use App\Auth\Access\AuthorizationException;
 use App\Enums\EvaluationRequestStatus;
 use App\Enums\OrderStatus;
 use App\Enums\PaymentStatus;
@@ -14,6 +13,7 @@ use App\Models\Refund;
 use App\Models\User;
 use App\Services\CreatorRefundService;
 use App\Services\DomainStateTransitionException;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request;

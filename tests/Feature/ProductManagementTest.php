@@ -12,8 +12,12 @@ use App\Models\User;
 use App\Services\DomainStateTransitionException;
 use App\Services\OrganizationContext;
 use App\Services\ProductManagement;
+use App\Filament\Resources\Products\Pages\ListProducts;
+use Filament\Actions\Testing\TestAction;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
+use function Pest\Livewire\livewire;
 
 function productManagementOrganization(User $user, OrganizationRole $role, string $slug): Organization
 {
@@ -161,4 +165,49 @@ it('rejects incomplete product data at the application boundary', function () {
     expect(fn () => $management->create($user, $organization, [
         'title' => 'Incomplete',
     ]))->toThrow(ValidationException::class);
+});
+
+it('renders the Filament product list only for the active organization', function () {
+    $user = User::factory()->create();
+    $organization = productManagementOrganization($user, OrganizationRole::Editor, 'creator-ui-a');
+    $otherUser = User::factory()->create();
+    $otherOrganization = productManagementOrganization($otherUser, OrganizationRole::Editor, 'creator-ui-b');
+
+    $product = app(ProductManagement::class)->create($user, $organization, validProductAttributes('ui-product'));
+    $otherProduct = app(ProductManagement::class)->create($otherUser, $otherOrganization, validProductAttributes('other-ui-product'));
+
+    session(['creator.organization_id' => $organization->getKey()]);
+    actingAs($user);
+
+    livewire(ListProducts::class)
+        ->assertSuccessful()
+        ->assertCanSeeTableRecords([$product])
+        ->assertCanNotSeeTableRecords([$otherProduct]);
+});
+
+it('allows an authorized editor to archive through the Filament action', function () {
+    $user = User::factory()->create();
+    $organization = productManagementOrganization($user, OrganizationRole::Editor, 'creator-ui-archive');
+    $product = app(ProductManagement::class)->create($user, $organization, validProductAttributes('ui-archive'));
+
+    session(['creator.organization_id' => $organization->getKey()]);
+    actingAs($user);
+
+    livewire(ListProducts::class)
+        ->callAction(TestAction::make('archive')->table($product))
+        ->assertNotified();
+
+    expect($product->refresh()->status)->toBe(ProductStatus::Archived);
+});
+
+it('denies billing users product management at the server boundary', function () {
+    $owner = User::factory()->create();
+    $organization = productManagementOrganization($owner, OrganizationRole::Owner, 'creator-ui-billing');
+    $billing = User::factory()->create();
+    $organization->users()->attach($billing, ['role' => OrganizationRole::Billing->value]);
+    $product = app(ProductManagement::class)->create($owner, $organization, validProductAttributes('billing-product'));
+
+    expect(Gate::forUser($billing)->allows('viewAny', Product::class))->toBeFalse()
+        ->and(Gate::forUser($billing)->allows('update', $product))->toBeFalse()
+        ->and(Gate::forUser($billing)->allows('archive', $product))->toBeFalse();
 });

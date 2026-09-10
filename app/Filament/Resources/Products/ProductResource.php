@@ -26,6 +26,7 @@ use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
+use BackedEnum;
 use UnitEnum;
 
 class ProductResource extends Resource
@@ -34,7 +35,7 @@ class ProductResource extends Resource
 
     protected static string|UnitEnum|null $navigationGroup = 'Creator';
 
-    protected static ?string $navigationIcon = 'heroicon-o-academic-cap';
+    protected static BackedEnum|string|null $navigationIcon = 'heroicon-o-academic-cap';
 
     public static function form(Schema $schema): Schema
     {

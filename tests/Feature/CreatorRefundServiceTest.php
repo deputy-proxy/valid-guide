@@ -13,6 +13,7 @@ use App\Models\Refund;
 use App\Models\User;
 use App\Services\CreatorRefundService;
 use App\Services\DomainStateTransitionException;
+use App\Services\ReportDelivery;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -112,7 +113,7 @@ test('a delivered report permanently closes the creator refund boundary', functi
     ]);
 
     $admin = User::factory()->create(['platform_role' => 'admin']);
-    app(\App\Services\ReportDelivery::class)->deliver($report, $admin);
+    app(ReportDelivery::class)->deliver($report, $admin);
 
     expect(fn () => app(CreatorRefundService::class)->refund($request, $user))
         ->toThrow(DomainStateTransitionException::class);

@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Services;
 
-use App\Enums\CriterionAssessment;
 use App\Enums\CriterionVotingMode;
 use App\Exceptions\DomainStateTransitionException;
 use App\Models\AuditorEvaluation;
@@ -16,7 +15,8 @@ class EvaluationDecisionService
 {
     public function __construct(
         private readonly CriterionVoting $criterionVoting,
-    ) {}
+    ) {
+    }
 
     /**
      * Resolve the final decision for an evaluation.

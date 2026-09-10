@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Enums\CriterionAssessment;
 use App\Services\DomainStateTransitionException;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -22,6 +23,13 @@ class CriterionVote extends Model
         'auditor_id',
         'decision',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'decision' => CriterionAssessment::class,
+        ];
+    }
 
     protected static function booted(): void
     {

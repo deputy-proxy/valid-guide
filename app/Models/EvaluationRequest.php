@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Enums\EvaluationComplexity;
 use App\Enums\EvaluationRequestStatus;
 use App\Services\DomainStateTransitionException;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -14,6 +15,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * @property EvaluationRequestStatus|null $status
+ * @property EvaluationComplexity $complexity
  * @property float|null $quoted_price
  * @property int|null $product_id
  * @property int|null $product_release_id
@@ -35,6 +37,7 @@ class EvaluationRequest extends Model
     protected function casts(): array
     {
         return [
+            'complexity' => EvaluationComplexity::class,
             'status' => EvaluationRequestStatus::class,
             'quoted_price' => 'decimal:2',
             'service_package_terms_snapshot' => 'array',
@@ -70,7 +73,7 @@ class EvaluationRequest extends Model
             }
             $lifecycleFields = ['submitted_at', 'payment_started_at', 'paid_at', 'evaluation_started_at', 'cancelled_at', 'refunded_at'];
             if ($request->exists && array_intersect(array_keys($request->getDirty()), $lifecycleFields) !== []) {
-                throw new DomainStateTransitionException('Evaluation request lifecycle timestamps can only be changed by their domain workflow.');
+                throw new DomainStateTransitionException('Evaluation request lifecycle timestamps can only be changed by the domain workflow.');
             }
             $originalStatus = $request->exists ? $request->getRawOriginal('status') : null;
             $frozenStatuses = [EvaluationRequestStatus::AwaitingPayment->value, EvaluationRequestStatus::Paid->value, EvaluationRequestStatus::Intake->value, EvaluationRequestStatus::AwaitingCreator->value, EvaluationRequestStatus::Ready->value, EvaluationRequestStatus::Cancelled->value, EvaluationRequestStatus::Refunded->value];

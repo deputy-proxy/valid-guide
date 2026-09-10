@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Enums\EvaluationComplexity;
 use App\Enums\EvaluationRequestStatus;
 use App\Models\EvaluationRequest;
 use App\Models\Organization;
@@ -33,7 +34,7 @@ test('snapshots the service package and price on the request', function () {
     $request = commercialTermsRequest();
     $package = commercialTermsPackage();
     $updated = app(EvaluationRequestCommercialTerms::class)->applyPackage($request, $package, 'standard');
-    expect($updated->service_package_id)->toBe($package->id)->and($updated->service_package_name_snapshot)->toBe('Standard Evaluation')->and($updated->quoted_price)->toBe('500.00')->and($updated->currency)->toBe('EUR')->and($updated->complexity)->toBe('standard');
+    expect($updated->service_package_id)->toBe($package->id)->and($updated->service_package_name_snapshot)->toBe('Standard Evaluation')->and($updated->quoted_price)->toBe('500.00')->and($updated->currency)->toBe('EUR')->and($updated->complexity)->toBe(EvaluationComplexity::Standard);
 });
 
 test('does not allow commercial terms to change once payment has started', function () {

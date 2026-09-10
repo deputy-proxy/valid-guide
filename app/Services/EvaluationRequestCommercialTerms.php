@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Enums\EvaluationComplexity;
 use App\Enums\EvaluationRequestStatus;
 use App\Models\EvaluationRequest;
 use App\Models\ServicePackage;
@@ -42,7 +43,7 @@ final class EvaluationRequestCommercialTerms
                 'currency' => $package->currency,
             ];
             $request->service_package = $package->slug;
-            $request->complexity = $complexity;
+            $request->complexity = EvaluationComplexity::from($complexity);
             $request->quoted_price = $package->price;
             $request->currency = $package->currency;
             $request->save();

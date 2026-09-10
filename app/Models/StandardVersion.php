@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Enums\CriterionAssessment;
+use App\Enums\EvaluationComplexity;
 use App\Enums\StandardVersionStatus;
 use App\Services\DomainStateTransitionException;
 use Carbon\CarbonImmutable;
@@ -22,6 +23,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property int|null $approved_by
  * @property array<string,mixed>|null $score_anchors
  * @property array<string,mixed>|null $decision_thresholds
+ * @property array<string,mixed>|null $auditor_staffing_rules
  */
 class StandardVersion extends Model
 {
@@ -42,12 +44,20 @@ class StandardVersion extends Model
         'dimension_minimum' => 60,
     ];
 
+    /** @var array<string,int> */
+    public const DEFAULT_AUDITOR_STAFFING_RULES = [
+        'simple' => 1,
+        'standard' => 1,
+        'complex' => 3,
+        'exceptional' => 5,
+    ];
+
     /** @use HasFactory<Factory> */
     use HasFactory;
 
     protected $fillable = [
         'evaluation_standard_id', 'version', 'description', 'effective_at', 'retired_at',
-        'status', 'approved_by', 'approved_at', 'score_anchors', 'decision_thresholds',
+        'status', 'approved_by', 'approved_at', 'score_anchors', 'decision_thresholds', 'auditor_staffing_rules',
     ];
 
     protected function casts(): array
@@ -59,6 +69,7 @@ class StandardVersion extends Model
             'approved_at' => 'datetime',
             'score_anchors' => 'array',
             'decision_thresholds' => 'array',
+            'auditor_staffing_rules' => 'array',
         ];
     }
 
@@ -67,6 +78,7 @@ class StandardVersion extends Model
         static::creating(function (self $version): void {
             $version->score_anchors ??= self::DEFAULT_SCORE_ANCHORS;
             $version->decision_thresholds ??= self::DEFAULT_DECISION_THRESHOLDS;
+            $version->auditor_staffing_rules ??= self::DEFAULT_AUDITOR_STAFFING_RULES;
         });
 
         static::updating(function (self $version): void {
@@ -146,6 +158,39 @@ class StandardVersion extends Model
         }
 
         return (float) $threshold;
+    }
+
+    /** @return array<string,int> */
+    public function auditorStaffingRules(): array
+    {
+        $rules = $this->auditor_staffing_rules;
+        if (! is_array($rules)) {
+            throw new DomainStateTransitionException(sprintf(
+                'Standard version %s has no Auditor staffing rules.',
+                $this->version,
+            ));
+        }
+
+        $validated = [];
+        foreach (EvaluationComplexity::cases() as $complexity) {
+            $count = $rules[$complexity->value] ?? null;
+            if (! is_int($count) || $count < 1 || $count % 2 === 0) {
+                throw new DomainStateTransitionException(sprintf(
+                    'Standard version %s has no valid Auditor staffing count for %s.',
+                    $this->version,
+                    $complexity->value,
+                ));
+            }
+
+            $validated[$complexity->value] = $count;
+        }
+
+        return $validated;
+    }
+
+    public function auditorCountFor(EvaluationComplexity $complexity): int
+    {
+        return $this->auditorStaffingRules()[$complexity->value];
     }
 
     /** @return BelongsTo<EvaluationStandard, $this> */

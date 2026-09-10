@@ -49,6 +49,8 @@ class EvaluationDecisionService
             ->whereNotNull('locked_at')
             ->get();
 
+        app(AuditorStaffing::class)->assertSubmittedCount($evaluation);
+
         $assignments = $evaluation->assignments()->get();
         $incompleteAssignments = $assignments->contains(
             fn ($assignment): bool => in_array($assignment->status, ['declined', 'cancelled'], true) === false

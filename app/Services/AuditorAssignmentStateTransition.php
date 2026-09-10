@@ -33,6 +33,8 @@ class AuditorAssignmentStateTransition
             $assignment = AuditorAssignment::query()->whereKey($assignment->getKey())->lockForUpdate()->firstOrFail();
 
             if ($to === 'accepted') {
+                app(AuditorStaffing::class)->assertFullyStaffed($assignment->evaluation);
+
                 $annualCleared = app(AuditorAnnualConflictDeclarationService::class)->isCurrentAndCleared($assignment->auditor);
                 $assignmentCleared = $assignment->conflictDeclarations()
                     ->where('outcome', 'cleared')

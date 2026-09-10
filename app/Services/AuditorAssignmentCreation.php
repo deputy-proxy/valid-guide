@@ -56,6 +56,7 @@ class AuditorAssignmentCreation
             if ($evaluation->status->value !== 'pending' && $evaluation->status->value !== 'in_progress') {
                 throw new DomainStateTransitionException('Auditors can only be assigned to pending or in-progress evaluations.');
             }
+            app(AuditorStaffing::class)->assertCanAdd($evaluation);
             $this->assertEligible($evaluation, $auditor);
             if ($evaluation->assignments()->where('auditor_id', $auditor->id)->exists()) {
                 throw new DomainStateTransitionException('The same Auditor cannot be assigned twice to one evaluation.');

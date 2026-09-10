@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Enums\EvaluationComplexity;
 use App\Models\AuditorAnnualConflictDeclaration;
 use App\Models\AuditorProfile;
 use App\Models\User;
@@ -47,6 +48,7 @@ function eligibleAuditorForEvaluation($evaluation): User
 it('creates an assignment only for an eligible auditor', function () {
     [$auditorEvaluation] = auditorEvaluationFixture();
     $evaluation = $auditorEvaluation->evaluation;
+    $evaluation->request->update(['complexity' => EvaluationComplexity::Complex]);
     $auditor = eligibleAuditorForEvaluation($evaluation);
     $admin = User::factory()->create(['platform_role' => 'admin']);
 
@@ -120,6 +122,7 @@ it('rejects an auditor without verified subject competence', function () {
 it('rejects a second assignment of the same auditor', function () {
     [$auditorEvaluation] = auditorEvaluationFixture();
     $evaluation = $auditorEvaluation->evaluation;
+    $evaluation->request->update(['complexity' => EvaluationComplexity::Complex]);
     $auditor = eligibleAuditorForEvaluation($evaluation);
     $admin = User::factory()->create(['platform_role' => 'admin']);
     $service = app(AuditorAssignmentCreation::class);

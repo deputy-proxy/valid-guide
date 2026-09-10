@@ -79,3 +79,16 @@
 - Final decision scoring for non-voting criteria averages the independent Auditor scores only after their categorical assessments agree. Majority criteria continue to score from the winning vote positions.
 - The final decision path idempotently records methodology-controlled votes for every submitted Auditor evaluation before resolving collective criteria. This ensures legacy or programmatically-created submitted evaluations cannot bypass the required vote records, while `CriterionVoting::record()` remains idempotent and never creates votes for individual criteria.
 - Feature coverage explicitly exercises one, three and five Auditor scenarios for voting and non-voting criteria.
+
+## 2026-09-10 — Auditor staffing is methodology-controlled
+
+- Evaluation complexity is a controlled `EvaluationComplexity` enum with exactly four values: `simple`, `standard`, `complex`, and `exceptional`.
+- The required Auditor count is versioned with the applicable `StandardVersion` through `auditor_staffing_rules`, rather than hard-coded in assignment or decision workflows.
+- The v1 staffing rule is Simple = 1, Standard = 1, Complex = 3, Exceptional = 5. All configured counts must be positive and odd.
+- `EvaluationRequest` casts complexity to `EvaluationComplexity`; evaluation staffing resolves the immutable complexity from the evaluation request and the staffing rule from the evaluation's methodology version.
+- `AuditorStaffing` is the single domain service for resolving the required count and validating staffed/submitted Auditor counts. Assignment creation, assignment acceptance and final decision assessment use the same rule rather than maintaining separate copies.
+- Assignment creation is transactionally protected by the existing evaluation row lock and cannot create an assignment beyond the methodology-required panel size.
+- An Auditor assignment cannot transition from offered to accepted until the complete required Auditor panel is staffed. This makes the staffing invariant hold before Auditor work begins.
+- Final decision assessment requires exactly the methodology-defined number of distinct submitted and locked Auditor evaluations. The previous positive-odd check remains as a defensive invariant, but oddness alone is no longer sufficient.
+- Standard evaluations remain a one-Auditor panel. The agreed second-review capability must not turn the primary evaluation panel into an even two-Auditor decision; review/replacement semantics are therefore separate from the required panel count.
+- Staffing configuration is validated before use, including missing and even counts, so malformed methodology data fails closed instead of silently changing the evaluation standard.

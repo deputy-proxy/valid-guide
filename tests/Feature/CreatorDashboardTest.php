@@ -148,7 +148,7 @@ it('returns billing commerce data without creator product or intake data', funct
 });
 
 it('rejects users outside the organization', function () {
-    [$user, $organization] = creatorDashboardFixture();
+    [, $organization] = creatorDashboardFixture();
     $otherUser = User::factory()->create();
 
     expect(fn () => app(CreatorDashboard::class)->forOrganization($otherUser, $organization->id))
@@ -232,5 +232,5 @@ it('exposes refund eligibility only when the backend refund preconditions are me
     $order->update(['status' => OrderStatus::Refunded]);
 
     expect(app(CreatorDashboard::class)->forOrganization($user, $organization->id)['evaluation_requests'][0]['commerce']['refund_eligible'])
-        ->toBeTrue();
+        ->toBeFalse();
 });

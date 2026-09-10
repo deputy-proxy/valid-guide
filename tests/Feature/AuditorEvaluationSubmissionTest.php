@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Enums\AudiencePromiseCoherence;
+use App\Enums\CriterionVotingMode;
 use App\Enums\EvidenceSufficiency;
 use App\Models\AuditorAssignment;
 use App\Models\AuditorEvaluation;
@@ -21,7 +22,7 @@ use App\Services\ConflictDeclarationDecision;
 use App\Services\DomainStateTransitionException;
 use Illuminate\Support\Facades\DB;
 
-function auditorEvaluationFixture(): array
+function auditorEvaluationFixture(CriterionVotingMode $votingMode = CriterionVotingMode::Individual): array
 {
     $organization = DB::table('organizations')->insertGetId(['name' => 'Auditor Test', 'slug' => 'auditor-test-'.uniqid(), 'status' => 'active', 'created_at' => now(), 'updated_at' => now()]);
     $product = Product::create(['organization_id' => $organization, 'title' => 'Course', 'slug' => 'auditor-course-'.uniqid()]);
@@ -33,7 +34,7 @@ function auditorEvaluationFixture(): array
     $auditor = User::factory()->create();
     $assignment = AuditorAssignment::create(['evaluation_id' => $evaluation->id, 'auditor_id' => $auditor->id, 'sequence' => 1, 'status' => 'accepted', 'assigned_at' => now(), 'accepted_at' => now()]);
     $declaration = ConflictDeclaration::create(['evaluation_id' => $evaluation->id, 'auditor_assignment_id' => $assignment->id, 'declaration_type' => 'assignment', 'disclosure' => 'No known conflict.', 'outcome' => 'cleared', 'determined_by' => $auditor->id, 'determined_at' => now()]);
-    $criterion = Criterion::create(['standard_version_id' => $version->id, 'code' => 'TEST-01', 'name' => 'Test criterion', 'weight' => 100, 'is_mandatory' => true]);
+    $criterion = Criterion::create(['standard_version_id' => $version->id, 'code' => 'TEST-01', 'name' => 'Test criterion', 'weight' => 100, 'is_mandatory' => true, 'voting_mode' => $votingMode]);
     $auditorEvaluation = AuditorEvaluation::create(['evaluation_id' => $evaluation->id, 'auditor_assignment_id' => $assignment->id, 'version' => 1, 'status' => 'draft', 'evidence_sufficiency' => EvidenceSufficiency::Sufficient, 'audience_promise_coherence' => AudiencePromiseCoherence::Coherent]);
     $result = CriterionResult::create(['auditor_evaluation_id' => $auditorEvaluation->id, 'criterion_id' => $criterion->id, 'assessment' => 'meets', 'score' => 80, 'rationale' => 'Sufficient evidence.', 'confidence' => 90]);
 

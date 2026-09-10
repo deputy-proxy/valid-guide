@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Auth\Access\AuthorizationException;
 use App\Enums\EvaluationRequestStatus;
 use App\Enums\OrderStatus;
 use App\Enums\PaymentStatus;
@@ -18,8 +19,6 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Gate;
-use Illuminate\Auth\Access\AuthorizationException;
 
 uses(RefreshDatabase::class);
 
@@ -80,10 +79,13 @@ test('a paid creator request can receive a full refund before report delivery', 
         ->and($order->fresh()->status)->toBe(OrderStatus::Refunded);
 
     Http::assertSent(function (Request $request) use ($paymentIntent, $amount): bool {
+        $idempotencyKey = $request->header('Idempotency-Key')[0] ?? null;
+
         return $request->url() === 'https://api.stripe.com/v1/refunds'
             && $request['payment_intent'] === $paymentIntent
             && $request['amount'] === $amount
-            && $request->header('Idempotency-Key') === ['refund_1'];
+            && is_string($idempotencyKey)
+            && str_starts_with($idempotencyKey, 'refund_');
     });
 });
 

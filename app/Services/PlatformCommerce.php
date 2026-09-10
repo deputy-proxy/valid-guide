@@ -20,6 +20,15 @@ final class PlatformCommerce
 
     public function refundEligible(EvaluationRequest $request): bool
     {
+        if (! in_array($request->status, [
+            EvaluationRequestStatus::Paid,
+            EvaluationRequestStatus::Intake,
+            EvaluationRequestStatus::AwaitingCreator,
+            EvaluationRequestStatus::Ready,
+        ], true)) {
+            return false;
+        }
+
         $order = $request->order;
         $payment = $this->latestPayment($request);
         $refund = $order?->refund;

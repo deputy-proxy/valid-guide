@@ -4,14 +4,12 @@ declare(strict_types=1);
 
 namespace App\Filament\Pages;
 
-use App\Models\Organization;
 use App\Models\User;
 use App\Services\OrganizationContext;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Select;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
-use Filament\Schemas\Schema;
 use Illuminate\Support\Facades\Auth;
 
 final class OrganizationContextPage extends Page
@@ -24,26 +22,9 @@ final class OrganizationContextPage extends Page
 
     protected static ?string $navigationLabel = 'Organization';
 
-    public ?int $organizationId = null;
-
     public function mount(): void
     {
-        $organization = app(OrganizationContext::class)->current(self::authenticatedUser());
-        $this->organizationId = $organization->getKey();
-    }
-
-    public function form(Schema $schema): Schema
-    {
-        return $schema
-            ->components([
-                Select::make('organizationId')
-                    ->label('Active organization')
-                    ->options(fn (): array => self::organizations())
-                    ->required()
-                    ->searchable()
-                    ->statePath('organizationId'),
-            ])
-            ->statePath('organizationId');
+        app(OrganizationContext::class)->current(self::authenticatedUser());
     }
 
     protected function getHeaderActions(): array

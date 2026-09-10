@@ -84,20 +84,20 @@ class ProductReleaseResource extends Resource
                     ->label('Make current')
                     ->icon('heroicon-o-arrow-up-circle')
                     ->requiresConfirmation()
-                    ->visible(fn (ProductRelease $record): bool => $record->status === ProductReleaseStatus::Draft && self::can($record, 'publish'))
+                    ->visible(fn (ProductRelease $record): bool => $record->status === ProductReleaseStatus::Draft && self::canReleaseAction($record, 'publish'))
                     ->action(fn (ProductRelease $record): ProductRelease => self::transition($record, ProductReleaseStatus::Current)),
                 Action::make('supersede')
                     ->label('Supersede')
                     ->icon('heroicon-o-arrow-down-circle')
                     ->requiresConfirmation()
-                    ->visible(fn (ProductRelease $record): bool => $record->status === ProductReleaseStatus::Current && self::can($record, 'supersede'))
+                    ->visible(fn (ProductRelease $record): bool => $record->status === ProductReleaseStatus::Current && self::canReleaseAction($record, 'supersede'))
                     ->action(fn (ProductRelease $record): ProductRelease => self::transition($record, ProductReleaseStatus::Superseded)),
                 Action::make('withdraw')
                     ->label('Withdraw')
                     ->icon('heroicon-o-x-circle')
                     ->color('danger')
                     ->requiresConfirmation()
-                    ->visible(fn (ProductRelease $record): bool => $record->status === ProductReleaseStatus::Current && self::can($record, 'withdraw'))
+                    ->visible(fn (ProductRelease $record): bool => $record->status === ProductReleaseStatus::Current && self::canReleaseAction($record, 'withdraw'))
                     ->action(fn (ProductRelease $record): ProductRelease => self::transition($record, ProductReleaseStatus::Withdrawn)),
             ]);
     }
@@ -133,7 +133,7 @@ class ProductReleaseResource extends Resource
             ->all();
     }
 
-    private static function can(ProductRelease $release, string $ability): bool
+    private static function canReleaseAction(ProductRelease $release, string $ability): bool
     {
         return self::authenticatedUser()->can($ability, $release);
     }

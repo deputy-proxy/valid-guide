@@ -3,8 +3,8 @@
 declare(strict_types=1);
 
 use App\Enums\EvaluationComplexity;
+use App\Models\AuditLog;
 use App\Models\AuditorAnnualConflictDeclaration;
-use App\Models\AuditorAssignment;
 use App\Models\AuditorProfile;
 use App\Models\Evaluation;
 use App\Models\User;
@@ -136,28 +136,39 @@ it('rejects a second assignment of the same auditor', function () {
 });
 
 it('rejects an auditor who is a creator or contributor on the product organization', function () {
-    [$auditorEvaluation] = auditorEvaluationFixture();
-    $evaluation = $auditorEvaluation->evaluation;
-    $auditor = eligibleAuditorForEvaluation($evaluation);
-    $admin = User::factory()->create(['platform_role' => 'admin']);
-    $organization = $evaluation->productRelease->product->organization;
+    foreach (['owner', 'admin', 'editor'] as $role) {
+        [$auditorEvaluation] = auditorEvaluationFixture();
+        $evaluation = $auditorEvaluation->evaluation;
+        $evaluation->request->update(['complexity' => EvaluationComplexity::Complex]);
+        $auditor = eligibleAuditorForEvaluation($evaluation);
+        $admin = User::factory()->create(['platform_role' => 'admin']);
+        $organization = $evaluation->productRelease->product->organization;
 
-    $organization->users()->attach($auditor->id, ['role' => 'editor']);
+        $organization->users()->attach($auditor->id, ['role' => $role]);
 
-    expect(fn () => app(AuditorAssignmentCreation::class)->create(
-        $evaluation,
-        $auditor,
-        $admin,
-        1,
-        15000,
-        'EUR',
-        Carbon::now()->addDays(3),
-    ))->toThrow(DomainStateTransitionException::class, 'previously participated in this product');
+        expect(fn () => app(AuditorAssignmentCreation::class)->create(
+            $evaluation,
+            $auditor,
+            $admin,
+            2,
+            15000,
+            'EUR',
+            Carbon::now()->addDays(3),
+        ))->toThrow(DomainStateTransitionException::class, 'previously participated in this product');
+
+        expect(AuditLog::query()
+            ->where('event', 'auditor_assignment.conflict_detected')
+            ->where('auditable_type', Evaluation::class)
+            ->where('auditable_id', $evaluation->id)
+            ->whereJsonContains('after->auditor_id', $auditor->id)
+            ->exists())->toBeTrue();
+    }
 });
 
 it('uses persisted organization membership instead of stale in-memory relationship state', function () {
     [$auditorEvaluation] = auditorEvaluationFixture();
     $evaluation = $auditorEvaluation->evaluation;
+    $evaluation->request->update(['complexity' => EvaluationComplexity::Complex]);
     $auditor = eligibleAuditorForEvaluation($evaluation);
     $admin = User::factory()->create(['platform_role' => 'admin']);
     $organization = $evaluation->productRelease->product->organization;
@@ -165,16 +176,16 @@ it('uses persisted organization membership instead of stale in-memory relationsh
     $organization->load('users');
     $organization->users()->attach($auditor->id, ['role' => 'owner']);
 
-    expect($organization->relationLoaded('users'))->toBeTrue()
-        ->and(fn () => app(AuditorAssignmentCreation::class)->create(
-            $evaluation,
-            $auditor,
-            $admin,
-            1,
-            15000,
-            'EUR',
-            Carbon::now()->addDays(3),
-        ))->toThrow(DomainStateTransitionException::class, 'previously participated in this product');
+    expect($organization->relationLoaded('users'))->toBeTrue();
+    expect(fn () => app(AuditorAssignmentCreation::class)->create(
+        $evaluation,
+        $auditor,
+        $admin,
+        2,
+        15000,
+        'EUR',
+        Carbon::now()->addDays(3),
+    ))->toThrow(DomainStateTransitionException::class, 'previously participated in this product');
 });
 
 it('rejects an auditor with prior participation through an earlier evaluation of the same product', function () {
@@ -184,10 +195,9 @@ it('rejects an auditor with prior participation through an earlier evaluation of
     $auditor = eligibleAuditorForEvaluation($evaluation);
     $admin = User::factory()->create(['platform_role' => 'admin']);
 
-    AuditorAssignment::query()->create([
-        'evaluation_id' => $evaluation->id,
+    $evaluation->assignments()->create([
         'auditor_id' => $auditor->id,
-        'sequence' => 1,
+        'sequence' => 2,
         'status' => 'completed',
         'assigned_at' => now()->subDays(10),
         'accepted_at' => now()->subDays(9),
@@ -218,6 +228,7 @@ it('rejects an auditor with prior participation through an earlier evaluation of
 it('allows an auditor who participated in a different product', function () {
     [$firstAuditorEvaluation] = auditorEvaluationFixture();
     $firstEvaluation = $firstAuditorEvaluation->evaluation;
+    $firstEvaluation->request->update(['complexity' => EvaluationComplexity::Complex]);
     $auditor = eligibleAuditorForEvaluation($firstEvaluation);
     $admin = User::factory()->create(['platform_role' => 'admin']);
 
@@ -230,7 +241,7 @@ it('allows an auditor who participated in a different product', function () {
         $secondEvaluation,
         $auditor,
         $admin,
-        1,
+        2,
         15000,
         'EUR',
         Carbon::now()->addDays(3),
@@ -242,6 +253,7 @@ it('allows an auditor who participated in a different product', function () {
 it('does not treat a billing-only organization membership as product participation', function () {
     [$auditorEvaluation] = auditorEvaluationFixture();
     $evaluation = $auditorEvaluation->evaluation;
+    $evaluation->request->update(['complexity' => EvaluationComplexity::Complex]);
     $auditor = eligibleAuditorForEvaluation($evaluation);
     $admin = User::factory()->create(['platform_role' => 'admin']);
     $organization = $evaluation->productRelease->product->organization;
@@ -252,7 +264,7 @@ it('does not treat a billing-only organization membership as product participati
         $evaluation,
         $auditor,
         $admin,
-        1,
+        2,
         15000,
         'EUR',
         Carbon::now()->addDays(3),

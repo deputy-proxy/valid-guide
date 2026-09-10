@@ -57,7 +57,7 @@ function creatorWizardFixture(string $role = 'owner'): array
         'description' => 'Creator evaluation package.',
         'product_types' => ['course'],
         'complexity_levels' => ['standard'],
-        'price' => 250,
+        'price_minor' => 25000,
         'currency' => 'EUR',
         'status' => 'active',
     ]);

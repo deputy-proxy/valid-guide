@@ -8,9 +8,9 @@ use App\Enums\EvaluationComplexity;
 use App\Enums\ProductType;
 use App\Services\DomainStateTransitionException;
 use Illuminate\Database\Eloquent\Factories\Factory;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * @property list<string>|null $complexity_levels

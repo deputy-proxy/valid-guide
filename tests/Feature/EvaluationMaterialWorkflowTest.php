@@ -116,9 +116,10 @@ it('rejects external material without a location', function () {
 it('rejects material submission outside the paid intake states', function () {
     $member = User::factory()->create();
     $request = materialWorkflowRequest($member);
-    app(EvaluationRequestStateTransition::class)->transition($request, EvaluationRequestStatus::Intake, $member);
-    app(EvaluationRequestStateTransition::class)->transition($request, EvaluationRequestStatus::AwaitingCreator, $member);
-    app(EvaluationRequestStateTransition::class)->transition($request, EvaluationRequestStatus::Ready, $member);
+    $transition = app(EvaluationRequestStateTransition::class);
+    $transition->transition($request, EvaluationRequestStatus::Intake, $member);
+    $transition->transition($request, EvaluationRequestStatus::AwaitingCreator, $member);
+    $transition->transition($request, EvaluationRequestStatus::Cancelled, $member);
 
     expect(fn () => app(EvaluationMaterialSubmission::class)->submit(
         $member,

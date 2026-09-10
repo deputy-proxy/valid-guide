@@ -17,6 +17,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property EvaluationRequestStatus|null $status
  * @property EvaluationComplexity $complexity
  * @property float|null $quoted_price
+ * @property int|null $organization_id
  * @property int|null $product_id
  * @property int|null $product_release_id
  * @property int|null $service_package_id
@@ -56,29 +57,46 @@ class EvaluationRequest extends Model
             if ($request->status !== null && $request->status !== EvaluationRequestStatus::Draft) {
                 throw new DomainStateTransitionException('Evaluation requests must be created as drafts and advanced through EvaluationRequestStateTransition.');
             }
-            $lifecycleFields = ['submitted_at', 'payment_started_at', 'paid_at', 'evaluation_started_at', 'cancelled_at', 'refunded_at'];
-            if (array_intersect(array_keys($request->getDirty()), $lifecycleFields) !== []) {
+
+            if ($request->hasDirtyLifecycleFields()) {
                 throw new DomainStateTransitionException('Evaluation request lifecycle timestamps can only be set by their domain workflow.');
             }
         });
+
         static::saving(function (self $request): void {
-            if ($request->product_id !== null && $request->product_release_id !== null) {
-                $releaseProductId = ProductRelease::query()->whereKey($request->product_release_id)->value('product_id');
-                if ($releaseProductId !== (int) $request->product_id) {
-                    throw new DomainStateTransitionException('An evaluation request product release must belong to the requested product.');
-                }
-            }
+            $request->assertTenantConsistency();
+
             if ($request->exists && $request->isDirty('status')) {
                 throw new DomainStateTransitionException('Evaluation request status can only be changed through EvaluationRequestStateTransition.');
             }
-            $lifecycleFields = ['submitted_at', 'payment_started_at', 'paid_at', 'evaluation_started_at', 'cancelled_at', 'refunded_at'];
-            if ($request->exists && array_intersect(array_keys($request->getDirty()), $lifecycleFields) !== []) {
+
+            if ($request->exists && $request->hasDirtyLifecycleFields()) {
                 throw new DomainStateTransitionException('Evaluation request lifecycle timestamps can only be changed by the domain workflow.');
             }
+
             $originalStatus = $request->exists ? $request->getRawOriginal('status') : null;
-            $frozenStatuses = [EvaluationRequestStatus::AwaitingPayment->value, EvaluationRequestStatus::Paid->value, EvaluationRequestStatus::Intake->value, EvaluationRequestStatus::AwaitingCreator->value, EvaluationRequestStatus::Ready->value, EvaluationRequestStatus::Cancelled->value, EvaluationRequestStatus::Refunded->value];
+            $frozenStatuses = [
+                EvaluationRequestStatus::AwaitingPayment->value,
+                EvaluationRequestStatus::Paid->value,
+                EvaluationRequestStatus::Intake->value,
+                EvaluationRequestStatus::AwaitingCreator->value,
+                EvaluationRequestStatus::Ready->value,
+                EvaluationRequestStatus::Cancelled->value,
+                EvaluationRequestStatus::Refunded->value,
+            ];
+
             if ($originalStatus !== null && in_array($originalStatus, $frozenStatuses, true)) {
-                $frozenFields = ['service_package_id', 'service_package', 'service_package_name_snapshot', 'service_package_description_snapshot', 'service_package_terms_snapshot', 'complexity', 'quoted_price', 'currency'];
+                $frozenFields = [
+                    'service_package_id',
+                    'service_package',
+                    'service_package_name_snapshot',
+                    'service_package_description_snapshot',
+                    'service_package_terms_snapshot',
+                    'complexity',
+                    'quoted_price',
+                    'currency',
+                ];
+
                 if (array_intersect(array_keys($request->getDirty()), $frozenFields) !== []) {
                     throw new DomainStateTransitionException('Commercial terms are immutable after payment processing has started.');
                 }
@@ -120,5 +138,50 @@ class EvaluationRequest extends Model
     public function evaluations(): HasMany
     {
         return $this->hasMany(Evaluation::class);
+    }
+
+    private function assertTenantConsistency(): void
+    {
+        if ($this->organization_id === null || $this->product_id === null) {
+            return;
+        }
+
+        $productOrganizationId = Product::query()
+            ->whereKey($this->product_id)
+            ->value('organization_id');
+
+        if ($productOrganizationId !== $this->organization_id) {
+            throw new DomainStateTransitionException(
+                'An evaluation request product must belong to the requested organization.',
+            );
+        }
+
+        if ($this->product_release_id === null) {
+            return;
+        }
+
+        $releaseProductId = ProductRelease::query()
+            ->whereKey($this->product_release_id)
+            ->value('product_id');
+
+        if ($releaseProductId !== $this->product_id) {
+            throw new DomainStateTransitionException(
+                'An evaluation request product release must belong to the requested product.',
+            );
+        }
+    }
+
+    private function hasDirtyLifecycleFields(): bool
+    {
+        $lifecycleFields = [
+            'submitted_at',
+            'payment_started_at',
+            'paid_at',
+            'evaluation_started_at',
+            'cancelled_at',
+            'refunded_at',
+        ];
+
+        return array_intersect(array_keys($this->getDirty()), $lifecycleFields) !== [];
     }
 }

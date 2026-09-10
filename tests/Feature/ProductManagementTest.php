@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Enums\OrganizationRole;
 use App\Enums\ProductStatus;
 use App\Enums\ProductType;
+use App\Filament\Resources\Products\Pages\ListProducts;
 use App\Models\Organization;
 use App\Models\Product;
 use App\Models\ProductRelease;
@@ -12,11 +13,11 @@ use App\Models\User;
 use App\Services\DomainStateTransitionException;
 use App\Services\OrganizationContext;
 use App\Services\ProductManagement;
-use App\Filament\Resources\Products\Pages\ListProducts;
 use Filament\Actions\Testing\TestAction;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
+
 use function Pest\Livewire\livewire;
 
 function productManagementOrganization(User $user, OrganizationRole $role, string $slug): Organization

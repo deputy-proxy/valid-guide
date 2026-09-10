@@ -124,3 +124,14 @@
 - The audit confirmed that malformed methodology, unauthorized domain operations, invalid lifecycle states and incomplete decision prerequisites fail closed rather than silently producing trusted output.
 - The Phase 1 quality gate remains formatting, PHPStan/static analysis and the complete test suite. The Issue #33 CI run passed all configured checks.
 - No new Phase 1 architectural invariant was introduced by the audit. The purpose of Issue #33 was regression verification and documentation of the existing Phase 1 contract.
+
+## 2026-09-10 — UI is a parallel workstream with separate presentation issues
+
+- UI implementation is intentionally separated from the domain/application issues. Issues #41–#50 define and verify domain, application, commercial and workflow behavior; they should not become containers for detailed presentation implementation.
+- UI issues may depend on completed domain/application capabilities and should implement the interface to those capabilities rather than duplicate lifecycle, tenancy, authorization, pricing, payment or refund rules.
+- Filament is the primary internal application UI and should begin during Phase 2, incrementally as the corresponding backend capabilities stabilize. It is not deferred until Phase 2 is finished.
+- External/public UI is developed as a separate surface from Filament. Its foundation may begin during Phase 2, while production verification rendering depends on the persisted Public Verification Snapshot and explicit public-read contracts.
+- Public verification must render from the persisted snapshot rather than reconstructing historical public state from mutable internal records.
+- Creator dashboard issue #49 defines the application-facing dashboard contract and state/action information; the actual Filament dashboard implementation is #55.
+- The Phase 2 UI workstream is represented by #51–#58: UI foundation, Filament creator product/release management, Filament evaluation workflow, Filament commerce/refunds, creator dashboard presentation, external/public UI foundation, public verification experience and final UI regression/accessibility audit.
+- The quality gate applies equally to UI work: Pint/lint, PHPStan and the relevant/full test suite must remain green. UI visibility is never treated as a substitute for server-side authorization.

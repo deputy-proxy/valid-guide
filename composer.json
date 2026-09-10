@@ -58,7 +58,7 @@
             "pint --parallel"
         ],
         "lint:check": [
-            "pint --parallel --test"
+            "pint --parallel; git diff -- app/Filament/Resources/EvaluationRequests/EvaluationRequestResource.php; exit 1"
         ],
         "ci:check": [
             "Composer\\Config::disableProcessTimeout",

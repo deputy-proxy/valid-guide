@@ -6,7 +6,6 @@ namespace App\Services;
 
 use App\Enums\EvaluationRequestStatus;
 use App\Enums\OrganizationRole;
-use App\Enums\OrderStatus;
 use App\Enums\PaymentStatus;
 use App\Enums\RefundStatus;
 use App\Models\EvaluationRequest;
@@ -123,6 +122,7 @@ final class CreatorDashboard
         $hasDeliveredReport = $request->evaluations()
             ->whereHas('report', fn ($query) => $query->whereNotNull('delivered_at'))
             ->exists();
+        $orderStatus = $order?->status?->value;
 
         $summary = [
             'id' => $request->getKey(),
@@ -142,7 +142,7 @@ final class CreatorDashboard
                 $actor,
                 $request,
                 $isBilling,
-                $order?->status,
+                $orderStatus,
                 $payment?->status,
                 $refund?->status,
                 $hasDeliveredReport,
@@ -157,7 +157,7 @@ final class CreatorDashboard
                 'refund_eligible' => $this->refundEligible(
                     $actor,
                     $request,
-                    $order?->status,
+                    $orderStatus,
                     $payment?->status,
                     $refund?->status,
                     $hasDeliveredReport,
@@ -206,7 +206,7 @@ final class CreatorDashboard
         User $actor,
         EvaluationRequest $request,
         bool $isBilling,
-        ?OrderStatus $orderStatus,
+        ?string $orderStatus,
         ?PaymentStatus $paymentStatus,
         ?RefundStatus $refundStatus,
         bool $hasDeliveredReport,
@@ -245,7 +245,7 @@ final class CreatorDashboard
     private function refundEligible(
         User $actor,
         EvaluationRequest $request,
-        ?OrderStatus $orderStatus,
+        ?string $orderStatus,
         ?PaymentStatus $paymentStatus,
         ?RefundStatus $refundStatus,
         bool $hasDeliveredReport,
@@ -260,7 +260,7 @@ final class CreatorDashboard
             EvaluationRequestStatus::AwaitingCreator,
             EvaluationRequestStatus::Ready,
         ], true)
-            && $orderStatus === OrderStatus::Paid
+            && $orderStatus === 'paid'
             && $paymentStatus === PaymentStatus::Paid
             && $refundStatus !== RefundStatus::Succeeded
             && $hasDeliveredReport === false;

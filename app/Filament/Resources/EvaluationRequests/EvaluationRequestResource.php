@@ -123,18 +123,9 @@ final class EvaluationRequestResource extends Resource
     {
         return $table
             ->columns([
-                TextColumn::make('id')
-                    ->label('Request')
-                    ->searchable()
-                    ->sortable(),
-                TextColumn::make('organization.name')
-                    ->label('Organization')
-                    ->searchable()
-                    ->sortable(),
-                TextColumn::make('product.title')
-                    ->label('Product')
-                    ->searchable()
-                    ->sortable(),
+                TextColumn::make('id')->label('Request')->searchable()->sortable(),
+                TextColumn::make('organization.name')->label('Organization')->searchable()->sortable(),
+                TextColumn::make('product.title')->label('Product')->searchable()->sortable(),
                 TextColumn::make('status')
                     ->badge()
                     ->formatStateUsing(fn (mixed $state): string => self::statusLabel($state)),
@@ -157,15 +148,9 @@ final class EvaluationRequestResource extends Resource
             ])
             ->filters([
                 SelectFilter::make('status')->options(self::enumOptions(EvaluationRequestStatus::cases())),
-                SelectFilter::make('order_status')
-                    ->label('Order status')
-                    ->options(self::enumOptions(OrderStatus::cases())),
-                SelectFilter::make('payment_status')
-                    ->label('Payment status')
-                    ->options(self::enumOptions(PaymentStatus::cases())),
-                SelectFilter::make('refund_status')
-                    ->label('Refund status')
-                    ->options(self::enumOptions(RefundStatus::cases())),
+                SelectFilter::make('order_status')->label('Order status')->options(self::enumOptions(OrderStatus::cases())),
+                SelectFilter::make('payment_status')->label('Payment status')->options(self::enumOptions(PaymentStatus::cases())),
+                SelectFilter::make('refund_status')->label('Refund status')->options(self::enumOptions(RefundStatus::cases())),
             ])
             ->recordActions([
                 ViewAction::make(),
@@ -181,7 +166,9 @@ final class EvaluationRequestResource extends Resource
                     ->color('danger')
                     ->requiresConfirmation()
                     ->visible(fn (EvaluationRequest $record): bool => app(PlatformCommerce::class)->refundEligible($record))
-                    ->action(fn (EvaluationRequest $record): void => self::refund($record)),
+                    ->action(function (EvaluationRequest $record): void {
+                        self::refund($record);
+                    }),
             ]);
     }
 

@@ -22,7 +22,7 @@ use function Pest\Livewire\livewire;
 
 uses(RefreshDatabase::class);
 
-function productReleaseLifecycleFixtureForTransition(): array
+function issue52ProductReleaseFixture(): array
 {
     $actor = User::factory()->create();
     $organization = Organization::create([
@@ -51,7 +51,7 @@ function productReleaseLifecycleFixtureForTransition(): array
 }
 
 test('a product release must be created as a draft', function () {
-    [$actor, $release] = productReleaseLifecycleFixtureForTransition();
+    [$actor, $release] = issue52ProductReleaseFixture();
 
     expect(fn () => ProductRelease::create([
         'product_id' => $release->product_id,
@@ -62,10 +62,9 @@ test('a product release must be created as a draft', function () {
 });
 
 test('product release lifecycle fields cannot be changed through direct model mutation', function () {
-    [$actor, $release] = productReleaseLifecycleFixtureForTransition();
+    [$actor, $release] = issue52ProductReleaseFixture();
 
     app(ProductReleaseStateTransition::class)->transition($release, ProductReleaseStatus::Current, $actor);
-
     $release->refresh();
 
     expect(fn () => $release->update(['status' => ProductReleaseStatus::Withdrawn]))
@@ -78,7 +77,7 @@ test('product release lifecycle fields cannot be changed through direct model mu
 });
 
 test('the lifecycle service remains the controlled path for status changes', function () {
-    [$actor, $release] = productReleaseLifecycleFixtureForTransition();
+    [$actor, $release] = issue52ProductReleaseFixture();
 
     $published = app(ProductReleaseStateTransition::class)
         ->transition($release, ProductReleaseStatus::Current, $actor);
@@ -94,8 +93,8 @@ test('the lifecycle service remains the controlled path for status changes', fun
 });
 
 test('the Filament release list is scoped to the active organization', function () {
-    [$user, $release] = productReleaseLifecycleFixtureForTransition();
-    [$otherUser, $otherRelease] = productReleaseLifecycleFixtureForTransition();
+    [$user, $release] = issue52ProductReleaseFixture();
+    [$otherUser, $otherRelease] = issue52ProductReleaseFixture();
 
     session(['creator.organization_id' => $release->product->organization_id]);
     actingAs($user);
@@ -109,7 +108,7 @@ test('the Filament release list is scoped to the active organization', function 
 });
 
 test('draft releases expose only draft actions', function () {
-    [$user, $release] = productReleaseLifecycleFixtureForTransition();
+    [$user, $release] = issue52ProductReleaseFixture();
 
     session(['creator.organization_id' => $release->product->organization_id]);
     actingAs($user);
@@ -122,7 +121,7 @@ test('draft releases expose only draft actions', function () {
 });
 
 test('non-draft releases cannot be ordinarily edited and expose only valid transitions', function () {
-    [$user, $release] = productReleaseLifecycleFixtureForTransition();
+    [$user, $release] = issue52ProductReleaseFixture();
     app(ProductReleaseStateTransition::class)->publish($release, $user);
     $release->refresh();
 
@@ -137,7 +136,7 @@ test('non-draft releases cannot be ordinarily edited and expose only valid trans
 });
 
 test('publishing a second release preserves the historical identity of the first', function () {
-    [$user, $firstRelease] = productReleaseLifecycleFixtureForTransition();
+    [$user, $firstRelease] = issue52ProductReleaseFixture();
     $product = $firstRelease->product;
     app(ProductReleaseStateTransition::class)->publish($firstRelease, $user);
 
@@ -156,7 +155,7 @@ test('publishing a second release preserves the historical identity of the first
 });
 
 test('billing users cannot manage product releases', function () {
-    [$owner, $release] = productReleaseLifecycleFixtureForTransition();
+    [$owner, $release] = issue52ProductReleaseFixture();
     $organization = $release->product->organization;
     $billing = User::factory()->create();
     $organization->users()->attach($billing, ['role' => OrganizationRole::Billing->value]);
@@ -167,8 +166,8 @@ test('billing users cannot manage product releases', function () {
 });
 
 test('a forged product release update cannot cross organization boundaries', function () {
-    [$user, $release] = productReleaseLifecycleFixtureForTransition();
-    [$otherUser, $otherRelease] = productReleaseLifecycleFixtureForTransition();
+    [$user, $release] = issue52ProductReleaseFixture();
+    [$otherUser, $otherRelease] = issue52ProductReleaseFixture();
 
     expect(Gate::forUser($user)->allows('update', $otherRelease))->toBeFalse();
 

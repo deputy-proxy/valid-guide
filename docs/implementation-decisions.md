@@ -50,7 +50,7 @@
 - The standard-version lifecycle itself remains mutable through the controlled governance service (`draft → scheduled → effective → retired`); the immutability applies to methodology content, not to legitimate lifecycle transitions.
 - Because `StandardVersion` casts `status` to `StandardVersionStatus`, guidance immutability checks that require a scalar persisted status read it directly from the database query builder. This avoids comparing a cast enum with a string return type and keeps the guard explicitly tied to persisted state.
 
-## 2026-09-09 — Methodology assessment scale and versioned score anchors
+## 2026-09-10 — Methodology assessment scale and versioned score anchors
 
 - Criterion assessments are a controlled `CriterionAssessment` enum with exactly six values: `exceeds`, `meets`, `partially_meets`, `does_not_meet`, `insufficient_evidence`, and `not_applicable`.
 - Numerical scores remain distinct from categorical assessments. The applicable `StandardVersion` stores immutable `score_anchors` and `decision_thresholds` JSON configuration so the scoring policy is versioned with the methodology rather than hard-coded in the decision engine.
@@ -135,3 +135,15 @@
 - Creator dashboard issue #49 defines the application-facing dashboard contract and state/action information; the actual Filament dashboard implementation is #55.
 - The Phase 2 UI workstream is represented by #51–#58: UI foundation, Filament creator product/release management, Filament evaluation workflow, Filament commerce/refunds, creator dashboard presentation, external/public UI foundation, public verification experience and final UI regression/accessibility audit.
 - The quality gate applies equally to UI work: Pint/lint, PHPStan and the relevant/full test suite must remain green. UI visibility is never treated as a substitute for server-side authorization.
+
+## 2026-09-10 — Creator organization and Product management foundation
+
+- Organization context is resolved from authenticated membership. A client-supplied organization identifier is never trusted without checking persisted membership.
+- Product management is restricted to Owner, Admin and Editor roles. Billing membership does not grant access to Products or evaluation content.
+- Product lifecycle uses the controlled `ProductStatus` values `active` and `archived`. Products are created active and historical Products are archived rather than destructively deleted.
+- A Product cannot change organization ownership after creation. Archived Products cannot be edited, and lifecycle changes use `ProductManagement` rather than ordinary Eloquent status mutation.
+- Products with Product Release or Evaluation Request history cannot be deleted. This preserves the enduring Product identity required by downstream historical evaluation and trust records.
+- Product management uses a single application boundary for create, update and archive operations. Validation includes the approved title, description, canonical URL, audience, claimed outcomes, language and controlled `ProductType` taxonomy.
+- `canonical_url` and `language` were added as persistence fields while retaining the existing `url` field for compatibility with the already-implemented Phase 1 domain surface. The new application boundary treats `canonical_url` and `language` as required creator data.
+- Cross-tenant access is covered by feature tests for forged organization identifiers, Product identifiers, role restrictions and direct model ownership mutation.
+- The implementation intentionally does not add the Filament Product interface. That presentation layer remains #52 and must consume these backend authorization and lifecycle boundaries rather than reproduce them.

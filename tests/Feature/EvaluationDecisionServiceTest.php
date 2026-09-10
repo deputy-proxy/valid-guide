@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Enums\AudiencePromiseCoherence;
+use App\Enums\CriterionVotingMode;
 use App\Enums\EvaluationStatus;
 use App\Enums\EvidenceSufficiency;
 use App\Enums\PlatformRole;
@@ -121,6 +122,7 @@ function decisionFixture(float $score = 80, bool $withSubmission = true): array
             'sequence' => $number,
             'weight' => 10,
             'is_mandatory' => $number === 1,
+            'voting_mode' => CriterionVotingMode::Majority,
         ]);
 
         if ($auditorEvaluation !== null) {

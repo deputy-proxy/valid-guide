@@ -180,6 +180,7 @@ final class StripePaymentService
             $currency = isset($session['currency']) && is_string($session['currency']) ? strtoupper($session['currency']) : null;
             if ($amount !== $order->amount_minor || $currency !== strtoupper($order->currency)) {
                 $payment->forceFill(['status' => PaymentStatus::Failed])->save();
+
                 return;
             }
 

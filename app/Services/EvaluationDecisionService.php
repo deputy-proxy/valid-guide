@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Enums\AudiencePromiseCoherence;
+use App\Enums\CriterionVotingMode;
 use App\Enums\EvaluationStatus;
 use App\Enums\EvidenceSufficiency;
 use App\Models\AuditorEvaluation;
@@ -124,6 +125,7 @@ class EvaluationDecisionService
                     'score' => null,
                     'weight' => 0.0,
                     'mandatory' => false,
+                    'voting_mode' => $criterion->voting_mode->value,
                 ];
 
                 continue;
@@ -134,46 +136,40 @@ class EvaluationDecisionService
                 $applicableDimensions[$dimension] = true;
             }
 
-            $aggregate = $criterionVoting->aggregate($evaluation, $criterion->id);
-
-            if ($aggregate['voter_count'] !== $voterCount) {
-                throw new DomainStateTransitionException(sprintf('Applicable criterion %s does not have a vote from every submitted Auditor.', $criterion->code));
-            }
-
-            $winningVotes = $evaluation->criterionVotes()
-                ->where('criterion_id', $criterion->id)
-                ->where('decision', $aggregate['decision'])
-                ->with('criterionResult')
-                ->get();
-
-            $score = in_array($aggregate['decision'], ['not_applicable', 'insufficient_evidence'], true)
-                ? null
-                : round((float) $winningVotes->avg(fn ($vote): float => (float) $vote->criterionResult->score), 2);
+            $criterionAssessment = $this->resolveCriterionAssessment(
+                $evaluation,
+                $criterion,
+                $auditorEvaluations->values(),
+                $voterCount,
+                $criterionVoting,
+            );
 
             $criterionDecisions[$criterion->code] = [
                 'criterion_id' => $criterion->id,
                 'applicable' => true,
-                'decision' => $aggregate['decision'],
-                'score' => $score,
+                'decision' => $criterionAssessment['decision'],
+                'score' => $criterionAssessment['score'],
                 'weight' => $applicability['weight'],
                 'mandatory' => $applicability['mandatory'],
-                'counts' => $aggregate['counts'],
+                'counts' => $criterionAssessment['counts'],
+                'voting_mode' => $criterion->voting_mode->value,
             ];
 
-            if ($applicability['mandatory'] && ($score === null || $score < $mandatoryThreshold)) {
+            if ($criterionAssessment['blocker'] !== null) {
+                $blockers[] = $criterionAssessment['blocker'];
+            }
+
+            $score = $criterionAssessment['score'];
+            if ($score === null) {
+                continue;
+            }
+
+            if ($applicability['mandatory'] && $score < $mandatoryThreshold) {
                 $blockers[] = sprintf(
                     'Mandatory criterion %s does not meet the %.0f/100 threshold.',
                     $criterion->code,
                     $mandatoryThreshold,
                 );
-            }
-
-            if ($aggregate['decision'] === 'insufficient_evidence') {
-                $blockers[] = sprintf('Criterion %s has insufficient evidence.', $criterion->code);
-            }
-
-            if ($score === null) {
-                continue;
             }
 
             $weight = $applicability['weight'];
@@ -229,6 +225,84 @@ class EvaluationDecisionService
             'blockers' => array_values(array_unique($blockers)),
             'criterion_decisions' => $criterionDecisions,
             'voter_count' => $voterCount,
+        ];
+    }
+
+    /** @return array{decision:string, score:float|null, counts:array<string,int>, blocker:string|null} */
+    private function resolveCriterionAssessment(
+        Evaluation $evaluation,
+        Criterion $criterion,
+        \Illuminate\Support\Collection $auditorEvaluations,
+        int $auditorCount,
+        CriterionVoting $criterionVoting,
+    ): array {
+        if ($criterion->voting_mode === CriterionVotingMode::Majority) {
+            $aggregate = $criterionVoting->aggregate($evaluation, $criterion->id);
+
+            if ($aggregate['voter_count'] !== $auditorCount) {
+                throw new DomainStateTransitionException(sprintf('Collective criterion %s does not have a vote from every submitted Auditor.', $criterion->code));
+            }
+
+            $winningVotes = $evaluation->criterionVotes()
+                ->where('criterion_id', $criterion->id)
+                ->where('decision', $aggregate['decision'])
+                ->with('criterionResult')
+                ->get();
+
+            $score = in_array($aggregate['decision'], ['not_applicable', 'insufficient_evidence'], true)
+                ? null
+                : round((float) $winningVotes->avg(fn ($vote): float => (float) $vote->criterionResult->score), 2);
+
+            return [
+                'decision' => $aggregate['decision'],
+                'score' => $score,
+                'counts' => $aggregate['counts'],
+                'blocker' => $aggregate['decision'] === 'insufficient_evidence'
+                    ? sprintf('Criterion %s has insufficient evidence.', $criterion->code)
+                    : null,
+            ];
+        }
+
+        $results = collect();
+        foreach ($auditorEvaluations as $auditorEvaluation) {
+            $result = $auditorEvaluation->criterionResults()->where('criterion_id', $criterion->id)->first();
+
+            if ($result === null) {
+                return [
+                    'decision' => 'unresolved',
+                    'score' => null,
+                    'counts' => [],
+                    'blocker' => sprintf('Criterion %s is unresolved because a submitted Auditor did not assess it.', $criterion->code),
+                ];
+            }
+
+            $results->push($result);
+        }
+
+        $decisions = $results->map(fn ($result): string => $result->assessment->value)->countBy();
+        $uniqueDecisions = $decisions->keys()->count();
+
+        if ($uniqueDecisions !== 1) {
+            return [
+                'decision' => 'unresolved',
+                'score' => null,
+                'counts' => $decisions->all(),
+                'blocker' => sprintf('Criterion %s has conflicting independent Auditor assessments and is unresolved.', $criterion->code),
+            ];
+        }
+
+        $decision = $decisions->keys()->first();
+        $score = in_array($decision, ['not_applicable', 'insufficient_evidence'], true)
+            ? null
+            : round((float) $results->avg(fn ($result): float => (float) $result->score), 2);
+
+        return [
+            'decision' => $decision,
+            'score' => $score,
+            'counts' => $decisions->all(),
+            'blocker' => $decision === 'insufficient_evidence'
+                ? sprintf('Criterion %s has insufficient evidence.', $criterion->code)
+                : null,
         ];
     }
 

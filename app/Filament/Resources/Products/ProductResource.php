@@ -86,7 +86,7 @@ class ProductResource extends Resource
                     ->icon('heroicon-o-archive-box')
                     ->color('danger')
                     ->requiresConfirmation()
-                    ->visible(fn (Product $record): bool => $record->status === ProductStatus::Active && self::canArchive($record))
+                    ->visible(fn (Product $record): bool => $record->status === ProductStatus::Active && self::canArchiveProduct($record))
                     ->action(function (Product $record): void {
                         $user = self::authenticatedUser();
                         app(\App\Services\ProductManagement::class)->archive($user, $record);
@@ -122,7 +122,7 @@ class ProductResource extends Resource
             ->all();
     }
 
-    private static function canArchive(Product $product): bool
+    private static function canArchiveProduct(Product $product): bool
     {
         return self::authenticatedUser()->can('archive', $product);
     }

@@ -16,7 +16,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 /**
  * @property EvaluationRequestStatus|null $status
  * @property EvaluationComplexity $complexity
- * @property float|null $quoted_price
+ * @property string|null $quoted_price
+ * @property int|null $quoted_amount_minor
  * @property int|null $organization_id
  * @property int|null $product_id
  * @property int|null $product_release_id
@@ -31,7 +32,7 @@ class EvaluationRequest extends Model
     protected $fillable = [
         'organization_id', 'product_id', 'product_release_id', 'service_package_id', 'service_package',
         'service_package_name_snapshot', 'service_package_description_snapshot', 'service_package_terms_snapshot',
-        'complexity', 'quoted_price', 'currency', 'status', 'submitted_at', 'payment_started_at', 'paid_at',
+        'complexity', 'quoted_price', 'quoted_amount_minor', 'currency', 'status', 'submitted_at', 'payment_started_at', 'paid_at',
         'evaluation_started_at', 'cancelled_at', 'refunded_at', 'intake_notes',
     ];
 
@@ -41,6 +42,7 @@ class EvaluationRequest extends Model
             'complexity' => EvaluationComplexity::class,
             'status' => EvaluationRequestStatus::class,
             'quoted_price' => 'decimal:2',
+            'quoted_amount_minor' => 'integer',
             'service_package_terms_snapshot' => 'array',
             'submitted_at' => 'datetime',
             'payment_started_at' => 'datetime',
@@ -65,6 +67,7 @@ class EvaluationRequest extends Model
 
         static::saving(function (self $request): void {
             $request->assertTenantConsistency();
+            $request->assertCommercialAmountConsistency();
 
             if ($request->exists && $request->isDirty('status')) {
                 throw new DomainStateTransitionException('Evaluation request status can only be changed through EvaluationRequestStateTransition.');
@@ -94,6 +97,7 @@ class EvaluationRequest extends Model
                     'service_package_terms_snapshot',
                     'complexity',
                     'quoted_price',
+                    'quoted_amount_minor',
                     'currency',
                 ];
 
@@ -168,6 +172,40 @@ class EvaluationRequest extends Model
             throw new DomainStateTransitionException(
                 'An evaluation request product release must belong to the requested product.',
             );
+        }
+    }
+
+    private function assertCommercialAmountConsistency(): void
+    {
+        $quotedAmountMinor = $this->quoted_amount_minor;
+
+        if ($quotedAmountMinor === null && $this->quoted_price !== null) {
+            $quotedAmountMinor = (int) round((float) $this->quoted_price * 100);
+        }
+
+        if ($quotedAmountMinor === null || $this->service_package_id === null) {
+            return;
+        }
+
+        if ($quotedAmountMinor <= 0) {
+            throw new DomainStateTransitionException('A quoted amount must be positive.');
+        }
+
+        if ($this->quoted_price !== null && (int) round((float) $this->quoted_price * 100) !== $quotedAmountMinor) {
+            throw new DomainStateTransitionException('The quoted price must match the integer minor-unit amount.');
+        }
+
+        $package = ServicePackage::query()->find($this->service_package_id);
+        if ($package === null) {
+            throw new DomainStateTransitionException('A quoted amount requires an existing service package.');
+        }
+
+        if ($quotedAmountMinor !== $package->price_minor) {
+            throw new DomainStateTransitionException('The quoted amount must match the selected service package price.');
+        }
+
+        if ($this->currency !== strtoupper($package->currency)) {
+            throw new DomainStateTransitionException('The quoted currency must match the selected service package currency.');
         }
     }
 

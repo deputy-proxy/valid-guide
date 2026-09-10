@@ -54,6 +54,11 @@ function materialIntakeRequest(): EvaluationRequest
         'service_package_id' => $package->id,
         'service_package' => $package->slug,
         'service_package_name_snapshot' => $package->name,
+        'service_package_description_snapshot' => $package->description,
+        'service_package_terms_snapshot' => [
+            'name' => $package->name,
+            'description' => $package->description,
+        ],
         'complexity' => 'standard',
         'quoted_price' => 100,
         'currency' => 'EUR',
@@ -61,10 +66,10 @@ function materialIntakeRequest(): EvaluationRequest
     ]);
 
     app(EvaluationRequestStateTransition::class)
-        ->transition($request, EvaluationRequestStatus::AwaitingPayment);
+        ->transition($request, EvaluationRequestStatus::AwaitingPayment, $user);
 
     return app(EvaluationRequestStateTransition::class)
-        ->transition($request->fresh(), EvaluationRequestStatus::Paid);
+        ->transition($request->fresh(), EvaluationRequestStatus::Paid, $user);
 }
 
 it('records submitted material with its provenance', function () {

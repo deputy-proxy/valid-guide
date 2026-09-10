@@ -7,7 +7,6 @@ namespace App\Policies;
 use App\Enums\OrganizationRole;
 use App\Enums\ProductReleaseStatus;
 use App\Models\Organization;
-use App\Models\Product;
 use App\Models\ProductRelease;
 use App\Models\User;
 

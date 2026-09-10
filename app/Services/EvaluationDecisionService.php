@@ -13,7 +13,6 @@ use App\Models\Criterion;
 use App\Models\Evaluation;
 use App\Models\EvaluationDecision;
 use App\Models\User;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 class EvaluationDecisionService
@@ -233,7 +232,7 @@ class EvaluationDecisionService
     private function resolveCriterionAssessment(
         Evaluation $evaluation,
         Criterion $criterion,
-        Collection $auditorEvaluations,
+        iterable $auditorEvaluations,
         int $auditorCount,
         CriterionVoting $criterionVoting,
     ): array {

@@ -5,8 +5,6 @@ declare(strict_types=1);
 namespace App\Filament\Resources\EvaluationRequests;
 
 use App\Enums\EvaluationRequestStatus;
-use App\Enums\OrderStatus;
-use App\Enums\PaymentStatus;
 use App\Enums\RefundStatus;
 use App\Filament\Resources\EvaluationRequests\Pages\ListEvaluationRequests;
 use App\Filament\Resources\EvaluationRequests\Pages\ViewEvaluationRequest;

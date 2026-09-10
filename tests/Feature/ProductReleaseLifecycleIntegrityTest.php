@@ -50,14 +50,14 @@ test('a product release must be created as a draft', function () {
         'product_id' => $release->product_id,
         'release_identifier' => '2026-02',
         'title_snapshot' => 'Example Course',
-        'status' => ProductReleaseStatus::Available,
+        'status' => ProductReleaseStatus::Current,
     ]))->toThrow(DomainStateTransitionException::class);
 });
 
 test('product release lifecycle fields cannot be changed through direct model mutation', function () {
     [$actor, $release] = productReleaseLifecycleFixture();
 
-    app(ProductReleaseStateTransition::class)->transition($release, ProductReleaseStatus::Available, $actor);
+    app(ProductReleaseStateTransition::class)->transition($release, ProductReleaseStatus::Current, $actor);
 
     $release->refresh();
 
@@ -74,9 +74,9 @@ test('the lifecycle service remains the controlled path for status changes', fun
     [$actor, $release] = productReleaseLifecycleFixture();
 
     $published = app(ProductReleaseStateTransition::class)
-        ->transition($release, ProductReleaseStatus::Available, $actor);
+        ->transition($release, ProductReleaseStatus::Current, $actor);
 
-    expect($published->status)->toBe(ProductReleaseStatus::Available)
+    expect($published->status)->toBe(ProductReleaseStatus::Current)
         ->and($published->published_at)->not->toBeNull();
 
     $withdrawn = app(ProductReleaseStateTransition::class)

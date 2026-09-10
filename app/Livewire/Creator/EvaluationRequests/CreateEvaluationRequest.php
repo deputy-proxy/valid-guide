@@ -14,7 +14,6 @@ use App\Models\ServicePackage;
 use App\Models\User;
 use App\Services\CreatorEvaluationRequestIntake;
 use App\Services\DomainStateTransitionException;
-use App\Services\EvaluationMaterialIntake;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Auth;
@@ -261,24 +260,18 @@ final class CreateEvaluationRequest extends Component
             'materialLocation' => ['nullable', 'string', 'max:2048'],
         ]);
 
-        $request = $this->requestModel();
-        if ($request->materials()->exists()) {
-            return;
-        }
-
         $type = EvaluationMaterialType::tryFrom($this->materialType);
         if ($type === null) {
             throw new DomainStateTransitionException('The selected material type is invalid.');
         }
 
-        app(EvaluationMaterialIntake::class)->submit(
-            $request,
+        app(CreatorEvaluationRequestIntake::class)->saveMaterialDraft(
             $this->authenticatedUser(),
+            $this->requestModel(),
             $type,
             $this->materialLabel,
             $this->materialDescription !== '' ? $this->materialDescription : null,
             $this->materialLocation !== '' ? $this->materialLocation : null,
-            ['source' => 'creator_wizard'],
         );
     }
 
@@ -305,6 +298,13 @@ final class CreateEvaluationRequest extends Component
         $this->completionWindow = isset($notes['requested_completion_window']) && is_string($notes['requested_completion_window'])
             ? $notes['requested_completion_window']
             : '';
+        $material = $notes['material'] ?? null;
+        if (is_array($material)) {
+            $this->materialType = isset($material['type']) && is_string($material['type']) ? $material['type'] : $this->materialType;
+            $this->materialLabel = isset($material['label']) && is_string($material['label']) ? $material['label'] : '';
+            $this->materialDescription = isset($material['description']) && is_string($material['description']) ? $material['description'] : '';
+            $this->materialLocation = isset($material['location']) && is_string($material['location']) ? $material['location'] : '';
+        }
         $this->claimsConfirmed = ($notes['claims_confirmed'] ?? false) === true;
         $this->audienceConfirmed = ($notes['audience_confirmed'] ?? false) === true;
         $this->servicePackageId = $request->service_package_id;

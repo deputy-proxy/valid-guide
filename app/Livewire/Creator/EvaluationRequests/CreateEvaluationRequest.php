@@ -78,15 +78,14 @@ final class CreateEvaluationRequest extends Component
     /** @return array<int, string> */
     public function productOptions(): array
     {
-        $products = Product::query()
+        return Product::query()
             ->where('organization_id', $this->organizationId)
             ->where('status', 'active')
             ->orderBy('title')
-            ->get(['id', 'title']);
-
-        return $products->pluck('title', 'id')->mapWithKeys(
-            fn (mixed $title, mixed $id): array => [(int) $id => (string) $title],
-        )->all();
+            ->pluck('title', 'id')
+            ->mapWithKeys(
+                fn (mixed $title, mixed $id): array => [(int) $id => (string) $title],
+            )->all();
     }
 
     /** @return array<int, string> */
@@ -117,7 +116,7 @@ final class CreateEvaluationRequest extends Component
     public function packageOptions(): array
     {
         $product = $this->request->product;
-        if ($product === null || $product->organization_id !== $this->organizationId || $product->product_type === null) {
+        if ($product === null || $product->organization_id !== $this->organizationId) {
             return [];
         }
 
@@ -142,7 +141,7 @@ final class CreateEvaluationRequest extends Component
 
     public function next(): void
     {
-        $this->clearErrorBag();
+        $this->resetValidation();
 
         try {
             match ($this->currentStep) {
@@ -170,13 +169,13 @@ final class CreateEvaluationRequest extends Component
             return;
         }
 
-        $this->clearErrorBag();
+        $this->resetValidation();
         $this->currentStep = max(1, $this->currentStep - 1);
     }
 
     public function submitForPayment(): void
     {
-        $this->clearErrorBag();
+        $this->resetValidation();
 
         try {
             $this->validate([
@@ -289,7 +288,7 @@ final class CreateEvaluationRequest extends Component
         $this->claimsConfirmed = ($notes['claims_confirmed'] ?? false) === true;
         $this->audienceConfirmed = ($notes['audience_confirmed'] ?? false) === true;
         $this->servicePackageId = $this->request->service_package_id;
-        $this->complexity = $this->request->complexity?->value ?? 'standard';
+        $this->complexity = $this->request->complexity->value;
 
         if ($this->request->status !== EvaluationRequestStatus::Draft) {
             $this->currentStep = 6;

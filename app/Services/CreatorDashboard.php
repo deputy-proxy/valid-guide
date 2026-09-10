@@ -6,6 +6,7 @@ namespace App\Services;
 
 use App\Enums\EvaluationRequestStatus;
 use App\Enums\OrganizationRole;
+use App\Enums\OrderStatus;
 use App\Enums\PaymentStatus;
 use App\Enums\RefundStatus;
 use App\Models\EvaluationRequest;
@@ -44,17 +45,13 @@ final class CreatorDashboard
             Gate::forUser($actor)->authorize('viewAny', EvaluationRequest::class);
         }
 
-        $products = $isCreator
-            ? $this->products($actor, $organization)
-            : [];
-
         return [
             'organization' => [
                 'id' => $organization->getKey(),
                 'name' => (string) $organization->name,
                 'role' => $role,
             ],
-            'products' => $products,
+            'products' => $isCreator ? $this->products($actor, $organization) : [],
             'evaluation_requests' => $this->evaluationRequests($actor, $organization, $role),
         ];
     }
@@ -93,9 +90,7 @@ final class CreatorDashboard
             ->all();
     }
 
-    /**
-     * @return list<array<string, mixed>>
-     */
+    /** @return list<array<string, mixed>> */
     private function evaluationRequests(User $actor, Organization $organization, string $role): array
     {
         $requests = EvaluationRequest::query()
@@ -106,7 +101,6 @@ final class CreatorDashboard
                 'servicePackage',
                 'order.payments',
                 'order.refund',
-                'evaluations.report',
             ])
             ->latest('created_at')
             ->get();
@@ -114,25 +108,21 @@ final class CreatorDashboard
         $isBilling = $role === OrganizationRole::Billing->value;
 
         return $requests
-            ->filter(function (EvaluationRequest $request) use ($actor, $isBilling): bool {
-                return $isBilling || Gate::forUser($actor)->allows('view', $request);
-            })
+            ->filter(fn (EvaluationRequest $request): bool => $isBilling || Gate::forUser($actor)->allows('view', $request))
             ->map(fn (EvaluationRequest $request): array => $this->requestSummary($actor, $request, $isBilling))
             ->values()
             ->all();
     }
 
-    /**
-     * @return array<string, mixed>
-     */
+    /** @return array<string, mixed> */
     private function requestSummary(User $actor, EvaluationRequest $request, bool $isBilling): array
     {
         $order = $request->order;
         $payment = $order?->payments->sortByDesc('created_at')->first();
         $refund = $order?->refund;
-        $hasDeliveredReport = $request->evaluations->contains(
-            fn ($evaluation): bool => $evaluation->report?->delivered_at !== null,
-        );
+        $hasDeliveredReport = $request->evaluations()
+            ->whereHas('report', fn ($query) => $query->whereNotNull('delivered_at'))
+            ->exists();
 
         $summary = [
             'id' => $request->getKey(),
@@ -148,7 +138,15 @@ final class CreatorDashboard
                 'version' => $request->productRelease->version !== null ? (string) $request->productRelease->version : null,
             ],
             'stage' => $this->stage($request),
-            'next_action' => $this->nextAction($actor, $request, $isBilling, $payment?->status, $refund?->status, $hasDeliveredReport),
+            'next_action' => $this->nextAction(
+                $actor,
+                $request,
+                $isBilling,
+                $order?->status,
+                $payment?->status,
+                $refund?->status,
+                $hasDeliveredReport,
+            ),
             'intake' => $isBilling ? null : $this->intakeStatus($request),
             'commerce' => [
                 'package' => $request->service_package_name_snapshot,
@@ -156,7 +154,14 @@ final class CreatorDashboard
                 'amount_minor' => $request->quoted_amount_minor,
                 'currency' => $request->currency,
                 'payment_status' => $payment?->status?->value,
-                'refund_eligible' => $this->refundEligible($actor, $request, $payment?->status, $refund?->status, $hasDeliveredReport),
+                'refund_eligible' => $this->refundEligible(
+                    $actor,
+                    $request,
+                    $order?->status,
+                    $payment?->status,
+                    $refund?->status,
+                    $hasDeliveredReport,
+                ),
             ],
         ];
 
@@ -201,6 +206,7 @@ final class CreatorDashboard
         User $actor,
         EvaluationRequest $request,
         bool $isBilling,
+        ?OrderStatus $orderStatus,
         ?PaymentStatus $paymentStatus,
         ?RefundStatus $refundStatus,
         bool $hasDeliveredReport,
@@ -211,9 +217,14 @@ final class CreatorDashboard
                 EvaluationRequestStatus::Paid,
                 EvaluationRequestStatus::Intake,
                 EvaluationRequestStatus::AwaitingCreator,
-                EvaluationRequestStatus::Ready => $this->refundEligible($actor, $request, $paymentStatus, $refundStatus, $hasDeliveredReport)
-                    ? 'request_refund'
-                    : null,
+                EvaluationRequestStatus::Ready => $this->refundEligible(
+                    $actor,
+                    $request,
+                    $orderStatus,
+                    $paymentStatus,
+                    $refundStatus,
+                    $hasDeliveredReport,
+                ) ? 'request_refund' : null,
                 default => null,
             };
         }
@@ -226,7 +237,7 @@ final class CreatorDashboard
             EvaluationRequestStatus::AwaitingCreator => 'complete_intake',
             EvaluationRequestStatus::Ready => 'view_status',
             EvaluationRequestStatus::Cancelled,
-            EvaluationRequestStatus::Refunded => null,
+            EvaluationRequestStatus::Refunded,
             null => null,
         };
     }
@@ -234,6 +245,7 @@ final class CreatorDashboard
     private function refundEligible(
         User $actor,
         EvaluationRequest $request,
+        ?OrderStatus $orderStatus,
         ?PaymentStatus $paymentStatus,
         ?RefundStatus $refundStatus,
         bool $hasDeliveredReport,
@@ -248,6 +260,7 @@ final class CreatorDashboard
             EvaluationRequestStatus::AwaitingCreator,
             EvaluationRequestStatus::Ready,
         ], true)
+            && $orderStatus === OrderStatus::Paid
             && $paymentStatus === PaymentStatus::Paid
             && $refundStatus !== RefundStatus::Succeeded
             && $hasDeliveredReport === false;

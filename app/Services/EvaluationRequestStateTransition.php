@@ -19,7 +19,7 @@ final class EvaluationRequestStateTransition
         'paid' => [EvaluationRequestStatus::Intake, EvaluationRequestStatus::Refunded],
         'intake' => [EvaluationRequestStatus::AwaitingCreator, EvaluationRequestStatus::Ready, EvaluationRequestStatus::Refunded],
         'awaiting_creator' => [EvaluationRequestStatus::Ready, EvaluationRequestStatus::Cancelled, EvaluationRequestStatus::Refunded],
-        'ready' => [],
+        'ready' => [EvaluationRequestStatus::Refunded],
         'cancelled' => [],
         'refunded' => [],
     ];

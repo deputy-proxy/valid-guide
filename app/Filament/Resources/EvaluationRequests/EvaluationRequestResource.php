@@ -31,8 +31,8 @@ use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
-use UnitEnum;
 use Throwable;
+use UnitEnum;
 
 final class EvaluationRequestResource extends Resource
 {

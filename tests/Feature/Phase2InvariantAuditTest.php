@@ -71,7 +71,7 @@ it('keeps raw bulk mutations outside application workflows', function (): void {
         $lines = preg_split('/\R/', $content) ?: [];
 
         foreach ($lines as $lineNumber => $line) {
-            if (preg_match('/DB::(?:table|query)\\([^;]*\\)->(?:update|delete)\\s*\\(/', $line) === 1) {
+            if (preg_match('/DB::(?:table|query)\([^;]*\)->(?:update|delete)\s*\(/', $line) === 1) {
                 $violations[] = sprintf('%s:%d', $relativePath, $lineNumber + 1);
             }
         }

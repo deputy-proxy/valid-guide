@@ -40,71 +40,87 @@ class AuditorAssignmentCreation
             throw new DomainStateTransitionException('An Auditor assignment deadline must be in the future.');
         }
 
-        return DB::transaction(function () use (
-            $evaluation,
-            $auditor,
-            $assignedBy,
-            $sequence,
-            $compensationAmountMinor,
-            $compensationCurrency,
-            $dueAt,
-        ): AuditorAssignment {
-            $evaluation = Evaluation::query()
-                ->with(['productRelease.product', 'assignments'])
-                ->lockForUpdate()
-                ->findOrFail($evaluation->getKey());
-            /** @var Evaluation $evaluation */
-            if ($evaluation->status->value !== 'pending' && $evaluation->status->value !== 'in_progress') {
-                throw new DomainStateTransitionException('Auditors can only be assigned to pending or in-progress evaluations.');
-            }
-            app(AuditorStaffing::class)->assertCanAdd($evaluation);
-            $this->assertEligible($evaluation, $auditor, $assignedBy);
-            if ($evaluation->assignments()->where('auditor_id', $auditor->id)->exists()) {
-                throw new DomainStateTransitionException('The same Auditor cannot be assigned twice to one evaluation.');
-            }
-            if ($evaluation->assignments()->where('sequence', $sequence)->exists()) {
-                throw new DomainStateTransitionException('The requested Auditor assignment sequence is already occupied.');
-            }
-
-            $assignment = AuditorAssignment::query()->create([
-                'evaluation_id' => $evaluation->id,
-                'auditor_id' => $auditor->id,
-                'sequence' => $sequence,
-                'status' => 'offered',
-                'assigned_at' => now(),
-                'due_at' => $dueAt,
-                'compensation_amount_minor' => $compensationAmountMinor,
-                'compensation_currency' => $compensationCurrency,
-                'compensation_status' => 'pending',
-            ]);
-
-            ConflictDeclaration::query()->create([
-                'evaluation_id' => $evaluation->id,
-                'auditor_assignment_id' => $assignment->id,
-                'declaration_type' => 'assignment',
-                'outcome' => 'potential_conflict',
-            ]);
-
-            app(AuditorCompensationService::class)->assign(
-                $assignment,
+        try {
+            return DB::transaction(function () use (
+                $evaluation,
+                $auditor,
                 $assignedBy,
+                $sequence,
                 $compensationAmountMinor,
                 $compensationCurrency,
-            );
+                $dueAt,
+            ): AuditorAssignment {
+                $evaluation = Evaluation::query()
+                    ->with(['productRelease.product', 'assignments'])
+                    ->lockForUpdate()
+                    ->findOrFail($evaluation->getKey());
+                /** @var Evaluation $evaluation */
+                if ($evaluation->status->value !== 'pending' && $evaluation->status->value !== 'in_progress') {
+                    throw new DomainStateTransitionException('Auditors can only be assigned to pending or in-progress evaluations.');
+                }
+                app(AuditorStaffing::class)->assertCanAdd($evaluation);
+                $this->assertEligible($evaluation, $auditor);
+                if ($evaluation->assignments()->where('auditor_id', $auditor->id)->exists()) {
+                    throw new DomainStateTransitionException('The same Auditor cannot be assigned twice to one evaluation.');
+                }
+                if ($evaluation->assignments()->where('sequence', $sequence)->exists()) {
+                    throw new DomainStateTransitionException('The requested Auditor assignment sequence is already occupied.');
+                }
 
-            AuditLogger::record(
-                event: 'auditor_assignment.created',
-                auditable: $assignment,
-                after: [
+                $assignment = AuditorAssignment::query()->create([
                     'evaluation_id' => $evaluation->id,
                     'auditor_id' => $auditor->id,
                     'sequence' => $sequence,
-                    'due_at' => $dueAt?->toIso8601String(),
+                    'status' => 'offered',
+                    'assigned_at' => now(),
+                    'due_at' => $dueAt,
+                    'compensation_amount_minor' => $compensationAmountMinor,
+                    'compensation_currency' => $compensationCurrency,
+                    'compensation_status' => 'pending',
+                ]);
+
+                ConflictDeclaration::query()->create([
+                    'evaluation_id' => $evaluation->id,
+                    'auditor_assignment_id' => $assignment->id,
+                    'declaration_type' => 'assignment',
+                    'outcome' => 'potential_conflict',
+                ]);
+
+                app(AuditorCompensationService::class)->assign(
+                    $assignment,
+                    $assignedBy,
+                    $compensationAmountMinor,
+                    $compensationCurrency,
+                );
+
+                AuditLogger::record(
+                    event: 'auditor_assignment.created',
+                    auditable: $assignment,
+                    after: [
+                        'evaluation_id' => $evaluation->id,
+                        'auditor_id' => $auditor->id,
+                        'sequence' => $sequence,
+                        'due_at' => $dueAt?->toIso8601String(),
+                    ],
+                );
+
+                return $assignment->refresh();
+            });
+        } catch (PriorProductParticipationException $exception) {
+            AuditLogger::record(
+                event: 'auditor_assignment.conflict_detected',
+                auditable: $exception->evaluation,
+                after: [
+                    'auditor_id' => $exception->auditor->id,
+                    'conflict' => 'prior_product_participation',
+                ],
+                metadata: [
+                    'determined_by' => $exception->determinedBy->id,
                 ],
             );
 
-            return $assignment->refresh();
-        });
+            throw $exception;
+        }
     }
 
     public function isEligible(Evaluation $evaluation, User $auditor): bool
@@ -118,7 +134,7 @@ class AuditorAssignmentCreation
         return true;
     }
 
-    private function assertEligible(Evaluation $evaluation, User $auditor, ?User $assignedBy = null): void
+    private function assertEligible(Evaluation $evaluation, User $auditor): void
     {
         $profile = $auditor->auditorProfile()->with('competencies')->first();
 
@@ -156,21 +172,7 @@ class AuditorAssignmentCreation
         }
 
         if ($this->hasPriorProductParticipation($evaluation, $auditor)) {
-            if ($assignedBy !== null) {
-                AuditLogger::record(
-                    event: 'auditor_assignment.conflict_detected',
-                    auditable: $evaluation,
-                    after: [
-                        'auditor_id' => $auditor->id,
-                        'conflict' => 'prior_product_participation',
-                    ],
-                    metadata: [
-                        'determined_by' => $assignedBy->id,
-                    ],
-                );
-            }
-
-            throw new DomainStateTransitionException('The Auditor cannot be assigned because they previously participated in this product.');
+            throw new PriorProductParticipationException($evaluation, $auditor, request()->user() ?? $auditor);
         }
     }
 

@@ -170,7 +170,7 @@ final class CreatorRefundService
             $payment = Payment::query()->whereKey($refund->payment_id)->lockForUpdate()->firstOrFail();
             $order = Order::query()->whereKey($refund->order_id)->lockForUpdate()->firstOrFail();
             $fromStatus = $request->status;
-            if (! ($fromStatus instanceof EvaluationRequestStatus)) {
+            if ($fromStatus instanceof EvaluationRequestStatus === false) {
                 throw new DomainStateTransitionException('The evaluation request must have a lifecycle state before it can be refunded.');
             }
 

@@ -97,7 +97,7 @@ test('the Filament release list is scoped to the active organization', function 
     [$otherUser, $otherRelease] = issue52ProductReleaseFixture();
 
     session(['creator.organization_id' => $release->product->organization_id]);
-    actingAs($user);
+    $this->actingAs($user);
 
     livewire(ListProductReleases::class)
         ->assertSuccessful()
@@ -111,7 +111,7 @@ test('draft releases expose only draft actions', function () {
     [$user, $release] = issue52ProductReleaseFixture();
 
     session(['creator.organization_id' => $release->product->organization_id]);
-    actingAs($user);
+    $this->actingAs($user);
 
     livewire(ListProductReleases::class)
         ->assertActionVisible(TestAction::make('publish')->table($release))
@@ -126,7 +126,7 @@ test('non-draft releases cannot be ordinarily edited and expose only valid trans
     $release->refresh();
 
     session(['creator.organization_id' => $release->product->organization_id]);
-    actingAs($user);
+    $this->actingAs($user);
 
     livewire(ListProductReleases::class)
         ->assertActionHidden(TestAction::make('edit')->table($release))

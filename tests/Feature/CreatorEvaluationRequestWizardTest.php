@@ -44,6 +44,7 @@ function creatorWizardFixture(string $role = 'owner'): array
     $release = ProductRelease::create([
         'product_id' => $product->id,
         'release_identifier' => 'release-'.$user->id,
+        'edition' => 'Professional Edition',
         'title_snapshot' => $product->title,
         'version' => '1.0',
         'status' => 'draft',
@@ -125,6 +126,34 @@ it('completes the creator wizard and reaches the payment handoff', function () {
         ]);
 });
 
+it('shows the exact pre-payment review summary and server-side quote', function () {
+    [$user, $organization, $product, $release, $package] = creatorWizardFixture();
+    $this->actingAs($user);
+
+    Livewire::test(CreateEvaluationRequest::class, ['organizationId' => $organization->id])
+        ->set('productId', $product->id)
+        ->call('next')
+        ->set('productReleaseId', $release->id)
+        ->set('scope', 'Evaluate the published learning experience.')
+        ->call('next')
+        ->set('materialType', 'url')
+        ->set('materialLabel', 'Course landing page')
+        ->set('materialLocation', 'https://example.test/course')
+        ->call('next')
+        ->set('claimsConfirmed', true)
+        ->set('audienceConfirmed', true)
+        ->call('next')
+        ->set('servicePackageId', $package->id)
+        ->set('complexity', 'standard')
+        ->assertSee('release-'.$user->id)
+        ->assertSee('v1.0')
+        ->assertSee('Professional Edition')
+        ->assertSee('1 intake item')
+        ->assertSee('Standard Evaluation')
+        ->assertSee('250.00 EUR')
+        ->assertSee('Before an evaluation report is delivered');
+});
+
 it('resumes an existing draft without creating another request', function () {
     [$user, $organization, $product] = creatorWizardFixture();
     $this->actingAs($user);
@@ -139,6 +168,26 @@ it('resumes an existing draft without creating another request', function () {
         ->assertSet('currentStep', 1);
 
     expect(EvaluationRequest::query()->where('organization_id', $organization->id)->count())->toBe(1);
+});
+
+it('rejects resuming a request outside the active organization', function () {
+    [$user, $organization] = creatorWizardFixture();
+    [, $otherOrganization, $otherProduct] = creatorWizardFixture();
+    $this->actingAs($user);
+
+    $request = app(CreatorEvaluationRequestIntake::class)->selectProduct(
+        User::query()->whereKey($otherOrganization->users()->firstOrFail()->getKey())->firstOrFail(),
+        app(CreatorEvaluationRequestIntake::class)->start(
+            User::query()->whereKey($otherOrganization->users()->firstOrFail()->getKey())->firstOrFail(),
+            $otherOrganization->id,
+        ),
+        $otherProduct,
+    );
+
+    expect(fn () => Livewire::test(CreateEvaluationRequest::class, [
+        'organizationId' => $organization->id,
+        'evaluationRequestId' => $request->id,
+    ]))->toThrow(AuthorizationException::class);
 });
 
 it('preserves state while navigating backwards', function () {
@@ -179,6 +228,43 @@ it('rejects cross-tenant products and releases server-side', function () {
 
     expect(fn () => app(CreatorEvaluationRequestIntake::class)->selectRelease($user, $request, $otherRelease))
         ->toThrow(DomainStateTransitionException::class);
+});
+
+it('rejects a package that is not applicable to the selected product', function () {
+    [$user, $organization, $product, $release, $package] = creatorWizardFixture();
+    $incompatiblePackage = ServicePackage::create([
+        'name' => 'Guide Evaluation',
+        'slug' => 'guide-evaluation-'.$user->id,
+        'description' => 'Incompatible package.',
+        'product_types' => ['guide'],
+        'complexity_levels' => ['standard'],
+        'price_minor' => 30000,
+        'currency' => 'EUR',
+        'status' => 'active',
+    ]);
+    $this->actingAs($user);
+
+    $component = Livewire::test(CreateEvaluationRequest::class, ['organizationId' => $organization->id])
+        ->set('productId', $product->id)
+        ->call('next')
+        ->set('productReleaseId', $release->id)
+        ->set('scope', 'Evaluate the product.')
+        ->call('next')
+        ->set('materialType', 'url')
+        ->set('materialLabel', 'Course landing page')
+        ->set('materialLocation', 'https://example.test/course')
+        ->call('next')
+        ->set('claimsConfirmed', true)
+        ->set('audienceConfirmed', true)
+        ->call('next')
+        ->set('servicePackageId', $incompatiblePackage->id)
+        ->set('complexity', 'standard')
+        ->call('submitForPayment')
+        ->assertHasErrors('form');
+
+    expect(EvaluationRequest::query()->where('organization_id', $organization->id)->firstOrFail()->status)
+        ->toBe(EvaluationRequestStatus::Draft)
+        ->and($package->price_minor)->toBe(25000);
 });
 
 it('denies the billing role at the creator intake authorization boundary', function () {

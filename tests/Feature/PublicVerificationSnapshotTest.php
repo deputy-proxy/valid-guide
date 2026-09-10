@@ -54,7 +54,7 @@ it('publishes a complete public verification snapshot', function (): void {
         ->and($snapshot['standard']['version'])->toBe('1.0')
         ->and($snapshot['criteria'][0]['code'])->toBe('C1')
         ->and($snapshot['criteria'][0]['assessment'])->toBe('meets')
-        ->and($snapshot['criteria'][0]['score'])->toBe(80.0)
+        ->and($snapshot['criteria'][0]['score'])->toBe(80)
         ->and($snapshot['findings'][0]['title'])->toBe('Clear strength')
         ->and($snapshot['strengths'])->toHaveCount(1)
         ->and($snapshot['weaknesses'])->toHaveCount(1)

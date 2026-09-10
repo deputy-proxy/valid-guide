@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Enums\EvaluationRequestStatus;
 use App\Enums\OrderStatus;
 use App\Enums\PaymentStatus;
 use App\Enums\RefundStatus;
@@ -14,9 +15,7 @@ final class PlatformCommerce
 {
     public function latestPayment(EvaluationRequest $request): ?Payment
     {
-        return $request->order?->payments()
-            ->latest('created_at')
-            ->first();
+        return $request->order?->latestPayment;
     }
 
     public function refundEligible(EvaluationRequest $request): bool
@@ -44,7 +43,7 @@ final class PlatformCommerce
 
     public function paymentRetryable(EvaluationRequest $request): bool
     {
-        if ($request->status?->value !== 'awaiting_payment') {
+        if ($request->status !== EvaluationRequestStatus::AwaitingPayment) {
             return false;
         }
 

@@ -15,7 +15,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
 
-function productReleaseLifecycleFixture(): array
+function productReleaseLifecycleFixtureForTransition(): array
 {
     $actor = User::factory()->create();
     $organization = Organization::create([
@@ -44,7 +44,7 @@ function productReleaseLifecycleFixture(): array
 }
 
 test('a product release must be created as a draft', function () {
-    [$actor, $release] = productReleaseLifecycleFixture();
+    [$actor, $release] = productReleaseLifecycleFixtureForTransition();
 
     expect(fn () => ProductRelease::create([
         'product_id' => $release->product_id,
@@ -55,7 +55,7 @@ test('a product release must be created as a draft', function () {
 });
 
 test('product release lifecycle fields cannot be changed through direct model mutation', function () {
-    [$actor, $release] = productReleaseLifecycleFixture();
+    [$actor, $release] = productReleaseLifecycleFixtureForTransition();
 
     app(ProductReleaseStateTransition::class)->transition($release, ProductReleaseStatus::Current, $actor);
 
@@ -71,7 +71,7 @@ test('product release lifecycle fields cannot be changed through direct model mu
 });
 
 test('the lifecycle service remains the controlled path for status changes', function () {
-    [$actor, $release] = productReleaseLifecycleFixture();
+    [$actor, $release] = productReleaseLifecycleFixtureForTransition();
 
     $published = app(ProductReleaseStateTransition::class)
         ->transition($release, ProductReleaseStatus::Current, $actor);

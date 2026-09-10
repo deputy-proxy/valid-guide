@@ -91,6 +91,7 @@ test('valid methodology rules are accepted', function () {
         'weight_overrides' => ['course' => 20],
         'mandatory_product_types' => ['course'],
     ]);
+    $criterion->refresh();
 
     expect(fn () => app(MethodologyRuleValidator::class)->validateCriterion($criterion))->not->toThrow(Exception::class);
 });

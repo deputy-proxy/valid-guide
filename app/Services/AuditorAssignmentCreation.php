@@ -59,7 +59,7 @@ class AuditorAssignmentCreation
                     throw new DomainStateTransitionException('Auditors can only be assigned to pending or in-progress evaluations.');
                 }
                 app(AuditorStaffing::class)->assertCanAdd($evaluation);
-                $this->assertEligible($evaluation, $auditor);
+                $this->assertEligible($evaluation, $auditor, $assignedBy);
                 if ($evaluation->assignments()->where('auditor_id', $auditor->id)->exists()) {
                     throw new DomainStateTransitionException('The same Auditor cannot be assigned twice to one evaluation.');
                 }
@@ -134,7 +134,7 @@ class AuditorAssignmentCreation
         return true;
     }
 
-    private function assertEligible(Evaluation $evaluation, User $auditor): void
+    private function assertEligible(Evaluation $evaluation, User $auditor, ?User $determinedBy = null): void
     {
         $profile = $auditor->auditorProfile()->with('competencies')->first();
 
@@ -172,7 +172,11 @@ class AuditorAssignmentCreation
         }
 
         if ($this->hasPriorProductParticipation($evaluation, $auditor)) {
-            throw new PriorProductParticipationException($evaluation, $auditor, request()->user() ?? $auditor);
+            if ($determinedBy === null) {
+                return;
+            }
+
+            throw new PriorProductParticipationException($evaluation, $auditor, $determinedBy);
         }
     }
 

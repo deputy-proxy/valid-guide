@@ -71,7 +71,7 @@ function creatorDashboardRequest(
     ServicePackage $package,
     EvaluationRequestStatus $status = EvaluationRequestStatus::Draft,
 ): EvaluationRequest {
-    return EvaluationRequest::create([
+    $request = EvaluationRequest::create([
         'organization_id' => $organization->id,
         'product_id' => $product->id,
         'product_release_id' => $release->id,
@@ -84,7 +84,6 @@ function creatorDashboardRequest(
         'quoted_price' => '250.00',
         'quoted_amount_minor' => 25000,
         'currency' => 'EUR',
-        'status' => $status,
         'intake_notes' => json_encode([
             'claims_confirmed' => true,
             'audience_confirmed' => true,
@@ -96,6 +95,15 @@ function creatorDashboardRequest(
             ],
         ], JSON_THROW_ON_ERROR),
     ]);
+
+    if ($status !== EvaluationRequestStatus::Draft) {
+        DB::table('evaluation_requests')
+            ->where('id', $request->getKey())
+            ->update(['status' => $status->value]);
+        $request->refresh();
+    }
+
+    return $request;
 }
 
 it('returns products, releases and request state for creator roles', function () {

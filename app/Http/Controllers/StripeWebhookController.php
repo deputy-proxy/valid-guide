@@ -18,11 +18,13 @@ final class StripeWebhookController
         $signature = $request->header('Stripe-Signature');
 
         if (! $this->isValidSignature($payload, $signature)) {
+
             return response()->json(['message' => 'Invalid webhook signature.'], Response::HTTP_BAD_REQUEST);
         }
 
         $event = json_decode($payload, true);
         if (! is_array($event) || ! isset($event['id'], $event['type']) || ! is_string($event['id']) || ! is_string($event['type'])) {
+
             return response()->json(['message' => 'Invalid webhook payload.'], Response::HTTP_BAD_REQUEST);
         }
 
@@ -35,6 +37,7 @@ final class StripeWebhookController
         );
 
         if ($webhookEvent->processed_at !== null) {
+
             return response()->json(['received' => true]);
         }
 
@@ -66,6 +69,7 @@ final class StripeWebhookController
     {
         $secret = config('stripe.webhook_secret');
         if (! is_string($secret) || $secret === '' || $signature === null || $signature === '') {
+
             return false;
         }
 
@@ -82,11 +86,13 @@ final class StripeWebhookController
         }
 
         if ($timestamp === null || $signatures === []) {
+
             return false;
         }
 
         $tolerance = (int) config('stripe.webhook_tolerance', 300);
         if (abs(time() - $timestamp) > $tolerance) {
+
             return false;
         }
 

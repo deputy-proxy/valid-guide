@@ -16,6 +16,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property list<string>|null $complexity_levels
  * @property list<string>|null $product_types
  * @property int $price_minor
+ * @property string $price
  * @property string $currency
  */
 class ServicePackage extends Model
@@ -29,6 +30,7 @@ class ServicePackage extends Model
         'description',
         'product_types',
         'complexity_levels',
+        'price',
         'price_minor',
         'currency',
         'status',
@@ -39,6 +41,7 @@ class ServicePackage extends Model
         return [
             'product_types' => 'array',
             'complexity_levels' => 'array',
+            'price' => 'decimal:2',
             'price_minor' => 'integer',
         ];
     }
@@ -49,9 +52,15 @@ class ServicePackage extends Model
             $productTypes = $package->product_types ?? [];
             $complexityLevels = $package->complexity_levels ?? [];
 
+            if ($package->price_minor <= 0 && $package->price !== null) {
+                $package->price_minor = (int) round((float) $package->price * 100);
+            }
+
             if ($package->price_minor <= 0) {
                 throw new DomainStateTransitionException('A service package must have a positive price.');
             }
+
+            $package->price = number_format($package->price_minor / 100, 2, '.', '');
 
             if ($package->currency !== strtoupper($package->currency) || ! preg_match('/^[A-Z]{3}$/', $package->currency)) {
                 throw new DomainStateTransitionException('A service package must use a valid three-letter currency code.');

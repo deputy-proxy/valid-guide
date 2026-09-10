@@ -89,11 +89,11 @@ it('rejects majority aggregation for a non-collective criterion', function () {
 });
 
 it('keeps independent non-collective assessments vote-free with one, three and five auditors', function (int $additionalAuditors) {
-    [$auditorEvaluation] = auditorEvaluationFixture();
+    [$auditorEvaluation, $result] = auditorEvaluationFixture();
     app(AuditorEvaluationSubmission::class)->submit($auditorEvaluation);
 
     for ($sequence = 2; $sequence <= $additionalAuditors + 1; $sequence++) {
-        addSubmittedAuditorEvaluation($auditorEvaluation->evaluation, $auditorEvaluation->criterionResults->first()->criterion, 'meets', $sequence);
+        addSubmittedAuditorEvaluation($auditorEvaluation->evaluation, $result->criterion, 'meets', $sequence);
     }
 
     $votes = app(CriterionVoting::class)->record($auditorEvaluation);
@@ -122,7 +122,7 @@ it('rejects aggregation with an even number of auditors', function () {
 });
 
 it('keeps recorded criterion votes immutable', function () {
-    [$auditorEvaluation, $result] = auditorEvaluationFixture(CriterionVotingMode::Majority);
+    [$auditorEvaluation] = auditorEvaluationFixture(CriterionVotingMode::Majority);
     app(AuditorEvaluationSubmission::class)->submit($auditorEvaluation);
     $vote = app(CriterionVoting::class)->record($auditorEvaluation)->first();
 
@@ -177,5 +177,8 @@ function addSubmittedAuditorEvaluation(
         'confidence' => 90,
     ]);
 
-    return app(AuditorEvaluationSubmission::class)->submit($auditorEvaluation);
+    $submitted = app(AuditorEvaluationSubmission::class)->submit($auditorEvaluation);
+    app(CriterionVoting::class)->record($submitted);
+
+    return $submitted;
 }

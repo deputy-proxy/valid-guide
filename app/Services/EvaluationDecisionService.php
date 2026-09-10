@@ -13,6 +13,7 @@ use App\Models\Criterion;
 use App\Models\Evaluation;
 use App\Models\EvaluationDecision;
 use App\Models\User;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 class EvaluationDecisionService
@@ -139,7 +140,7 @@ class EvaluationDecisionService
             $criterionAssessment = $this->resolveCriterionAssessment(
                 $evaluation,
                 $criterion,
-                $auditorEvaluations->values(),
+                $auditorEvaluations,
                 $voterCount,
                 $criterionVoting,
             );
@@ -197,7 +198,7 @@ class EvaluationDecisionService
                 $blockers[] = sprintf(
                     '%s is below the %.0f/100 core-dimension floor.',
                     $dimension,
-                    $dimensionThreshold,
+                    $dimensionScore,
                 );
             }
         }
@@ -228,11 +229,12 @@ class EvaluationDecisionService
         ];
     }
 
+    /** @param Collection<int, AuditorEvaluation> $auditorEvaluations */
     /** @return array{decision:string, score:float|null, counts:array<string,int>, blocker:string|null} */
     private function resolveCriterionAssessment(
         Evaluation $evaluation,
         Criterion $criterion,
-        iterable $auditorEvaluations,
+        Collection $auditorEvaluations,
         int $auditorCount,
         CriterionVoting $criterionVoting,
     ): array {
@@ -291,7 +293,7 @@ class EvaluationDecisionService
             ];
         }
 
-        $decision = $decisions->keys()->first();
+        $decision = (string) $decisions->keys()->first();
         $score = in_array($decision, ['not_applicable', 'insufficient_evidence'], true)
             ? null
             : round((float) $results->avg(fn ($result): float => (float) $result->score), 2);

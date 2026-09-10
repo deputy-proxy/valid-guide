@@ -148,9 +148,6 @@ final class EvaluationRequestResource extends Resource
             ])
             ->filters([
                 SelectFilter::make('status')->options(self::enumOptions(EvaluationRequestStatus::cases())),
-                SelectFilter::make('order_status')->label('Order status')->options(self::enumOptions(OrderStatus::cases())),
-                SelectFilter::make('payment_status')->label('Payment status')->options(self::enumOptions(PaymentStatus::cases())),
-                SelectFilter::make('refund_status')->label('Refund status')->options(self::enumOptions(RefundStatus::cases())),
             ])
             ->recordActions([
                 ViewAction::make(),

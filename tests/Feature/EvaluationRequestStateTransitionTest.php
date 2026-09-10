@@ -133,6 +133,7 @@ it('freezes commercial terms after payment processing starts', function () {
     $actor = User::factory()->create();
     $request = evaluationRequestForTransition($actor);
     app(EvaluationRequestStateTransition::class)->transition($request, EvaluationRequestStatus::AwaitingPayment, $actor);
+    $request->refresh();
 
     expect(fn () => $request->update(['quoted_price' => 200]))
         ->toThrow(DomainStateTransitionException::class)

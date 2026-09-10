@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Enums\CriterionVotingMode;
 use App\Enums\StandardVersionStatus;
 use App\Services\DomainStateTransitionException;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -15,6 +16,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 /**
  * @property array<string,mixed>|null $applicability_rules
  * @property array<string,mixed>|null $scoring_rules
+ * @property CriterionVotingMode $voting_mode
  */
 class Criterion extends Model
 {
@@ -27,6 +29,7 @@ class Criterion extends Model
         'name',
         'description',
         'category',
+        'voting_mode',
         'sequence',
         'weight',
         'is_mandatory',
@@ -40,6 +43,7 @@ class Criterion extends Model
             'sequence' => 'integer',
             'weight' => 'decimal:2',
             'is_mandatory' => 'boolean',
+            'voting_mode' => CriterionVotingMode::class,
             'applicability_rules' => 'array',
             'scoring_rules' => 'array',
         ];

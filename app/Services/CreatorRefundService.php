@@ -25,7 +25,8 @@ final class CreatorRefundService
     {
         Gate::forUser($actor)->authorize('refund', $request);
 
-        [$refund, $payment] = DB::transaction(function () use ($request, $actor, $reason): array {
+        /** @var array{0: Refund, 1: Payment|null} $result */
+        $result = DB::transaction(function () use ($request, $actor, $reason): array {
             $request = EvaluationRequest::query()
                 ->with('organization')
                 ->whereKey($request->getKey())
@@ -49,6 +50,15 @@ final class CreatorRefundService
 
             if ($order->organization_id !== $request->organization_id) {
                 throw new DomainStateTransitionException('The order organization does not match the evaluation request organization.');
+            }
+
+            $existingRefund = Refund::query()
+                ->where('order_id', $order->getKey())
+                ->lockForUpdate()
+                ->first();
+
+            if ($existingRefund?->status === RefundStatus::Succeeded) {
+                return [$existingRefund, null];
             }
 
             $payment = Payment::query()
@@ -80,14 +90,7 @@ final class CreatorRefundService
                 throw new DomainStateTransitionException('An evaluation request cannot be refunded after a report has been delivered.');
             }
 
-            $refund = Refund::query()
-                ->where('payment_id', $payment->getKey())
-                ->lockForUpdate()
-                ->first();
-
-            if ($refund?->status === RefundStatus::Succeeded) {
-                return [$refund, $payment];
-            }
+            $refund = $existingRefund;
 
             if ($refund === null) {
                 $refund = Refund::query()->create([
@@ -112,8 +115,14 @@ final class CreatorRefundService
             return [$refund, $payment];
         });
 
+        [$refund, $payment] = $result;
+
         if ($refund->status === RefundStatus::Succeeded) {
             return $refund;
+        }
+
+        if ($payment === null) {
+            throw new DomainStateTransitionException('A refundable payment could not be resolved.');
         }
 
         try {

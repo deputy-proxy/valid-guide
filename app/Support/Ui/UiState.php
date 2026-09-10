@@ -11,8 +11,7 @@ final readonly class UiState
         public string $color,
         public string $icon,
         public ?string $description = null,
-    ) {
-    }
+    ) {}
 
     public static function make(
         string $label,

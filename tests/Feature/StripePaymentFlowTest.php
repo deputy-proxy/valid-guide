@@ -16,7 +16,7 @@ use App\Models\User;
 use App\Services\CreatorEvaluationRequestIntake;
 use App\Services\DomainStateTransitionException;
 use App\Services\StripePaymentService;
-use Illuminate\Http\Client\Request as HttpRequest;
+use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Testing\TestResponse;
 
@@ -87,7 +87,7 @@ it('creates a Stripe checkout with the frozen amount and currency', function () 
         ->and(Order::query()->count())->toBe(1)
         ->and(Payment::query()->count())->toBe(1);
 
-    Http::assertSent(function (HttpRequest $request): bool {
+    Http::assertSent(function (Request $request): bool {
         return $request->url() === 'https://api.stripe.com/v1/checkout/sessions'
             && $request['line_items[0][price_data][unit_amount]'] === '25000'
             && $request['line_items[0][price_data][currency]'] === 'eur'

@@ -15,8 +15,7 @@ class EvaluationDecisionService
 {
     public function __construct(
         private readonly CriterionVoting $criterionVoting,
-    ) {
-    }
+    ) {}
 
     /**
      * Resolve the final decision for an evaluation.

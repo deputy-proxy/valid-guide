@@ -26,7 +26,7 @@ uses(RefreshDatabase::class);
 /** @return array{0: User, 1: EvaluationRequest, 2: Order, 3: Payment} */
 function creatorRefundFixture(): array
 {
-    [$user, , $request] = stripePaymentFixture();
+    [, $organization, $request] = stripePaymentFixture();
 
     EvaluationRequest::query()->whereKey($request->id)->update([
         'status' => EvaluationRequestStatus::Paid->value,
@@ -35,6 +35,8 @@ function creatorRefundFixture(): array
         'paid_at' => now(),
     ]);
     $request->refresh();
+
+    $actor = $organization->users()->wherePivot('role', 'owner')->firstOrFail();
 
     $order = Order::query()->create([
         'organization_id' => $request->organization_id,
@@ -56,7 +58,7 @@ function creatorRefundFixture(): array
         'paid_at' => now(),
     ]);
 
-    return [$user, $request, $order, $payment];
+    return [$actor, $request, $order, $payment];
 }
 
 test('a paid creator request can receive a full refund before report delivery', function () {

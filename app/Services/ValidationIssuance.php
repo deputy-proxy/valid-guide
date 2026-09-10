@@ -60,7 +60,7 @@ class ValidationIssuance
                 'embed_version' => '1',
             ]);
 
-            (new PublicVerificationPublication)->publish($validation->fresh());
+            app(PublicVerificationPublication::class)->publish($validation->fresh());
 
             AuditLogger::record(
                 event: 'validation.issued',

@@ -71,7 +71,7 @@ class ValidationStateTransition
             }
 
             $validation->refresh();
-            (new PublicVerificationPublication)->sync($validation);
+            app(PublicVerificationPublication::class)->sync($validation);
 
             AuditLogger::record(
                 event: 'validation.status_changed',

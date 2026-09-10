@@ -11,13 +11,12 @@ use Illuminate\Support\Str;
 
 class PublicVerificationPublication
 {
+    public function __construct(
+        private readonly PublicVerificationSnapshotBuilder $snapshotBuilder,
+    ) {}
+
     public function publish(Validation $validation): PublicVerificationRecord
     {
-        $validation->loadMissing([
-            'productRelease.product.organization',
-            'evaluation.standardVersion.standard',
-        ]);
-
         if ($validation->status === ValidationStatus::Revoked) {
             throw new DomainStateTransitionException('A revoked validation cannot be newly published.');
         }
@@ -28,7 +27,12 @@ class PublicVerificationPublication
 
         $record->public_slug ??= Str::lower($validation->verification_identifier);
         $record->directory_visible ??= true;
-        $record->snapshot = $this->snapshot($validation);
+        $record->full_report_visible ??= false;
+        $record->snapshot = $this->snapshotBuilder->build(
+            $validation,
+            $record->directory_visible,
+            $record->full_report_visible,
+        );
         $record->published_at ??= now();
         $record->save();
 
@@ -55,41 +59,13 @@ class PublicVerificationPublication
             return null;
         }
 
-        $validation->loadMissing([
-            'productRelease.product.organization',
-            'evaluation.standardVersion.standard',
-        ]);
-
-        $record->snapshot = $this->snapshot($validation);
+        $record->snapshot = $this->snapshotBuilder->build(
+            $validation,
+            $record->directory_visible,
+            $record->full_report_visible,
+        );
         $record->save();
 
         return $record->refresh();
-    }
-
-    /** @return array<string, mixed> */
-    private function snapshot(Validation $validation): array
-    {
-        $release = $validation->productRelease;
-        $product = $release->product;
-        $evaluation = $validation->evaluation;
-
-        return [
-            'verification_identifier' => $validation->verification_identifier,
-            'status' => $validation->status->value,
-            'issued_at' => $validation->issued_at?->toIso8601String(),
-            'product' => [
-                'title' => $release->title_snapshot,
-                'type' => $product->product_type->value,
-                'creator' => $product->organization->name,
-                'release_identifier' => $release->release_identifier,
-                'version' => $release->version,
-            ],
-            'standard' => [
-                'name' => $evaluation->standardVersion->standard->name,
-                'version' => $evaluation->standardVersion->version,
-            ],
-            'decision' => $evaluation->decision,
-            'overall_score' => $evaluation->overall_score,
-        ];
     }
 }

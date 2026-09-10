@@ -15,6 +15,9 @@ use Illuminate\Support\Str;
 
 final class EvaluationMaterialSubmission
 {
+    /**
+     * @phpstan-param array<string, mixed>|null $metadata
+     */
     public function submit(
         User $actor,
         EvaluationRequest $request,
@@ -73,7 +76,7 @@ final class EvaluationMaterialSubmission
                     'evaluation_request_id' => $request->getKey(),
                     'type' => $type->value,
                     'submitted_by' => $actor->getKey(),
-                    'submitted_at' => $material->submitted_at?->toIso8601String(),
+                    'submitted_at' => $material->submitted_at,
                 ],
                 actor: $actor,
             );

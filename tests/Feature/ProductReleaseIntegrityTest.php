@@ -12,6 +12,7 @@ use App\Models\ProductRelease;
 use App\Models\User;
 use App\Services\DomainStateTransitionException;
 use App\Services\ProductReleaseStateTransition;
+use Illuminate\Auth\Access\AuthorizationException;
 
 function releaseIntegrityOrganization(User $user, OrganizationRole $role = OrganizationRole::Owner): Organization
 {
@@ -182,7 +183,7 @@ it('does not allow billing members to change release state', function () {
 
     expect(fn () => app(ProductReleaseStateTransition::class)
         ->transition($release, ProductReleaseStatus::Current, $billing))
-        ->toThrow(\Illuminate\Auth\Access\AuthorizationException::class);
+        ->toThrow(AuthorizationException::class);
 });
 
 it('allows owner admin and editor lifecycle transitions', function (OrganizationRole $role) {

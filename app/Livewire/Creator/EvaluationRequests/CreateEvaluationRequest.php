@@ -14,6 +14,8 @@ use App\Models\ServicePackage;
 use App\Models\User;
 use App\Services\CreatorEvaluationRequestIntake;
 use App\Services\DomainStateTransitionException;
+use App\Services\EvaluationQuote;
+use App\Services\EvaluationQuoteService;
 use App\Services\StripePaymentService;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Contracts\View\View;
@@ -145,6 +147,37 @@ final class CreateEvaluationRequest extends Component
                 ],
             )
             ->all();
+    }
+
+    public function quotePreview(EvaluationRequest $request): ?EvaluationQuote
+    {
+        if ($this->servicePackageId === null || $request->product === null) {
+            return null;
+        }
+
+        $complexity = EvaluationComplexity::tryFrom($this->complexity);
+        if ($complexity === null) {
+            return null;
+        }
+
+        $package = ServicePackage::query()
+            ->whereKey($this->servicePackageId)
+            ->where('status', 'active')
+            ->first();
+
+        if ($package === null) {
+            return null;
+        }
+
+        try {
+            return app(EvaluationQuoteService::class)->quote(
+                $package,
+                $request->product->product_type,
+                $complexity,
+            );
+        } catch (DomainStateTransitionException) {
+            return null;
+        }
     }
 
     /** @return array<string, mixed> */

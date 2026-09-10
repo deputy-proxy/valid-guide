@@ -184,13 +184,13 @@ it('requires verified evidence before readiness and closes the evidence set', fu
     $transition->transition($request, EvaluationRequestStatus::Intake, $user);
 
     $material = app(EvaluationMaterialIntake::class)->submit(
-        $request,
+        $request->fresh(),
         $user,
         EvaluationMaterialType::Note,
         'Evidence note',
     );
 
-    expect(fn () => $transition->transition($request, EvaluationRequestStatus::Ready, $user))
+    expect(fn () => $transition->transition($request->fresh(), EvaluationRequestStatus::Ready, $user))
         ->toThrow(DomainStateTransitionException::class);
 
     $admin = User::factory()->create(['platform_role' => 'admin']);

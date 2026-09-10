@@ -10,6 +10,7 @@ use App\Models\CriterionVote;
 use App\Models\Finding;
 use App\Models\Validation;
 use Carbon\CarbonImmutable;
+use Carbon\CarbonInterface;
 use Illuminate\Support\Collection;
 
 class PublicVerificationSnapshotBuilder
@@ -163,9 +164,15 @@ class PublicVerificationSnapshotBuilder
         ];
     }
 
-    private function formatDate(?string $value): ?string
+    private function formatDate(CarbonInterface|string|null $value): ?string
     {
-        return $value === null ? null : CarbonImmutable::parse($value)->toIso8601String();
+        if ($value === null) {
+            return null;
+        }
+
+        return $value instanceof CarbonInterface
+            ? $value->toIso8601String()
+            : CarbonImmutable::parse($value)->toIso8601String();
     }
 
     private function enumValue(mixed $value): ?string

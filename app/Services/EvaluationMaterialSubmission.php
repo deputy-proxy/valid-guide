@@ -15,9 +15,6 @@ use Illuminate\Support\Str;
 
 final class EvaluationMaterialSubmission
 {
-    /**
-     * @param array<string, mixed>|null $metadata
-     */
     public function submit(
         User $actor,
         EvaluationRequest $request,

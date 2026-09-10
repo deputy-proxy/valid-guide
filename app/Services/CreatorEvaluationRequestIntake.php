@@ -6,6 +6,7 @@ namespace App\Services;
 
 use App\Enums\EvaluationRequestStatus;
 use App\Models\EvaluationRequest;
+use App\Models\Organization;
 use App\Models\Product;
 use App\Models\ProductRelease;
 use App\Models\ServicePackage;
@@ -35,18 +36,7 @@ final class CreatorEvaluationRequestIntake
             return $request->load(['product', 'productRelease', 'materials', 'servicePackage']);
         }
 
-        $existingDraft = EvaluationRequest::query()
-            ->where('organization_id', $organization->getKey())
-            ->where('status', EvaluationRequestStatus::Draft->value)
-            ->whereNull('product_id')
-            ->latest('created_at')
-            ->first();
-
-        if ($existingDraft !== null) {
-            return $existingDraft->load(['product', 'productRelease', 'materials', 'servicePackage']);
-        }
-
-        return EvaluationRequest::query()->create([
+        return new EvaluationRequest([
             'organization_id' => $organization->getKey(),
             'status' => EvaluationRequestStatus::Draft,
         ]);
@@ -54,8 +44,6 @@ final class CreatorEvaluationRequestIntake
 
     public function selectProduct(User $actor, EvaluationRequest $request, Product $product): EvaluationRequest
     {
-        $this->authorizeDraft($actor, $request);
-
         $organizationId = $request->organization_id;
         if ($organizationId === null || $product->organization_id !== $organizationId) {
             throw new DomainStateTransitionException('The selected product does not belong to the request organization.');
@@ -63,10 +51,33 @@ final class CreatorEvaluationRequestIntake
 
         Gate::forUser($actor)->authorize('view', $product);
 
-        $request->product_id = $product->getKey();
-        $request->product_release_id = null;
-        $this->clearCommercialTerms($request);
-        $request->save();
+        if ($request->exists === false) {
+            $organization = Organization::query()->findOrFail($organizationId);
+            Gate::forUser($actor)->authorize('create', [EvaluationRequest::class, $organization]);
+
+            $existingDraft = EvaluationRequest::query()
+                ->where('organization_id', $organizationId)
+                ->where('product_id', $product->getKey())
+                ->where('status', EvaluationRequestStatus::Draft->value)
+                ->latest('created_at')
+                ->first();
+
+            if ($existingDraft !== null) {
+                return $existingDraft->load(['product', 'productRelease', 'materials', 'servicePackage']);
+            }
+
+            $request = EvaluationRequest::query()->create([
+                'organization_id' => $organizationId,
+                'product_id' => $product->getKey(),
+                'status' => EvaluationRequestStatus::Draft,
+            ]);
+        } else {
+            $this->authorizeDraft($actor, $request);
+            $request->product_id = $product->getKey();
+            $request->product_release_id = null;
+            $this->clearCommercialTerms($request);
+            $request->save();
+        }
 
         return $request->refresh()->load(['product', 'productRelease', 'materials', 'servicePackage']);
     }

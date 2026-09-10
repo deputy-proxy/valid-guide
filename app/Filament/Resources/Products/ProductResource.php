@@ -26,12 +26,13 @@ use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
+use UnitEnum;
 
 class ProductResource extends Resource
 {
     protected static ?string $model = Product::class;
 
-    protected static ?string $navigationGroup = 'Creator';
+    protected static string|UnitEnum|null $navigationGroup = 'Creator';
 
     protected static ?string $navigationIcon = 'heroicon-o-academic-cap';
 
@@ -77,7 +78,7 @@ class ProductResource extends Resource
                     ProductStatus::Archived->value => 'Archived',
                 ]),
             ])
-            ->actions([
+            ->recordActions([
                 EditAction::make(),
                 Action::make('archive')
                     ->label('Archive')

@@ -11,14 +11,16 @@ use Filament\Forms\Components\Select;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Illuminate\Support\Facades\Auth;
+use BackedEnum;
+use UnitEnum;
 
 final class OrganizationContextPage extends Page
 {
     protected string $view = 'filament.pages.organization-context';
 
-    protected static ?string $navigationGroup = 'Creator';
+    protected static string|UnitEnum|null $navigationGroup = 'Creator';
 
-    protected static ?string $navigationIcon = 'heroicon-o-building-office-2';
+    protected static BackedEnum|string|null $navigationIcon = 'heroicon-o-building-office-2';
 
     protected static ?string $navigationLabel = 'Organization';
 

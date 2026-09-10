@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Filament\Resources\ProductReleases;
 
+use BackedEnum;
+use UnitEnum;
 use App\Enums\ProductReleaseStatus;
 use App\Filament\Resources\ProductReleases\Pages\CreateProductRelease;
 use App\Filament\Resources\ProductReleases\Pages\EditProductRelease;
@@ -12,6 +14,7 @@ use App\Models\Product;
 use App\Models\ProductRelease;
 use App\Models\User;
 use App\Services\OrganizationContext;
+use App\Services\ProductReleaseStateTransition;
 use Filament\Actions\Action;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\Select;
@@ -25,8 +28,6 @@ use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
-use BackedEnum;
-use UnitEnum;
 
 class ProductReleaseResource extends Resource
 {
@@ -141,7 +142,7 @@ class ProductReleaseResource extends Resource
     private static function transition(ProductRelease $release, ProductReleaseStatus $status): ProductRelease
     {
         $actor = self::authenticatedUser();
-        $transition = app(\App\Services\ProductReleaseStateTransition::class);
+        $transition = app(ProductReleaseStateTransition::class);
         $updated = $transition->transition($release, $status, $actor);
 
         Notification::make()

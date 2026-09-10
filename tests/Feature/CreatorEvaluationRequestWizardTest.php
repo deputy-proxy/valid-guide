@@ -167,11 +167,11 @@ it('rejects cross-tenant products and releases server-side', function () {
         ->toThrow(DomainStateTransitionException::class);
 });
 
-it('denies the billing role access to the creator wizard', function () {
+it('denies the billing role at the creator intake authorization boundary', function () {
     [$user, $organization] = creatorWizardFixture(OrganizationRole::Billing->value);
     $this->actingAs($user);
 
-    expect(fn () => Livewire::test(CreateEvaluationRequest::class, ['organizationId' => $organization->id]))
+    expect(fn () => app(CreatorEvaluationRequestIntake::class)->start($user, $organization->id))
         ->toThrow(AuthorizationException::class);
 });
 

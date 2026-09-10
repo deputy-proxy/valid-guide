@@ -49,6 +49,16 @@ class EvaluationRequestPolicy
         ], true) && $this->canManageCreatorResource($user, $evaluationRequest->organization);
     }
 
+    public function refund(User $user, EvaluationRequest $evaluationRequest): bool
+    {
+        return in_array($evaluationRequest->status, [
+            EvaluationRequestStatus::Paid,
+            EvaluationRequestStatus::Intake,
+            EvaluationRequestStatus::AwaitingCreator,
+            EvaluationRequestStatus::Ready,
+        ], true) && $this->canManageCreatorResource($user, $evaluationRequest->organization);
+    }
+
     public function delete(User $user, EvaluationRequest $evaluationRequest): bool
     {
         return $evaluationRequest->status === EvaluationRequestStatus::Draft

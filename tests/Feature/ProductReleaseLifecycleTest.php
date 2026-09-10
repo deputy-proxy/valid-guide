@@ -17,8 +17,7 @@ use Filament\Actions\Testing\TestAction;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Gate;
-
-use function Pest\Livewire\livewire;
+use Livewire\Livewire;
 
 uses(RefreshDatabase::class);
 
@@ -99,7 +98,7 @@ test('the Filament release list is scoped to the active organization', function 
     session(['creator.organization_id' => $release->product->organization_id]);
     $this->actingAs($user);
 
-    livewire(ListProductReleases::class)
+    Livewire::test(ListProductReleases::class)
         ->assertSuccessful()
         ->assertCanSeeTableRecords([$release])
         ->assertCanNotSeeTableRecords([$otherRelease]);
@@ -113,7 +112,7 @@ test('draft releases expose only draft actions', function () {
     session(['creator.organization_id' => $release->product->organization_id]);
     $this->actingAs($user);
 
-    livewire(ListProductReleases::class)
+    Livewire::test(ListProductReleases::class)
         ->assertActionVisible(TestAction::make('publish')->table($release))
         ->assertActionVisible(TestAction::make('edit')->table($release))
         ->assertActionHidden(TestAction::make('supersede')->table($release))
@@ -128,7 +127,7 @@ test('non-draft releases cannot be ordinarily edited and expose only valid trans
     session(['creator.organization_id' => $release->product->organization_id]);
     $this->actingAs($user);
 
-    livewire(ListProductReleases::class)
+    Livewire::test(ListProductReleases::class)
         ->assertActionHidden(TestAction::make('edit')->table($release))
         ->assertActionHidden(TestAction::make('publish')->table($release))
         ->assertActionVisible(TestAction::make('supersede')->table($release))

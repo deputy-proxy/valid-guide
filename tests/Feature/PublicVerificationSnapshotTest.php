@@ -156,7 +156,14 @@ function publicVerificationFixture(): Validation
         'voting_mode' => 'individual',
     ]);
 
-    $creator = User::factory()->create();
+    $auditor = User::factory()->create(['name' => 'Public Auditor']);
+    AuditorProfile::create([
+        'auditor_id' => $auditor->id,
+        'status' => AuditorProfileStatus::Approved,
+        'bio' => 'Independent evaluator.',
+        'credentials' => ['certification' => 'Certified Reviewer'],
+    ]);
+
     $request = EvaluationRequest::create([
         'organization_id' => $organization->id,
         'product_id' => $product->id,
@@ -175,37 +182,17 @@ function publicVerificationFixture(): Validation
 
     $assignment = AuditorAssignment::create([
         'evaluation_id' => $evaluation->id,
-        'auditor_id' => $creator->id,
+        'auditor_id' => $auditor->id,
         'sequence' => 1,
         'status' => 'completed',
     ]);
 
-    AuditorEvaluation::create([
+    $auditorEvaluation = AuditorEvaluation::create([
         'evaluation_id' => $evaluation->id,
         'auditor_assignment_id' => $assignment->id,
         'version' => 1,
         'status' => 'submitted',
     ]);
-
-    $auditor = User::factory()->create(['name' => 'Public Auditor']);
-    $profile = AuditorProfile::create([
-        'auditor_id' => $auditor->id,
-        'status' => AuditorProfileStatus::Approved,
-        'bio' => 'Independent evaluator.',
-        'credentials' => ['certification' => 'Certified Reviewer'],
-    ]);
-
-    $assignment->update(['auditor_id' => $auditor->id]);
-    $auditorEvaluation = AuditorEvaluation::query()->whereKey($assignment->id)->first();
-
-    if ($auditorEvaluation === null) {
-        $auditorEvaluation = AuditorEvaluation::create([
-            'evaluation_id' => $evaluation->id,
-            'auditor_assignment_id' => $assignment->id,
-            'version' => 2,
-            'status' => 'submitted',
-        ]);
-    }
 
     CriterionResult::create([
         'auditor_evaluation_id' => $auditorEvaluation->id,
@@ -221,7 +208,6 @@ function publicVerificationFixture(): Validation
         'criterion_id' => $criterion->id,
         'auditor_evaluation_id' => $auditorEvaluation->id,
         'type' => 'strength',
-        'severity' => null,
         'title' => 'Clear strength',
         'description' => 'The criterion is well supported.',
     ]);
@@ -236,15 +222,11 @@ function publicVerificationFixture(): Validation
         'description' => 'Some evidence could be clearer.',
     ]);
 
-    $validation = Validation::create([
+    return Validation::create([
         'product_release_id' => $release->id,
         'evaluation_id' => $evaluation->id,
         'verification_identifier' => 'VG-TEST-001',
         'issued_at' => now(),
         'status' => ValidationStatus::Active,
     ]);
-
-    unset($profile);
-
-    return $validation->refresh();
 }

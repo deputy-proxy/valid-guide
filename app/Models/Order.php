@@ -60,6 +60,12 @@ class Order extends Model
         return $this->hasMany(Payment::class);
     }
 
+    /** @return HasOne<Payment, $this> */
+    public function latestPayment(): HasOne
+    {
+        return $this->hasOne(Payment::class)->latestOfMany();
+    }
+
     /** @return HasOne<Refund, $this> */
     public function refund(): HasOne
     {

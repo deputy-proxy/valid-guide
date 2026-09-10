@@ -12,16 +12,12 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('service_packages', function (Blueprint $table): void {
-            $table->unsignedBigInteger('price_minor')->nullable()->after('price');
+            $table->unsignedBigInteger('price_minor')->default(0)->after('price');
         });
 
         DB::table('service_packages')->update([
             'price_minor' => DB::raw('CAST(ROUND(price * 100) AS INTEGER)'),
         ]);
-
-        Schema::table('service_packages', function (Blueprint $table): void {
-            $table->unsignedBigInteger('price_minor')->nullable(false)->change();
-        });
 
         Schema::table('evaluation_requests', function (Blueprint $table): void {
             $table->unsignedBigInteger('quoted_amount_minor')->nullable()->after('quoted_price');

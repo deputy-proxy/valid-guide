@@ -68,3 +68,13 @@
 - When a Product has claimed outcomes, an Auditor Evaluation must also contain at least one evidence record before submission. The decision engine independently checks evidence presence so incomplete historical data cannot silently validate.
 - The final decision blocks validation when any submitted Auditor evaluation does not establish sufficient evidence or coherence with the stated audience and promise. Multiple-Auditor majority semantics remain delegated to the methodology-controlled voting work in #27 rather than being duplicated here.
 - These gate conclusions are immutable once the Auditor Evaluation is locked, preserving the historical basis of the final decision.
+
+## 2026-09-10 — Auditor voting is methodology-controlled
+
+- Collective criterion determination is controlled by `Criterion.voting_mode`, persisted and therefore versioned through the owning `StandardVersion`.
+- The domain exposes two modes: `individual` and `majority`. Criteria default to `individual`, so the existence of multiple Auditors never implicitly creates a vote.
+- `CriterionVote` records are created only for criteria explicitly configured for `majority` determination. Independent `CriterionResult` records remain the primary historical Auditor assessments.
+- Majority criteria require an odd number of distinct Auditor votes and use simple majority aggregation. Minority vote counts remain in the aggregate and the underlying immutable Auditor results remain untouched.
+- Non-voting criteria do not create `CriterionVote` records. During final decision assessment, their independent Auditor results must agree categorically; disagreement or a missing result leaves the criterion unresolved and blocks validation rather than inventing a voting rule.
+- Final decision scoring for non-voting criteria averages the independent Auditor scores only after their categorical assessments agree. Majority criteria continue to score from the winning vote positions.
+- Feature coverage explicitly exercises one, three and five Auditor scenarios for voting and non-voting criteria.

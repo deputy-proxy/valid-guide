@@ -18,6 +18,7 @@ final class CreatorPaymentStatusController
         $evaluationRequest = EvaluationRequest::query()->findOrFail($requestId);
 
         if (Gate::denies('view', $evaluationRequest)) {
+
             throw new AuthorizationException('You are not authorized to view this evaluation request.');
         }
 

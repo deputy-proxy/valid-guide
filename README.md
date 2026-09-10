@@ -1,138 +1,96 @@
 # Valid.guide
 
-## Application Plan
-
-> **Status:** Phase 1 in progress · Domain foundation implemented
-> **Product:** Valid.guide Validation
-> **Stack:** Laravel 13, Filament 5, Livewire 4, Flux 2, Tailwind CSS 4
->
-> This document is the high-level application blueprint and development roadmap. It describes **how the application is being built**, not the order in which the business operates. The business rules themselves are defined in the authoritative specifications below.
-
-### Development phase status
-
-- **Phase 0 — Product Definition & Architecture:** Complete
-- **Phase 1 — Application Foundation & Domain Integrity:** In progress
-- **Phase 2 — Core Application Workflows:** Planned
-- **Phase 3 — Role-Based Application Experiences:** Planned
-- **Phase 4 — Public Trust & Discovery:** Planned
-- **Phase 5 — Integrations, Automation & Operations:** Planned
-- **Phase 6 — Production Readiness & Launch:** Planned
-
-### Authoritative specifications
-
-- [`docs/domain-and-database-specification.md`](docs/domain-and-database-specification.md) — authoritative domain model, persistence model, lifecycle rules, authorization boundaries, trust model, commerce rules and public verification architecture.
-- [`docs/validation-methodology-v1.md`](docs/validation-methodology-v1.md) — authoritative Validation Methodology v1.0, including dimensions, criteria, scoring, blockers, Auditor rules, complexity and decision logic.
-- [`docs/phase-1-decisions.md`](docs/phase-1-decisions.md) — implementation-significant decisions made while completing Phase 1.
-
-### Decision-recording rule
-
-Important decisions made during development must be reflected in the relevant repository documentation. The README remains the high-level project record; detailed decisions belong in the appropriate specification or decision document. Documentation must be updated whenever an architectural, product, methodology, workflow, policy, security, data or implementation-significant decision changes.
-
----
-
-## 1. Product Definition
-
 Valid.guide is an independent validation service for courses, guides, and other online learning products.
 
-A creator or publisher submits a learning product for evaluation. Valid.guide evaluates it against a transparent quality standard using qualified Auditors and evidence. The creator receives a detailed evaluation report. If the product meets the defined standard, Valid.guide awards a public validation badge and publishes an appropriate public verification record.
+It turns product quality into a credible, transparent signal that buyers can understand and creators can use to build trust.
 
-### The fundamental promise
+## Product Definition
 
-**Turn the quality of an online learning product into a credible, transparent signal that buyers can understand and creators can use to build trust.**
+Valid.guide is:
 
-### What Valid.guide is not
+- an independent validation service;
+- a transparent quality-assessment system;
+- a structured evaluation process performed by qualified independent Auditors;
+- a public trust signal backed by a verifiable record.
 
-- Not a generic review marketplace.
-- Not a star-rating site.
-- Not an affiliate catalogue whose incentives depend on recommending products.
-- Not a pay-for-positive-review service.
-- Not a guarantee that a learner will achieve a particular outcome.
-- Not a substitute for a buyer's own judgement.
+Valid.guide is not:
 
-The creator pays for an **evaluation**, not for a positive result. Payment must never influence the evaluation outcome.
+- a generic review marketplace;
+- a star-rating website;
+- an affiliate catalogue whose incentives depend on recommendations;
+- a pay-for-positive-review service;
+- a guarantee of learner outcomes;
+- a substitute for buyer judgement.
 
----
+Creators pay for an evaluation, never for a positive result. Payment must never influence the evaluation outcome.
 
-## 2. Product Principles
+## Product Principles
 
-The application must encode these principles in UX, domain logic, persistence and security.
+1. **Independence** — evaluation outcomes are independent of commercial relationships.
+2. **Transparency** — the methodology and relevant evaluation information are understandable and verifiable.
+3. **Evidence** — conclusions are grounded in submitted product material and documented evaluation work.
+4. **Consistency** — evaluations use controlled, versioned standards.
+5. **Historical integrity** — completed evaluations and published trust records retain their historical meaning.
+6. **Accountability** — important decisions, conflicts and trust-state changes are auditable.
+7. **Privacy** — private creator material, evidence and internal deliberation are not public by default.
+8. **Buyer usefulness** — public information should help people make better-informed decisions.
 
-1. **Independence** — Auditors must be separated from the commercial transaction as far as practical.
-2. **Evidence** — findings should be traceable to submitted material, observed product content, testing, or documented Auditor judgement.
-3. **Transparency** — the evaluation standard and meaning of the badge must be understandable.
-4. **Fairness** — creators must have a predictable process and an opportunity to provide relevant evidence or clarify factual errors.
-5. **Usefulness** — reports should identify strengths and weaknesses and provide actionable findings.
-6. **No guaranteed pass** — the system must never imply that purchasing an evaluation buys Validation.
-7. **Auditability** — important decisions and changes must leave an immutable or append-only audit trail.
-8. **Historical integrity** — published methodology, product releases, Auditor work, decisions, reports and Validation states must remain interpretable over time.
-9. **Least privilege** — authorization must be enforced server-side and must not depend on UI visibility.
-10. **Separation of concerns** — commercial administration, evaluation work, methodology, decision-making, publication and public presentation remain distinct domains.
+## Primary Actors
 
----
+### Creator
 
-## 3. Primary Actors
+The person or organization submitting a learning product for validation.
 
-### 3.1 Creator
+### Auditor
 
-The person or organization submitting a product for evaluation.
+An independent subject-matter expert responsible for evaluating an assigned product against the applicable Evaluation Standard.
 
-Capabilities include managing products and releases, requesting evaluations, providing access/materials, tracking progress, receiving reports, responding to factual clarification requests, viewing Validation/badge information, and managing billing.
+### Valid.guide Administrator
 
-### 3.2 Auditor
+An authorized platform operator responsible for governance, assignments, conflicts, decisions, trust state, disputes and other platform-level operations.
 
-An independent subject-matter expert who performs evaluation work.
+### Buyer / Learner
 
-Public terminology is **Auditor**. Reviewer is not used as the product-facing role name.
+The public consumer of validation information.
 
-Auditor eligibility requires relevant topic expertise and relevant teaching, training, research, application or creator experience, plus the ability to evaluate the product format, methodology literacy, appropriate language competence and current conflict-of-interest clearance. Credentials are useful evidence but are not universally mandatory. Direct competitors are potential conflicts requiring disclosure and administrative determination rather than automatic disqualification. An Auditor may not evaluate a product they previously participated in.
+## Core Domain Model
 
-The Auditor Board is the public program for established, qualified contributors who participate in evaluations and methodology improvement and are compensated independently of evaluation outcomes.
-
-Auditor identity, profile, qualifications and criterion attribution may be publicly shown when the Auditor opts in.
-
-### 3.3 Valid.guide Administrator
-
-Internal staff operating the service. Administrators manage users, organizations, products, intake, standards, Auditor assignments, conflicts, evaluations, decisions, publication, badges, commerce, compensation, reports, disputes and audit logs.
-
-An Administrator may override or amend the **final Evaluation Decision**, with an auditable reason, but must never silently rewrite immutable Auditor work.
-
-### 3.4 Buyer / Learner
-
-Primarily a consumer of public Validation information, not necessarily an authenticated application user in the MVP.
-
----
-
-## 4. Core Domain Model
-
-The application is built around the following bounded concepts. The complete domain/database specification is authoritative.
+The application is organized around explicit domain boundaries rather than a collection of uncontrolled CRUD records.
 
 ### Identity & Access
 
 - User
 - Organization
 - Organization Membership
-- roles: owner, admin, editor, billing
-- platform administration role
 
-Organization membership is tenant-scoped. Platform administration is deliberately separate from organization membership.
+Organization membership roles:
+
+- Owner
+- Admin
+- Editor
+- Billing
+
+Platform administration is separate from organization membership.
 
 ### Product & Intake
 
-- Product — the enduring learning product.
-- **Product Release** — the exact evaluated edition/version/state of a product.
-- Evaluation Request — the commercial/intake request; it buys an evaluation, never a result.
+- Product
+- Product Release
+- Evaluation Request
 - Submitted Material / Access
 
-A Product Release is the historical object against which an Evaluation and Validation are anchored.
+A Product Release identifies the exact edition, version or state evaluated. Validation attaches to the evaluated release, not merely to the abstract product.
 
 ### Methodology
 
 - Evaluation Standard
-- Standard Version — versioned, approved and frozen for an evaluation once evaluation starts.
+- Standard Version
 - Criterion
 - Criterion Guidance
-- Applicability rules
-- Scoring rules and assessment anchors
+- Applicability Rules
+- Scoring Rules / Assessment Anchors
+
+Methodology is versioned. An Evaluation uses the Standard Version applicable when the formal evaluation starts, and that interpretation is frozen for the life of the Evaluation.
 
 ### Evaluation Operations
 
@@ -147,17 +105,17 @@ A Product Release is the historical object against which an Evaluation and Valid
 - Evidence
 - Finding
 
-Auditor work is independent and historical. Multiple Auditors are assigned according to complexity and methodology rules. There is no lead Auditor.
-
 ### Decision & Trust
 
-- Evaluation Decision — the final internal decision, separate from Auditor work.
-- Validation — the public trust state attached to a specific Evaluation/Product Release.
+- Evaluation Decision
+- Validation
 - Badge
 - Public Verification Record
-- Report / Report Version
+- Report
+- Report Version
 - Clarification Request
-- Formal Dispute / Independent Review
+- Formal Dispute
+- Independent Review
 
 ### Commerce
 
@@ -175,64 +133,43 @@ Auditor work is independent and historical. Multiple Auditors are assigned accor
 - Audit Log
 - Public Directory projection
 
-The architecture intentionally avoids collapsing these concepts into one large `evaluations` table with a heroic collection of status columns. Civilization has suffered enough from that pattern.
+## Core Business Lifecycle
 
----
-
-## 5. Core Business Lifecycle
-
-The business lifecycle is defined here for orientation. **It is not the development roadmap.** The application is built in technical/development phases described in Section 15.
+The business lifecycle is separate from the application's development roadmap.
 
 ```text
 Evaluation Request
-  ↓
+        ↓
 Intake
-  ↓
+        ↓
 Commercial terms fixed / payment
-  ↓
+        ↓
 Materials received and verified
-  ↓
-Evaluation formally starts
-  ↓
+        ↓
+Evaluation starts
+        ↓
 Standard Version frozen
-  ↓
-Auditor Assignment + COI clearance
-  ↓
+        ↓
+Auditor assignment + COI clearance
+        ↓
 Auditor work
-  ↓
-Internal review / vote where applicable
-  ↓
+        ↓
+Review / voting
+        ↓
 Evaluation Decision
-  ├── Validated → Report / Publication → Validation + Badge
-  └── Not Validated → Report → Optional publication
+        ↓
+Validated OR Not Validated
+        ↓
+Report / publication / Validation / Badge
 ```
 
-Clarifications and formal disputes are controlled workflows. They do not silently mutate historical Auditor work or rewrite completed evaluations.
+Clarifications and formal disputes are controlled workflows. They must not silently mutate historical Auditor work or completed evaluations.
 
-### Validation lifecycle
+## Methodology
 
-A badge **never expires automatically**.
+Valid.guide uses a common core methodology with product-type modules.
 
-```text
-Active
-  ├── Material change detected → Suspended / review
-  ├── Validity permanently compromised → Revoked
-  └── Later validated release replaces it → Superseded
-```
-
-Material product changes include edition/version/publish date changes and material changes to content, design, scope, audience, outcomes, identity, or relevant quantitative release metadata. Pricing, instructor changes and platform migration do not automatically require revalidation unless another material-change rule is triggered.
-
-A creator must notify Valid.guide of material changes. An older release may retain its historical Validation if it remains available in parallel and is clearly distinguished.
-
-Failed Validation is private by default. A creator may choose to publish it. Public status distinguishes not validated, withdrawn, suspended, revoked and superseded states where applicable. Attempts are retained historically.
-
----
-
-## 6. Methodology
-
-Valid.guide uses a common core methodology with product-type modules rather than unrelated standards for each format.
-
-Supported formats include:
+Supported product formats include:
 
 - Course
 - Cohort course
@@ -241,9 +178,9 @@ Supported formats include:
 - Workshop
 - Program
 - Membership
-- Other approved learning format
+- Other approved format
 
-The ten core dimensions are:
+The Validation Methodology v1 defines ten dimensions:
 
 1. Promise & Audience Fit
 2. Subject-Matter Credibility
@@ -256,117 +193,106 @@ The ten core dimensions are:
 9. Differentiation & Added Value
 10. Outcome Realism & Overall Product Integrity
 
-The complete criteria, weights, assessment states, evidence model, validation gates, blockers, complexity rules and calibration/QC protocol are defined in [`docs/validation-methodology-v1.md`](docs/validation-methodology-v1.md).
+The authoritative methodology is maintained in `docs/validation-methodology-v1.md`.
 
-The standard is versioned. The effective Standard Version at the formal start of an Evaluation is frozen for that Evaluation. In-progress Evaluations never migrate to a later standard. Historical versions remain available.
+## Public Trust Model
 
----
+The Verification Page is authoritative. A badge is a signal that points to the verification record.
 
-## 7. Public Trust Model
+A public verification record contains, where applicable:
 
-The **Verification Page is authoritative**. The badge itself is only a trust signal pointing to that page.
+- product and release identity;
+- creator;
+- product type;
+- Validation status and date;
+- Standard Version;
+- evaluation scope;
+- overall result;
+- published criterion results;
+- strengths and weaknesses;
+- Auditor count;
+- Auditor identities and credentials where disclosure is permitted;
+- unique verification identifier;
+- relevant status history and revocation information;
+- a Valid.guide-generated public abstract;
+- optional full report content.
 
-Every Validation receives a unique, non-guessable verification identifier. The persisted Public Verification Record contains the public-facing snapshot required to render the verification state without reconstructing it from mutable internal data.
+Validated products may appear in the public directory by default. Creators may opt out of directory listing while retaining a verifiable badge.
 
-At minimum, the public record can contain:
+Public verification information is produced from an explicit public record, not reconstructed from mutable internal operational data.
 
-- product and exact release identity
-- creator/publisher
-- product type
-- current Validation status
-- Validation date
-- Standard Version
-- evaluation scope
-- overall result
-- criterion-level results/scores where published
-- strengths and weaknesses
-- number of Auditors
-- Auditor identities/credentials when opted in
-- verification identifier
-- relevant status history and revocation reason
-- Valid.guide-generated report abstract
-- optional full report where enabled
+## Independence & Anti-Pay-to-Play Architecture
 
-The public verification record remains resolvable after suspension, revocation or supersession. Its identity is not replaced merely because the trust state changes.
+The system must make the following properties enforceable:
 
-All validated products are listed in the public directory by default. A creator may opt out of directory listing while retaining a verifiable badge. Discovery filters can include product type, subject/topic, audience level, Validation status, Validation date and language. Popularity, sales and star ratings are not quality signals.
+- payment creates an Evaluation Request, never a result;
+- commercial terms are fixed before payment;
+- creators cannot choose their Auditor;
+- annual and assignment-level conflict checks are mandatory;
+- prior participation in the product is a conflict;
+- direct competitors require disclosure and administrative determination;
+- the Standard Version is locked when evaluation starts;
+- Auditor work becomes immutable at its defined submission boundary;
+- Evaluation Decision is a separate authorized step;
+- administrative overrides are auditable and do not rewrite Auditor records;
+- Badge and public verification follow Validation state;
+- published Validation is not creator-editable;
+- corrections use clarification/dispute workflows;
+- compensation is independent of evaluation outcome.
 
-The public abstract is generated from the Valid.guide report, not supplied as creator marketing copy.
+## Public Website
 
----
-
-## 8. Independence & Anti-Pay-to-Play Architecture
-
-This is the application's most important non-functional requirement.
-
-- Payment creates an Evaluation Request, never a Validation result.
-- Commercial terms are frozen before the payment boundary.
-- The creator cannot choose the Auditor.
-- Annual and assignment-specific COI checks are mandatory.
-- Prior participation in the product is a conflict condition.
-- Standard Version is locked at evaluation start.
-- Auditor work is immutable after submission/lock.
-- Evaluation Decision is a separate authorized step.
-- Administrator overrides are auditable and do not rewrite Auditor records.
-- Badge/public verification creation follows the Validation state.
-- Published Validation cannot be edited by the creator.
-- Factual corrections use controlled clarification/dispute workflows.
-- Important changes are audited.
-- Auditor compensation is independent of whether the product validates.
-
-The architecture intentionally avoids unnecessary bureaucracy. Higher-risk or disputed evaluations can use additional independent Auditors according to complexity and methodology rules.
-
----
-
-## 9. Public Website
-
-Core pages:
+The public website will provide:
 
 - Home
 - How Validation Works
 - Evaluation Standard
 - For Creators
-- For Buyers/Learners
+- For Buyers / Learners
 - Auditors / Auditor Board
 - Validated Products
-- Individual Product Validation page
+- Individual Validation page
 - Verify a Badge
 - About / Independence
 - Pricing
 - FAQ
 - Contact
-- Legal pages
+- Legal
 
-Each validated product has a canonical public page. The page states exactly what was evaluated and that Validation does not guarantee an individual learner's results.
+## Creator Application
 
----
+Creators will have a dedicated application experience, even if it is implemented within the same Laravel application.
 
-## 10. Creator Application
+The dashboard will provide access to:
 
-The creator-facing application is a dedicated experience from the internal operations interface, even if both are implemented in the same Laravel application.
+- organizations;
+- products;
+- product releases;
+- Evaluation Requests;
+- active and completed evaluations;
+- Validation status;
+- invoices and payments;
+- reports and permitted findings;
+- badge assets;
+- permitted actions.
 
-The dashboard covers organizations, products, Product Releases, evaluation requests, active evaluations, completed evaluations, Validation status, invoices/payment status and actions requiring attention.
-
-Evaluation intake is wizard-style:
+The Evaluation Request intake is structured as:
 
 1. Product
 2. Scope / Product Release
-3. Access and materials
-4. Claims and audience
+3. Access / Materials
+4. Claims / Audience
 5. Review
-6. Payment
+6. Payment handoff
 
-Creators can track high-level progress and access reports, findings, decisions and badge assets when available. Internal Auditor deliberation is not exposed by default.
+Creators see high-level progress and permitted results, not private Auditor deliberation by default.
 
----
+## Internal Filament Application
 
-## 11. Internal Filament Application
-
-Filament is the primary operations back office.
+The internal application will provide workflow-oriented interfaces for:
 
 ### Operations
 
-- Dashboard
 - Evaluation Requests
 - Evaluations
 - Auditor Assignments
@@ -380,14 +306,14 @@ Filament is the primary operations back office.
 - Standard Versions
 - Criteria
 - Guidance
-- Applicability / scoring configuration
+- Applicability / Scoring
 
 ### Directory
 
 - Users
 - Organizations
 - Products
-- Product Releases
+- Releases
 - Auditors / Auditor Board
 
 ### Trust
@@ -405,7 +331,7 @@ Filament is the primary operations back office.
 - Orders / Payments
 - Refunds
 - Invoices
-- Auditor Compensation / Payouts
+- Compensation / Payouts
 
 ### System
 
@@ -413,415 +339,323 @@ Filament is the primary operations back office.
 - Settings
 - Roles / Permissions
 
-Not every model needs a generic CRUD resource. Workflow-specific pages and domain services must be used where uncontrolled editing would violate domain rules.
+Not every model requires generic CRUD. Workflow-specific pages and domain services are preferred where uncontrolled editing could violate business invariants.
 
----
+## Authorization & Security
 
-## 12. Authorization & Security
+Authorization is server-side, tenant-aware and policy-driven.
 
-Authorization must be policy-driven, tenant-aware and enforced server-side.
+Organization roles:
 
-Creator data is scoped by Organization. Organization roles are:
+- **Owner** — full organization administration
+- **Admin** — operational administration within the organization
+- **Editor** — product and intake operations
+- **Billing** — commercial and billing operations
 
-- **Owner** — full organization administration.
-- **Admin** — operational administration within the organization.
-- **Editor** — product and evaluation-intake work within granted boundaries.
-- **Billing** — commercial/billing work without access to evaluation content merely by virtue of the role.
+Platform administration is separate from organization membership.
 
-Platform administration is separate from organization membership. An organization role must never grant platform authority.
+Auditors can access only evaluations to which they are assigned and cleared. Internal evidence and deliberation remain private.
 
-Auditors access only evaluations to which they are assigned and cleared. Internal evidence and deliberation are private by default.
+High-trust operations such as Evaluation Decisions, conflict determinations and Validation state changes require authorized platform administration at the domain-service boundary.
 
-High-trust operations such as Evaluation Decision recording, Conflict determination, Validation issuance and Validation state changes require platform administration at the domain-service boundary.
+UI restrictions are not considered security boundaries.
 
-Historical and trust-sensitive records use controlled write paths. Application workflows must not bypass those boundaries through bulk or raw database mutation.
+## Reports, Clarifications & Disputes
 
-Do not rely on hidden UI controls as the security boundary.
+Reports are historical and versioned. A substantive correction creates a new immutable Report Version.
 
----
+Creators receive the full report. Public disclosure is controlled through the public verification model.
 
-## 13. Reports, Clarifications & Disputes
+Clarifications are for factual clarification and correction. Formal disputes are limited to matters such as:
 
-Reports are historical, versioned records. A Report belongs to one Evaluation and each substantive correction creates a new immutable Report Version. Delivered reports cannot be rewritten in place.
+- procedural error;
+- material factual error;
+- conflict-of-interest issues;
+- demonstrably flawed application of the methodology.
 
-The creator receives the full agreed report. The public receives the controlled public record and Valid.guide-generated abstract; the creator may enable publication of the full report where permitted.
+Disputes are not a negotiation mechanism for changing professional judgement simply because a creator dislikes the result.
 
-Creators may request factual clarification. Formal disputes are limited to:
+Independent review is required where appropriate. If a process is materially flawed, a new Evaluation may be created while preserving the original historical record.
 
-- procedural error
-- material factual error
-- conflict-of-interest concern
-- demonstrably flawed methodology application
+## Commerce
 
-They are not negotiations over professional judgement or a mechanism for buying a more favorable outcome.
+The commercial model is deliberately separated from validation authority.
 
-Dispute reviewers must be independent of the original evaluation. If the process is found materially flawed, a new Evaluation may be created for the same Product Release and frozen Standard Version context. The original historical record remains immutable.
+Creators buy an evaluation, not a result.
 
----
+The application uses:
 
-## 14. Commerce
+- Service Packages;
+- complexity-based pricing;
+- deterministic quotes;
+- frozen commercial snapshots;
+- Order and Payment records;
+- explicit Refund records;
+- outcome-independent Auditor compensation;
+- immutable compensation and payout history.
 
-The creator purchases an evaluation, not a result.
+The refund boundary is based on report delivery. A paid evaluation may receive the promised refund before the defined report-delivery boundary; after report delivery, the refund entitlement ends according to the approved policy.
 
-The commercial implementation must preserve:
+External payment providers such as Stripe are integrations, not sources of truth for Valid.guide's domain lifecycle.
 
-- service-package and complexity-based pricing
-- deterministic quote calculation
-- price and commercial terms fixed before payment
-- commercial snapshots retained on historical requests
-- 100% refund before the agreed refund boundary
-- no refund after report delivery
-- evaluation cancellation/refund rules defined by the approved domain lifecycle
-- re-evaluation for a new edition/version or materially changed release
-- fixed Auditor compensation
-- outcome-independent Auditor compensation
-- deadline-based compensation eligibility
-- immutable compensation and payout history
-- Stripe for creator payments, with a suitable payout abstraction for Auditor compensation
-
-Commerce state must never become a hidden input into the Evaluation Decision.
-
----
-
-## 15. Application Development Roadmap
+## Application Development Roadmap
 
 The phases below describe the **technical construction of the application**. They deliberately do not mirror the business lifecycle. A feature may participate in several business workflows while being implemented in a different development phase.
 
 ### Phase 0 — Product Definition & Architecture
 
-**Status: Complete.**
+**Status: Complete**
 
-Purpose: decide what Valid.guide is and establish the architecture before implementation.
+Define what Valid.guide is and establish the architecture before implementation.
 
-Completed:
+This phase establishes the product positioning, business model, actors, bounded contexts, persistence architecture, methodology, trust model, commerce model, authorization model and critical business invariants.
 
-- Product positioning and business model
-- Core promise and anti-pay-to-play principle
-- Actor definitions and terminology
-- Bounded contexts and domain model
-- Database/persistence architecture
-- Product Release architecture
-- Evaluation and Validation lifecycle design
-- Auditor eligibility and COI rules
-- Multi-Auditor and voting rules
-- Validation decision logic
-- Product change/revalidation policy
-- Badge and public verification architecture
-- Report transparency model
-- Clarification and dispute/appeal model
-- Commerce/refund/compensation rules
-- Authorization/tenant boundaries
-- Standard Version governance
-- Validation Methodology v1.0
-
-Authoritative outputs:
-
-- `docs/domain-and-database-specification.md`
-- `docs/validation-methodology-v1.md`
-
-Exit criterion:
-
-> The product, architecture, methodology and critical business invariants are sufficiently defined that implementation can proceed without inventing core rules inside application code.
+**Exit criterion:** the product and architecture are defined sufficiently that implementation does not need to invent core business rules in code.
 
 ### Phase 1 — Application Foundation & Domain Integrity
 
-**Status: In progress.**
+**Status: In progress**
 
-Purpose: build the technical foundation and make the domain model trustworthy before exposing substantial user workflows.
+Build the technical foundation and make the domain trustworthy before substantial user workflows are layered on top.
 
-Work includes:
+Focus areas:
 
-- Laravel application structure and conventions
-- domain enums and value representations
-- migrations, foreign keys, indexes and database constraints
-- Eloquent models and relationships
-- organization tenancy and authorization foundations
-- platform-admin separation
-- domain services and explicit state-transition services
-- audit logging foundations
-- immutable/historical boundaries
-- methodology persistence and governance
-- Product/Product Release/Evaluation Request/Evaluation foundations
-- Auditor profile, eligibility and COI foundations
-- Evaluation Decision and Validation foundations
-- Badge and Public Verification Record foundations
-- Report and Report Version foundations
-- Clarification and Formal Dispute foundations
-- commerce ledger foundations
-- concurrency/locking where required to preserve invariants
-- negative-path, authorization and historical-integrity tests
-- Pint/lint, PHPStan and CI quality gates
+- Laravel structure and conventions;
+- enums and value representations;
+- migrations, foreign keys, indexes and database constraints;
+- Eloquent models and relationships;
+- tenancy and authentication;
+- platform-admin separation;
+- domain/state-transition services;
+- audit logging;
+- immutable and historical boundaries;
+- methodology persistence and governance;
+- Product, Product Release, Evaluation Request and Evaluation foundations;
+- Auditor profiles, eligibility and conflicts;
+- Evaluation Decisions and Validation;
+- Badge and Public Verification foundations;
+- Report versioning;
+- Clarification and Formal Dispute foundations;
+- commerce ledger foundations;
+- concurrency controls;
+- negative-path and authorization tests;
+- lint, PHPStan and CI quality gates.
 
-Current Phase 1 completion issues:
-
-- **#65** — Complete methodology guidance and applicability persistence
-- **#66** — Harden trust-domain invariants against raw and bulk mutation
-- **#67** — Complete Phase 1 lifecycle entities and domain relationships
-- **#68** — Expand Phase 1 authorization, lifecycle and trust regression coverage
-- **#69** — Resolve Phase 1 CI, static analysis and dependency-lock baseline
-- **#33** — Final Phase 1 specification, invariant and CI audit
-
-Exit criterion:
-
-> The application foundation faithfully represents the approved architecture, all critical invariants are enforced through controlled application paths, regression coverage protects them, documentation is synchronized, and CI is green.
+**Exit criterion:** the architecture is faithfully represented in code and persistence, critical invariants are controlled, regression coverage exists, documentation is synchronized and CI is green.
 
 ### Phase 2 — Core Application Workflows
 
-**Status: Planned.**
+**Status: Planned**
 
-Purpose: turn the stable domain foundation into complete end-to-end application workflows.
+Turn the stable domain foundation into complete end-to-end application workflows.
 
-Work includes:
+Focus areas:
 
-- creator organization context
-- Product management
-- Product Release management
-- Evaluation Request creation and lifecycle
-- service package selection and deterministic quoting
-- creator intake workflow
-- payment handoff
-- material submission and verification
-- evaluation creation from eligible requests
-- Standard Version selection/freeze at the correct lifecycle boundary
-- Auditor assignment workflow
-- annual and assignment-specific COI workflow
-- Auditor evaluation workspace
-- evidence and finding capture
-- criterion assessment and methodology-controlled voting
-- Evaluation Decision workflow
-- report creation and versioning
-- Validation issuance and lifecycle controls
+- organization context;
+- Product management;
+- Product Releases;
+- Evaluation Request lifecycle;
+- package, complexity and quote handling;
+- intake;
+- payment handoff;
+- material submission;
+- evaluation creation;
+- Standard Version freezing;
+- Auditor assignment and conflict clearance;
+- Auditor workspace;
+- evidence and findings;
+- criterion assessment and voting;
+- Evaluation Decision;
+- report generation and versioning;
+- Validation issuance and lifecycle.
 
-Exit criterion:
-
-> A complete evaluation can move through the application using real domain workflows without requiring manual database intervention.
+**Exit criterion:** a complete evaluation can move through the application without manual database intervention.
 
 ### Phase 3 — Role-Based Application Experiences
 
-**Status: Planned.**
+**Status: Planned**
 
-Purpose: build polished, role-specific interfaces on top of the completed core workflows.
+Build polished role-specific interfaces on top of the stable workflows.
 
-Work includes:
+Focus areas:
 
-- creator dashboard and navigation
-- creator evaluation wizard and draft resumption
-- creator product/release experience
-- creator payment and request status experience
-- creator report and Validation experience
-- Auditor onboarding
-- Auditor profile and competence management
-- Auditor assignment inbox
-- Auditor evaluation workspace
-- Auditor evidence/finding experience
-- Administrator operational dashboards
-- methodology administration UI
-- conflict/dispute administration UI
-- compensation and payout administration UI
-- notifications and attention/action queues
+- creator dashboard and intake experience;
+- product and release management;
+- payment and request experience;
+- reports and Validation results;
+- Auditor onboarding and profile;
+- Auditor assignment and evaluation workspace;
+- administrator operations and governance interfaces;
+- notifications and action queues.
 
-The UI must consume the domain services and policies established in earlier phases. It must not become a second implementation of business rules.
+UI must consume domain services and authorization policies rather than duplicate business rules.
 
-Exit criterion:
-
-> Each primary actor can perform the actions permitted by their role through a coherent application experience, with server-side authorization and no accidental exposure of internal data.
+**Exit criterion:** each primary actor can perform permitted actions through a coherent application experience without internal data leakage.
 
 ### Phase 4 — Public Trust & Discovery
 
-**Status: Planned.**
+**Status: Planned**
 
-Purpose: build the public-facing layer that turns internal Validation data into a trustworthy external signal.
+Expose the Validation system as a trustworthy public layer.
 
-Work includes:
+Focus areas:
 
-- public website
-- methodology explanation pages
-- creator-facing marketing pages
-- Auditor Board pages
-- public Validation pages
-- canonical Verification Page
-- badge rendering/embed experience
-- verification identifier lookup
-- public status history
-- report abstract publication
-- optional full-report publication
-- public directory
-- directory filtering and discovery
-- structured metadata/SEO where appropriate
-- public disclosure and privacy controls
+- public website;
+- methodology pages;
+- creator-facing marketing pages;
+- Auditor Board;
+- public Validation pages;
+- canonical Verification Page;
+- badge embedding;
+- verification identifier lookup;
+- status history;
+- report abstract and controlled full-report publication;
+- public directory;
+- discovery filters;
+- structured metadata and SEO;
+- public privacy controls.
 
-The persisted Public Verification Record remains the authoritative public projection. Public pages must not reconstruct historical trust state from mutable operational tables.
-
-Exit criterion:
-
-> A third party can independently verify what was evaluated, against which Standard Version, for which Product Release, with what current Validation status, without needing access to internal application data.
+**Exit criterion:** a third party can independently verify what was evaluated, against which Standard Version, for which Product Release and what the current Validation status is.
 
 ### Phase 5 — Integrations, Automation & Operations
 
-**Status: Planned.**
+**Status: Planned**
 
-Purpose: connect the application to external systems and automate repetitive operational work without moving domain authority into integrations.
+Connect external systems and automate repetitive work without moving domain authority into integrations.
 
-Work includes:
+Focus areas:
 
-- Stripe payment integration
-- refund integration
-- payout integration
-- email/notification delivery
-- transactional communication
-- scheduled operational reminders
-- background jobs and queues
-- document/file storage integration
-- temporary signed access to private evidence where required
-- monitoring and operational alerts
-- audit-log operational tooling
-- analytics and product instrumentation
-- integration failure/retry handling
-- webhook processing and idempotency
+- Stripe;
+- refunds and payouts;
+- email and notifications;
+- scheduled reminders;
+- background jobs and queues;
+- storage and signed access;
+- monitoring and alerts;
+- analytics;
+- webhook idempotency;
+- retry and failure handling.
 
-External providers may trigger or report events, but they must not bypass domain services or become the authoritative source for Valid.guide trust state.
+External providers may trigger or report events but must not bypass domain services or become the source of trust authority.
 
-Exit criterion:
-
-> External integrations are reliable, idempotent, observable and isolated behind application/domain boundaries, with failures recoverable without corrupting historical trust data.
+**Exit criterion:** integrations are reliable, idempotent, observable and recoverable without corrupting domain or trust data.
 
 ### Phase 6 — Production Readiness & Launch
 
-**Status: Planned.**
+**Status: Planned**
 
-Purpose: make the complete application safe, observable and maintainable in production.
+Prepare the complete application for safe production operation.
 
-Work includes:
+Focus areas:
 
-- production infrastructure configuration
-- deployment pipeline
-- environment and secret management
-- database backup and recovery strategy
-- storage backup/recovery strategy
-- monitoring and error reporting
-- performance testing and optimization
-- security review
-- authorization penetration testing
-- privacy/data-retention review
-- accessibility review
-- browser/device compatibility testing
-- queue and webhook failure testing
-- migration/recovery testing
-- rate limiting and abuse protection
-- operational runbooks
-- incident response procedures
-- production smoke tests
-- final end-to-end regression suite
-- launch checklist
+- production infrastructure;
+- deployment pipeline;
+- secrets management;
+- database and storage backup/recovery;
+- monitoring and error reporting;
+- performance;
+- security testing;
+- privacy and retention;
+- accessibility;
+- browser and device compatibility;
+- queue and webhook failure recovery;
+- migration/recovery procedures;
+- rate limiting and abuse protection;
+- operational runbooks;
+- incident response;
+- smoke tests;
+- end-to-end regression;
+- launch checklist.
 
-Exit criterion:
+**Exit criterion:** the application can be deployed, operated, monitored, recovered and supported without undocumented manual intervention.
 
-> The application can be deployed, operated, monitored, recovered and supported in production without relying on undocumented manual intervention.
-
----
-
-## 16. Development Rules
-
-The following rules apply throughout every development phase.
+## Development Rules
 
 ### Domain authority
 
-Business-critical state changes belong in domain services and controlled workflows. UI components, Filament resources and HTTP endpoints may initiate those workflows but must not independently reproduce or bypass their rules.
+Business-critical state changes belong in controlled domain/application services and workflows.
 
 ### Historical integrity
 
-If a record represents a historical trust, methodology, evaluation, report or financial fact, prefer immutable records, snapshots or explicit versioning over destructive updates.
+Historical meaning is preserved through immutable records, snapshots and versioning.
 
 ### Authorization
 
-Every protected action must be authorized server-side. Tenant boundaries must be enforced even when IDs are supplied manually or when a request bypasses the expected UI.
+Authorization is enforced server-side and is always tenant-aware where applicable.
 
 ### Database integrity
 
-Use foreign keys, unique constraints, indexes and appropriate nullability to enforce invariants at the persistence layer wherever practical.
+Foreign keys, uniqueness, indexes, nullability and other database constraints should enforce invariants wherever practical.
 
 ### Concurrency
 
-Operations that can race must use transactions and row locking or equivalent concurrency controls where required. A stale in-memory model must not be allowed to overwrite a newer domain state.
+Concurrent state changes must use transactions and appropriate locking or equivalent concurrency controls.
 
 ### Testing
 
-New domain behavior must include appropriate unit, feature and negative-path tests. Important invariants should have regression tests proving both the allowed path and prohibited bypasses.
+Tests should cover normal behavior, invalid behavior, authorization failures, bypass attempts and important concurrency scenarios.
 
-### Static analysis and quality
+### Static quality
 
-Before an issue is considered complete:
-
-- Pint/lint must pass.
-- PHPStan must pass at the configured level.
-- Relevant tests must pass.
-- CI must be green.
-
-Do not weaken static analysis, remove tests or suppress errors merely to make a build green.
+Every implementation must satisfy the repository's lint/formatting rules, PHPStan configuration and relevant automated tests before being considered complete.
 
 ### Documentation
 
-When implementation changes an architectural or implementation-significant decision, update the relevant documentation in the same development cycle.
+When implementation changes an architectural or business decision, the authoritative documentation must be updated at the same time.
 
 ### No uncontrolled CRUD
 
-A model does not automatically deserve a generic CRUD interface. If direct editing could violate a lifecycle, trust or historical invariant, expose a workflow instead.
+Trust-sensitive aggregates must not become generic editable records merely because Filament can generate a form for them.
 
----
+## Definition of Done
 
-## 17. Definition of Done
+A development item is complete only when:
 
-A development issue is not complete merely because its primary code path works.
-
-The implementation is considered done only when:
-
-1. The requested behavior is implemented.
-2. The approved architecture and business decisions are respected.
-3. Authorization is enforced server-side.
-4. Historical and trust boundaries are preserved.
-5. Invalid and bypass paths are tested.
-6. Database constraints and relationships are correct.
-7. Documentation is updated where necessary.
-8. Pint/lint passes.
-9. PHPStan passes.
-10. Relevant tests pass.
+1. the intended behavior is implemented;
+2. approved architecture and business decisions are respected;
+3. authorization is enforced server-side;
+4. historical and trust boundaries are preserved;
+5. invalid and bypass paths have appropriate tests;
+6. database constraints and relationships are correct;
+7. relevant documentation is updated;
+8. lint/formatting passes;
+9. PHPStan passes;
+10. relevant tests pass;
 11. CI is green.
 
-For trust-sensitive work, manual confidence is not an acceptance criterion. The repository must provide executable evidence that the invariant holds.
-
----
-
-## 18. Current Development State
-
-The application has moved beyond architectural discovery and is now in the **Application Foundation & Domain Integrity** stage.
-
-The major architectural decisions are already established. The immediate objective is therefore not to add every visible feature at once, but to finish the foundation cleanly so subsequent workflow and UI work can be built without repeatedly revisiting the domain model.
-
-The current implementation backlog should be read in dependency order:
+## Current Development State
 
 ```text
-Phase 0
-  ↓
-Phase 1 — Foundation & Integrity
-  ├── #65 Methodology persistence
-  ├── #66 Trust-domain mutation hardening
-  ├── #67 Domain entities/relationships
-  ├── #68 Regression coverage
-  └── #69 CI/static-analysis baseline
-          ↓
-       #33 Final Phase 1 audit
-          ↓
-Phase 2 — Core application workflows
-          ↓
-Phase 3 — Role-based experiences
-          ↓
-Phase 4 — Public trust & discovery
-          ↓
-Phase 5 — Integrations & automation
-          ↓
-Phase 6 — Production readiness & launch
+Phase 0 — Product Definition & Architecture
+                │
+                ▼
+Phase 1 — Application Foundation & Domain Integrity
+                │
+                ▼
+Phase 2 — Core Application Workflows
+                │
+                ▼
+Phase 3 — Role-Based Application Experiences
+                │
+                ▼
+Phase 4 — Public Trust & Discovery
+                │
+                ▼
+Phase 5 — Integrations, Automation & Operations
+                │
+                ▼
+Phase 6 — Production Readiness & Launch
 ```
 
-This sequencing is intentional: **build the foundation, prove the foundation, build the workflows, build the experiences, expose the trust layer, integrate external systems, then harden for production.**
-
 The application should not advance to the next development phase merely because a feature can technically be demonstrated. The exit criteria for the current phase must be satisfied first.
+
+## Documentation
+
+The authoritative project documentation is organized as follows:
+
+- `docs/domain-and-database-specification.md` — domain model and persistence specification
+- `docs/validation-methodology-v1.md` — Validation Methodology v1
+- `docs/phase-1-decisions.md` — approved Phase 1 decisions and invariants
+- `docs/implementation-decisions.md` — implementation-level architectural decisions and intentional deviations
+
+The README provides the high-level product and development roadmap. Detailed rules belong in the appropriate specification or decision document.

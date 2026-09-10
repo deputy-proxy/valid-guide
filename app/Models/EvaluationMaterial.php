@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Enums\EvaluationMaterialType;
+use App\Enums\EvaluationRequestStatus;
 use App\Services\DomainStateTransitionException;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -20,6 +21,13 @@ class EvaluationMaterial extends Model
 {
     /** @use HasFactory<Factory> */
     use HasFactory;
+
+    /** @var list<EvaluationRequestStatus> */
+    private const CREATOR_SUBMISSION_STATUSES = [
+        EvaluationRequestStatus::Paid,
+        EvaluationRequestStatus::Intake,
+        EvaluationRequestStatus::AwaitingCreator,
+    ];
 
     protected $fillable = [
         'evaluation_request_id',
@@ -48,20 +56,27 @@ class EvaluationMaterial extends Model
 
     protected static function booted(): void
     {
-        static::updating(function (self $material): void {
-            if ($material->getOriginal('verified_at') !== null) {
-                $allowed = ['status', 'verification_notes'];
+        static::creating(function (self $material): void {
+            if ($material->submitted_at === null || $material->submitted_by === null) {
+                throw new DomainStateTransitionException('Evaluation materials must have a submitter and submission timestamp.');
+            }
 
-                if (array_diff(array_keys($material->getDirty()), $allowed) !== []) {
-                    throw new DomainStateTransitionException('Verified evaluation materials are immutable.');
-                }
+            $request = EvaluationRequest::query()->find($material->evaluation_request_id);
+            if ($request === null || ! in_array($request->status, self::CREATOR_SUBMISSION_STATUSES, true)) {
+                throw new DomainStateTransitionException('Evaluation materials can only be submitted during the paid intake workflow.');
+            }
+
+            if ($request->status === EvaluationRequestStatus::Ready) {
+                throw new DomainStateTransitionException('The evidence set is closed once an evaluation request is ready.');
             }
         });
 
+        static::updating(function (self $material): void {
+            throw new DomainStateTransitionException('Submitted evaluation materials are immutable.');
+        });
+
         static::deleting(function (self $material): void {
-            if ($material->submitted_at !== null) {
-                throw new DomainStateTransitionException('Submitted evaluation materials cannot be deleted.');
-            }
+            throw new DomainStateTransitionException('Submitted evaluation materials cannot be deleted.');
         });
     }
 

@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 use App\Models\ServicePackage;
 use App\Models\User;
-use App\Services\DomainStateTransitionException;
 use App\Services\ServicePackageManagement;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Validation\ValidationException;
 
 function platformAdmin(): User
 {
@@ -49,11 +49,11 @@ test('platform administrators can update package pricing', function () {
     $admin->save();
     $package = app(ServicePackageManagement::class)->create($admin, packageAttributes());
 
-    $updated = app(ServicePackageManagement::class)->update($admin, $package, [
-        ...packageAttributes(),
-        'slug' => $package->slug,
-        'price_minor' => 75000,
-    ]);
+    $attributes = packageAttributes();
+    $attributes['slug'] = $package->slug;
+    $attributes['price_minor'] = 75000;
+
+    $updated = app(ServicePackageManagement::class)->update($admin, $package, $attributes);
 
     expect($updated->price_minor)->toBe(75000);
 });
@@ -65,5 +65,5 @@ test('package management rejects non positive prices', function () {
     expect(fn () => app(ServicePackageManagement::class)->create($admin, [
         ...packageAttributes(),
         'price_minor' => 0,
-    ]))->toThrow(DomainStateTransitionException::class);
+    ]))->toThrow(ValidationException::class);
 });

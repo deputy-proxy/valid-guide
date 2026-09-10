@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Enums\EvaluationComplexity;
+use App\Enums\EvaluationMaterialType;
 use App\Enums\EvaluationRequestStatus;
 use App\Models\EvaluationRequest;
 use App\Models\Organization;
@@ -142,6 +143,54 @@ final class CreatorEvaluationRequestIntake
         return $request->refresh()->load(['product', 'productRelease', 'materials', 'servicePackage']);
     }
 
+    public function saveMaterialDraft(
+        User $actor,
+        EvaluationRequest $request,
+        EvaluationMaterialType $type,
+        string $label,
+        ?string $description = null,
+        ?string $location = null,
+    ): EvaluationRequest {
+        $this->authorizeDraft($actor, $request);
+
+        $label = trim($label);
+        $description = $description !== null ? trim($description) : null;
+        $location = $location !== null ? trim($location) : null;
+
+        if ($label === '') {
+            throw new DomainStateTransitionException('Evaluation material labels are required.');
+        }
+
+        if (Str::length($label) > 255) {
+            throw new DomainStateTransitionException('Evaluation material labels must not exceed 255 characters.');
+        }
+
+        if ($description !== null && Str::length($description) > 10000) {
+            throw new DomainStateTransitionException('Evaluation material descriptions must not exceed 10000 characters.');
+        }
+
+        if (in_array($type, [
+            EvaluationMaterialType::File,
+            EvaluationMaterialType::Url,
+            EvaluationMaterialType::Access,
+        ], true) && blank($location)) {
+            throw new DomainStateTransitionException('A location is required for files, URLs and access materials.');
+        }
+
+        $notes = $this->intakeNotes($request);
+        $notes['material'] = [
+            'type' => $type->value,
+            'label' => $label,
+            'description' => $description,
+            'location' => $location,
+        ];
+
+        $request->intake_notes = json_encode($notes, JSON_THROW_ON_ERROR);
+        $request->save();
+
+        return $request->refresh()->load(['product', 'productRelease', 'materials', 'servicePackage']);
+    }
+
     public function confirmClaimsAndAudience(User $actor, EvaluationRequest $request): EvaluationRequest
     {
         $this->authorizeDraft($actor, $request);
@@ -263,7 +312,8 @@ final class CreatorEvaluationRequestIntake
             throw new DomainStateTransitionException('Evaluation scope is required before payment.');
         }
 
-        if ($request->materials->isEmpty()) {
+        $material = $notes['material'] ?? null;
+        if (is_array($material) === false || ($material['type'] ?? null) === null || ($material['label'] ?? null) === null) {
             throw new DomainStateTransitionException('At least one access or material item is required before payment.');
         }
 

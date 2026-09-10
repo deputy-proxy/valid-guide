@@ -176,13 +176,13 @@ class EvaluationDecisionService
             $results->push($result);
         }
 
-        $decisions = $results->map(fn ($result): string => $result->decision->value)->unique()->values();
+        $decisions = $results->map(fn ($result): string => $result->assessment->value)->unique()->values();
 
         if ($decisions->count() !== 1) {
             return [
                 'decision' => 'insufficient_evidence',
                 'score' => null,
-                'counts' => $results->countBy(fn ($result): string => $result->decision->value)->all(),
+                'counts' => $results->countBy(fn ($result): string => $result->assessment->value)->all(),
                 'blocker' => sprintf('Criterion %s has conflicting Auditor assessments.', $criterion->code),
             ];
         }
@@ -195,7 +195,7 @@ class EvaluationDecisionService
         return [
             'decision' => $decision,
             'score' => $score,
-            'counts' => $results->countBy(fn ($result): string => $result->decision->value)->all(),
+            'counts' => $results->countBy(fn ($result): string => $result->assessment->value)->all(),
             'blocker' => $decision === 'insufficient_evidence'
                 ? sprintf('Criterion %s has insufficient evidence.', $criterion->code)
                 : null,

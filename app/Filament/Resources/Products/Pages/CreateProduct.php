@@ -5,13 +5,12 @@ declare(strict_types=1);
 namespace App\Filament\Resources\Products\Pages;
 
 use App\Filament\Resources\Products\ProductResource;
-use App\Models\Product;
 use App\Models\User;
 use App\Services\OrganizationContext;
 use App\Services\ProductManagement;
 use Filament\Resources\Pages\CreateRecord;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Auth;
 
 class CreateProduct extends CreateRecord
 {

@@ -114,3 +114,13 @@
 - These completeness checks run in `StandardVersionGovernance` immediately before `draft → scheduled`, so malformed methodology cannot be frozen into a published standard.
 - Validation is version-specific: only criteria belonging to the Standard Version being scheduled contribute to its profile, and changing another Standard Version cannot affect the result.
 - Feature coverage includes a complete valid v1 profile, missing D10 coverage, invalid product-type weights, invalid total weighting, and rejection at the scheduling boundary.
+
+## 2026-09-10 — Phase 1 invariant regression audit completed
+
+- Issue #33 is the final Phase 1 specification-to-code regression audit. The audit matrix is maintained in `docs/phase-1-invariant-audit.md` and is backed by the existing domain-specific Feature tests plus `Phase1InvariantAuditTest`.
+- The audit verified that Phase 1 lifecycle, methodology, assessment, decision, voting, staffing, Auditor eligibility/conflict, evaluation history, reporting, refund, compensation, public verification and authorization boundaries have executable regression coverage at the application layer.
+- Raw/bulk database mutations are treated as a controlled implementation boundary. The regression audit statically rejects `DB::table(...)->update/delete` and `DB::query(...)->update/delete` application paths outside `app/Services`, where controlled domain writes are intentionally implemented.
+- Concurrency-sensitive workflows retain transaction and row-lock protections together with database uniqueness constraints. The SQLite in-memory test environment cannot faithfully reproduce every production database isolation/locking characteristic, so those database-specific semantics are documented rather than falsely represented as fully reproduced by the test suite.
+- The audit confirmed that malformed methodology, unauthorized domain operations, invalid lifecycle states and incomplete decision prerequisites fail closed rather than silently producing trusted output.
+- The Phase 1 quality gate remains formatting, PHPStan/static analysis and the complete test suite. The Issue #33 CI run passed all configured checks.
+- No new Phase 1 architectural invariant was introduced by the audit. The purpose of Issue #33 was regression verification and documentation of the existing Phase 1 contract.

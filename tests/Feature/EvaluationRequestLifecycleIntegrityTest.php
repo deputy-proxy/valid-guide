@@ -42,7 +42,7 @@ function evaluationRequestLifecycleFixture(): EvaluationRequest
 
 function evaluationRequestLifecycleActor(EvaluationRequest $request): User
 {
-    return $request->organization->users()->first();
+    return $request->organization->users()->firstOrFail();
 }
 
 test('evaluation request status cannot be changed directly', function () {

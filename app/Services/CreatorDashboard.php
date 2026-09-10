@@ -221,6 +221,22 @@ final class CreatorDashboard
             };
         }
 
+        if (in_array($request->status, [
+            EvaluationRequestStatus::Paid,
+            EvaluationRequestStatus::Intake,
+            EvaluationRequestStatus::AwaitingCreator,
+            EvaluationRequestStatus::Ready,
+        ], true) && $this->refundEligible(
+            $actor,
+            $request,
+            $orderStatus,
+            $paymentStatus,
+            $refundStatus,
+            $hasDeliveredReport,
+        )) {
+            return 'request_refund';
+        }
+
         return match ($request->status) {
             EvaluationRequestStatus::Draft => 'resume_request',
             EvaluationRequestStatus::AwaitingPayment => 'continue_payment',

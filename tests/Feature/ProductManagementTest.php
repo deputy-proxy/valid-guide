@@ -20,7 +20,7 @@ use Illuminate\Validation\ValidationException;
 
 use function Pest\Livewire\livewire;
 
-function productManagementOrganization(User $user, OrganizationRole $role, string $slug): Organization
+function issue52ProductOrganization(User $user, OrganizationRole $role, string $slug): Organization
 {
     $organization = Organization::query()->create([
         'name' => ucfirst($slug),
@@ -33,7 +33,7 @@ function productManagementOrganization(User $user, OrganizationRole $role, strin
     return $organization;
 }
 
-function validProductAttributes(string $slug = 'valid-course'): array
+function issue52ValidProductAttributes(string $slug = 'valid-course'): array
 {
     return [
         'title' => 'Valid Course',
@@ -49,7 +49,7 @@ function validProductAttributes(string $slug = 'valid-course'): array
 
 it('resolves only organizations the user belongs to', function () {
     $user = User::factory()->create();
-    $organization = productManagementOrganization($user, OrganizationRole::Editor, 'creator-a');
+    $organization = issue52ProductOrganization($user, OrganizationRole::Editor, 'creator-a');
     $otherOrganization = Organization::query()->create([
         'name' => 'Creator B',
         'slug' => 'creator-b',
@@ -59,18 +59,16 @@ it('resolves only organizations the user belongs to', function () {
     $context = new OrganizationContext;
 
     expect($context->resolve($user, $organization->getKey())->is($organization))->toBeTrue();
-
-    expect(fn () => $context->resolve($user, $otherOrganization->getKey()))
-        ->toThrow(AuthorizationException::class);
+    expect(fn () => $context->resolve($user, $otherOrganization->getKey()))->toThrow(AuthorizationException::class);
 });
 
 it('allows owner admin and editor to create products but denies billing', function (OrganizationRole $role, bool $allowed) {
     $user = User::factory()->create();
-    $organization = productManagementOrganization($user, $role, 'creator-'.strtolower($role->value));
+    $organization = issue52ProductOrganization($user, $role, 'creator-'.strtolower($role->value));
     $management = new ProductManagement;
 
     if ($allowed) {
-        $product = $management->create($user, $organization, validProductAttributes());
+        $product = $management->create($user, $organization, issue52ValidProductAttributes());
 
         expect($product->organization_id)->toBe($organization->getKey())
             ->and($product->status)->toBe(ProductStatus::Active);
@@ -78,7 +76,7 @@ it('allows owner admin and editor to create products but denies billing', functi
         return;
     }
 
-    expect(fn () => $management->create($user, $organization, validProductAttributes()))
+    expect(fn () => $management->create($user, $organization, issue52ValidProductAttributes()))
         ->toThrow(AuthorizationException::class);
 })->with([
     [OrganizationRole::Owner, true],
@@ -90,20 +88,17 @@ it('allows owner admin and editor to create products but denies billing', functi
 it('rejects a forged organization context even when the identifier is supplied manually', function () {
     $user = User::factory()->create();
     $otherUser = User::factory()->create();
-    $organization = productManagementOrganization($user, OrganizationRole::Editor, 'creator-a');
-    $otherOrganization = productManagementOrganization($otherUser, OrganizationRole::Owner, 'creator-b');
+    $organization = issue52ProductOrganization($user, OrganizationRole::Editor, 'creator-a');
+    $otherOrganization = issue52ProductOrganization($otherUser, OrganizationRole::Owner, 'creator-b');
     $context = new OrganizationContext;
 
-    expect(fn () => $context->resolve($user, $otherOrganization->getKey()))
-        ->toThrow(AuthorizationException::class);
-
-    expect($context->resolve($user, $organization->getKey())->getKey())
-        ->toBe($organization->getKey());
+    expect(fn () => $context->resolve($user, $otherOrganization->getKey()))->toThrow(AuthorizationException::class);
+    expect($context->resolve($user, $organization->getKey())->getKey())->toBe($organization->getKey());
 });
 
 it('does not allow a product to change organizations', function () {
     $user = User::factory()->create();
-    $organization = productManagementOrganization($user, OrganizationRole::Editor, 'creator-a');
+    $organization = issue52ProductOrganization($user, OrganizationRole::Editor, 'creator-a');
     $otherOrganization = Organization::query()->create([
         'name' => 'Creator B',
         'slug' => 'creator-b',
@@ -122,26 +117,23 @@ it('does not allow a product to change organizations', function () {
 
 it('archives products through the controlled lifecycle service', function () {
     $user = User::factory()->create();
-    $organization = productManagementOrganization($user, OrganizationRole::Editor, 'creator-a');
+    $organization = issue52ProductOrganization($user, OrganizationRole::Editor, 'creator-a');
     $product = Product::query()->create([
         'organization_id' => $organization->getKey(),
         'title' => 'Course',
         'slug' => 'course',
     ]);
-    $management = new ProductManagement;
 
-    $archived = $management->archive($user, $product);
+    $archived = (new ProductManagement)->archive($user, $product);
 
     expect($archived->status)->toBe(ProductStatus::Archived);
-
     $archived->title = 'Changed';
-
     expect(fn () => $archived->save())->toThrow(DomainStateTransitionException::class);
 });
 
 it('does not allow historical products to be deleted', function () {
     $user = User::factory()->create();
-    $organization = productManagementOrganization($user, OrganizationRole::Owner, 'creator-a');
+    $organization = issue52ProductOrganization($user, OrganizationRole::Owner, 'creator-a');
     $product = Product::query()->create([
         'organization_id' => $organization->getKey(),
         'title' => 'Course',
@@ -160,22 +152,20 @@ it('does not allow historical products to be deleted', function () {
 
 it('rejects incomplete product data at the application boundary', function () {
     $user = User::factory()->create();
-    $organization = productManagementOrganization($user, OrganizationRole::Editor, 'creator-a');
-    $management = new ProductManagement;
+    $organization = issue52ProductOrganization($user, OrganizationRole::Editor, 'creator-a');
 
-    expect(fn () => $management->create($user, $organization, [
-        'title' => 'Incomplete',
-    ]))->toThrow(ValidationException::class);
+    expect(fn () => (new ProductManagement)->create($user, $organization, ['title' => 'Incomplete']))
+        ->toThrow(ValidationException::class);
 });
 
 it('renders the Filament product list only for the active organization', function () {
     $user = User::factory()->create();
-    $organization = productManagementOrganization($user, OrganizationRole::Editor, 'creator-ui-a');
+    $organization = issue52ProductOrganization($user, OrganizationRole::Editor, 'creator-ui-a');
     $otherUser = User::factory()->create();
-    $otherOrganization = productManagementOrganization($otherUser, OrganizationRole::Editor, 'creator-ui-b');
+    $otherOrganization = issue52ProductOrganization($otherUser, OrganizationRole::Editor, 'creator-ui-b');
 
-    $product = app(ProductManagement::class)->create($user, $organization, validProductAttributes('ui-product'));
-    $otherProduct = app(ProductManagement::class)->create($otherUser, $otherOrganization, validProductAttributes('other-ui-product'));
+    $product = app(ProductManagement::class)->create($user, $organization, issue52ValidProductAttributes('ui-product'));
+    $otherProduct = app(ProductManagement::class)->create($otherUser, $otherOrganization, issue52ValidProductAttributes('other-ui-product'));
 
     session(['creator.organization_id' => $organization->getKey()]);
     actingAs($user);
@@ -188,8 +178,8 @@ it('renders the Filament product list only for the active organization', functio
 
 it('allows an authorized editor to archive through the Filament action', function () {
     $user = User::factory()->create();
-    $organization = productManagementOrganization($user, OrganizationRole::Editor, 'creator-ui-archive');
-    $product = app(ProductManagement::class)->create($user, $organization, validProductAttributes('ui-archive'));
+    $organization = issue52ProductOrganization($user, OrganizationRole::Editor, 'creator-ui-archive');
+    $product = app(ProductManagement::class)->create($user, $organization, issue52ValidProductAttributes('ui-archive'));
 
     session(['creator.organization_id' => $organization->getKey()]);
     actingAs($user);
@@ -203,10 +193,10 @@ it('allows an authorized editor to archive through the Filament action', functio
 
 it('denies billing users product management at the server boundary', function () {
     $owner = User::factory()->create();
-    $organization = productManagementOrganization($owner, OrganizationRole::Owner, 'creator-ui-billing');
+    $organization = issue52ProductOrganization($owner, OrganizationRole::Owner, 'creator-ui-billing');
     $billing = User::factory()->create();
     $organization->users()->attach($billing, ['role' => OrganizationRole::Billing->value]);
-    $product = app(ProductManagement::class)->create($owner, $organization, validProductAttributes('billing-product'));
+    $product = app(ProductManagement::class)->create($owner, $organization, issue52ValidProductAttributes('billing-product'));
 
     expect(Gate::forUser($billing)->allows('viewAny', Product::class))->toBeFalse()
         ->and(Gate::forUser($billing)->allows('update', $product))->toBeFalse()

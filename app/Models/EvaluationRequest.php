@@ -16,7 +16,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 /**
  * @property EvaluationRequestStatus|null $status
  * @property EvaluationComplexity $complexity
- * @property float|null $quoted_price
+ * @property string|null $quoted_price
  * @property int|null $quoted_amount_minor
  * @property int|null $organization_id
  * @property int|null $product_id

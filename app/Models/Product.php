@@ -53,7 +53,9 @@ class Product extends Model
     protected static function booted(): void
     {
         static::creating(function (self $product): void {
-            if ($product->status !== null && $product->status !== ProductStatus::Active) {
+            $product->status ??= ProductStatus::Active;
+
+            if ($product->status !== ProductStatus::Active) {
                 throw new DomainStateTransitionException('Products must be created as active.');
             }
         });

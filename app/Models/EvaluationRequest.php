@@ -183,7 +183,7 @@ class EvaluationRequest extends Model
             $quotedAmountMinor = (int) round((float) $this->quoted_price * 100);
         }
 
-        if ($quotedAmountMinor === null) {
+        if ($quotedAmountMinor === null || $this->service_package_id === null) {
             return;
         }
 
@@ -193,10 +193,6 @@ class EvaluationRequest extends Model
 
         if ($this->quoted_price !== null && (int) round((float) $this->quoted_price * 100) !== $quotedAmountMinor) {
             throw new DomainStateTransitionException('The quoted price must match the integer minor-unit amount.');
-        }
-
-        if ($this->service_package_id === null) {
-            throw new DomainStateTransitionException('A quoted amount requires a service package.');
         }
 
         $package = ServicePackage::query()->find($this->service_package_id);

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Policies;
 
 use App\Enums\OrganizationRole;
+use App\Enums\ProductStatus;
 use App\Models\Organization;
 use App\Models\Product;
 use App\Models\User;
@@ -31,13 +32,13 @@ class ProductPolicy
     public function update(User $user, Product $product): bool
     {
         return $this->canManageCreatorResource($user, $product->organization)
-            && $product->status->value !== 'archived';
+            && $product->status !== ProductStatus::Archived;
     }
 
     public function archive(User $user, Product $product): bool
     {
         return $this->canManageCreatorResource($user, $product->organization)
-            && $product->status->value !== 'archived';
+            && $product->status !== ProductStatus::Archived;
     }
 
     public function delete(User $user, Product $product): bool

@@ -14,14 +14,15 @@ class EvaluationRequestPolicy
 {
     public function viewAny(User $user): bool
     {
-        return $user->organizations()
+        return $user->isPlatformAdmin() || $user->organizations()
             ->wherePivotIn('role', $this->creatorRoles())
             ->exists();
     }
 
     public function view(User $user, EvaluationRequest $evaluationRequest): bool
     {
-        return $this->canManageCreatorResource($user, $evaluationRequest->organization);
+        return $user->isPlatformAdmin()
+            || $this->canManageCreatorResource($user, $evaluationRequest->organization);
     }
 
     public function create(User $user, Organization $organization): bool

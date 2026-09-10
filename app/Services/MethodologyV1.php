@@ -36,6 +36,11 @@ final class MethodologyV1
             MethodologyDimension::cases(),
         );
 
-        return array_combine($dimensions, $weights) ?: [];
+        $profile = [];
+        foreach ($dimensions as $index => $dimension) {
+            $profile[$dimension] = $weights[$index];
+        }
+
+        return $profile;
     }
 }

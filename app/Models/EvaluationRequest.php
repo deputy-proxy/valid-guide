@@ -33,7 +33,7 @@ class EvaluationRequest extends Model
         'organization_id', 'product_id', 'product_release_id', 'service_package_id', 'service_package',
         'service_package_name_snapshot', 'service_package_description_snapshot', 'service_package_terms_snapshot',
         'complexity', 'quoted_price', 'quoted_amount_minor', 'currency', 'status', 'submitted_at', 'payment_started_at', 'paid_at',
-        'evaluation_started_at', 'evaluation_started_at', 'cancelled_at', 'refunded_at', 'intake_notes',
+        'evaluation_started_at', 'cancelled_at', 'refunded_at', 'intake_notes',
     ];
 
     protected function casts(): array

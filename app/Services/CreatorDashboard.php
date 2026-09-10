@@ -18,13 +18,7 @@ use Illuminate\Support\Facades\Gate;
 
 final class CreatorDashboard
 {
-    /**
-     * @return array{
-     *     organization: array{id: int|string, name: string, role: string},
-     *     products: list<array{id: int|string, title: string, slug: string, status: string, releases: list<array{id: int|string, identifier: string, version: string|null, status: string, published_at: string|null}>>},
-     *     evaluation_requests: list<array<string, mixed>>
-     * }
-     */
+    /** @return array<string, mixed> */
     public function forOrganization(User $actor, int|string $organizationId): array
     {
         $organization = Organization::query()->findOrFail($organizationId);
@@ -55,9 +49,7 @@ final class CreatorDashboard
         ];
     }
 
-    /**
-     * @return list<array{id: int|string, title: string, slug: string, status: string, releases: list<array{id: int|string, identifier: string, version: string|null, status: string, published_at: string|null}>>}
-     */
+    /** @return array<int, array<string, mixed>> */
     private function products(User $actor, Organization $organization): array
     {
         return Product::query()
@@ -89,7 +81,7 @@ final class CreatorDashboard
             ->all();
     }
 
-    /** @return list<array<string, mixed>> */
+    /** @return array<int, array<string, mixed>> */
     private function evaluationRequests(User $actor, Organization $organization, string $role): array
     {
         $requests = EvaluationRequest::query()
@@ -150,7 +142,7 @@ final class CreatorDashboard
             'intake' => $isBilling ? null : $this->intakeStatus($request),
             'commerce' => [
                 'package' => $request->service_package_name_snapshot,
-                'complexity' => $request->complexity?->value,
+                'complexity' => $request->complexity->value,
                 'amount_minor' => $request->quoted_amount_minor,
                 'currency' => $request->currency,
                 'payment_status' => $payment?->status?->value,
@@ -276,7 +268,7 @@ final class CreatorDashboard
             return null;
         }
 
-        $role = $membership->pivot?->role;
+        $role = $membership->pivot->getAttribute('role');
 
         return is_string($role) ? $role : null;
     }

@@ -18,7 +18,7 @@ use Illuminate\Validation\Rule;
 class ProductManagement
 {
     /**
-     * @param  array<string, mixed> $attributes
+     * @param array<string, mixed> $attributes
      */
     public function create(User $user, Organization $organization, array $attributes): Product
     {
@@ -29,12 +29,11 @@ class ProductManagement
         $validated['organization_id'] = $organization->getKey();
         $validated['status'] = ProductStatus::Active->value;
 
-        /** @var Product */
         return Product::query()->create($validated);
     }
 
     /**
-     * @param  array<string, mixed> $attributes
+     * @param array<string, mixed> $attributes
      */
     public function update(User $user, Product $product, array $attributes): Product
     {

@@ -28,8 +28,6 @@ final class ProductReleaseStateTransition
                 ->lockForUpdate()
                 ->firstOrFail();
 
-            Gate::forUser($actor)->authorize($this->ability($to), $release);
-
             $from = $release->status->value;
 
             if ($from === $to->value) {
@@ -43,6 +41,8 @@ final class ProductReleaseStateTransition
                     sprintf('Product release cannot transition from [%s] to [%s].', $from, $to->value),
                 );
             }
+
+            Gate::forUser($actor)->authorize($this->ability($to), $release);
 
             if ($to === ProductReleaseStatus::Current) {
                 if (blank($release->release_identifier) || blank($release->title_snapshot)) {

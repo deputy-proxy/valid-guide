@@ -4,14 +4,13 @@ declare(strict_types=1);
 
 namespace App\Filament\Resources\EvaluationRequests;
 
+use App\Enums\EvaluationRequestStatus;
 use App\Enums\OrderStatus;
 use App\Enums\PaymentStatus;
 use App\Enums\RefundStatus;
 use App\Filament\Resources\EvaluationRequests\Pages\ListEvaluationRequests;
 use App\Filament\Resources\EvaluationRequests\Pages\ViewEvaluationRequest;
 use App\Models\EvaluationRequest;
-use App\Models\Payment;
-use App\Models\Refund;
 use App\Models\User;
 use App\Services\CreatorRefundService;
 use App\Services\DomainStateTransitionException;
@@ -22,6 +21,9 @@ use Filament\Actions\Action;
 use Filament\Actions\ViewAction;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
+use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\TextEntry;
+use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
@@ -51,6 +53,72 @@ final class EvaluationRequestResource extends Resource
         return self::authenticatedUser()->isPlatformAdmin();
     }
 
+    public static function infolist(Schema $schema): Schema
+    {
+        return $schema->components([
+            Section::make('Request')
+                ->schema([
+                    TextEntry::make('id')->label('Request'),
+                    TextEntry::make('organization.name')->label('Organization'),
+                    TextEntry::make('product.title')->label('Product'),
+                    TextEntry::make('productRelease.release_identifier')->label('Product Release'),
+                    TextEntry::make('status')
+                        ->badge()
+                        ->formatStateUsing(fn (mixed $state): string => self::statusLabel($state)),
+                    TextEntry::make('paid_at')->dateTime(),
+                ])
+                ->columns(2),
+            Section::make('Commercial terms')
+                ->schema([
+                    TextEntry::make('service_package_name_snapshot')->label('Service package'),
+                    TextEntry::make('complexity')
+                        ->formatStateUsing(fn (mixed $state): string => self::statusLabel($state)),
+                    TextEntry::make('quoted_amount_minor')
+                        ->label('Amount')
+                        ->formatStateUsing(fn (mixed $state, EvaluationRequest $record): string => self::formatMoney($state, $record->currency)),
+                    TextEntry::make('currency'),
+                ])
+                ->columns(2),
+            Section::make('Payment')
+                ->schema([
+                    TextEntry::make('order.status')
+                        ->label('Order status')
+                        ->badge()
+                        ->formatStateUsing(fn (mixed $state): string => self::statusLabel($state)),
+                    TextEntry::make('order.provider')->label('Provider'),
+                    TextEntry::make('order.provider_reference')->label('Provider reference'),
+                    TextEntry::make('order.latestPayment.status')
+                        ->label('Payment status')
+                        ->badge()
+                        ->formatStateUsing(fn (mixed $state): string => self::statusLabel($state)),
+                    TextEntry::make('order.latestPayment.provider_payment_id')->label('Payment reference'),
+                    TextEntry::make('order.latestPayment.paid_at')->label('Paid at')->dateTime(),
+                ])
+                ->columns(2),
+            Section::make('Refund')
+                ->schema([
+                    TextEntry::make('order.refund.status')
+                        ->label('Refund status')
+                        ->badge()
+                        ->formatStateUsing(fn (mixed $state): string => self::statusLabel($state)),
+                    TextEntry::make('order.refund.amount_minor')
+                        ->label('Refund amount')
+                        ->formatStateUsing(fn (mixed $state, EvaluationRequest $record): string => self::formatMoney($state, $record->currency)),
+                    TextEntry::make('order.refund.provider_refund_id')->label('Refund reference'),
+                    TextEntry::make('order.refund.requested_at')->label('Requested at')->dateTime(),
+                    TextEntry::make('order.refund.processed_at')->label('Processed at')->dateTime(),
+                    TextEntry::make('order.refund.failed_at')->label('Failed at')->dateTime(),
+                    TextEntry::make('order.refund.reason')->label('Reason'),
+                    TextEntry::make('refund_eligibility')
+                        ->label('Refund eligibility')
+                        ->state(fn (EvaluationRequest $record): string => app(PlatformCommerce::class)->refundEligible($record) ? 'Eligible' : 'Not eligible')
+                        ->badge()
+                        ->color(fn (string $state): string => $state === 'Eligible' ? 'success' : 'gray'),
+                ])
+                ->columns(2),
+        ]);
+    }
+
     public static function table(Table $table): Table
     {
         return $table
@@ -69,12 +137,12 @@ final class EvaluationRequestResource extends Resource
                     ->sortable(),
                 TextColumn::make('status')
                     ->badge()
-                    ->formatStateUsing(fn (mixed $state): string => self::requestStatusLabel($state)),
+                    ->formatStateUsing(fn (mixed $state): string => self::statusLabel($state)),
                 TextColumn::make('order.status')
                     ->label('Order')
                     ->badge()
                     ->formatStateUsing(fn (mixed $state): string => self::statusLabel($state)),
-                TextColumn::make('order.payments.status')
+                TextColumn::make('order.latestPayment.status')
                     ->label('Payment')
                     ->badge()
                     ->formatStateUsing(fn (mixed $state): string => self::statusLabel($state)),
@@ -88,7 +156,7 @@ final class EvaluationRequestResource extends Resource
                 TextColumn::make('paid_at')->dateTime()->sortable(),
             ])
             ->filters([
-                SelectFilter::make('status')->options(self::requestStatusOptions()),
+                SelectFilter::make('status')->options(self::enumOptions(EvaluationRequestStatus::cases())),
                 SelectFilter::make('order_status')
                     ->label('Order status')
                     ->options(self::enumOptions(OrderStatus::cases())),
@@ -122,7 +190,8 @@ final class EvaluationRequestResource extends Resource
         return parent::getEloquentQuery()->with([
             'organization',
             'product',
-            'order.payments',
+            'productRelease',
+            'order.latestPayment',
             'order.refund',
         ]);
     }
@@ -132,21 +201,6 @@ final class EvaluationRequestResource extends Resource
         return [
             'index' => ListEvaluationRequests::route('/'),
             'view' => ViewEvaluationRequest::route('/{record}'),
-        ];
-    }
-
-    /** @return array<string, string> */
-    private static function requestStatusOptions(): array
-    {
-        return [
-            'draft' => 'Draft',
-            'awaiting_payment' => 'Awaiting payment',
-            'paid' => 'Paid',
-            'intake' => 'Intake',
-            'awaiting_creator' => 'Awaiting creator',
-            'ready' => 'Ready',
-            'cancelled' => 'Cancelled',
-            'refunded' => 'Refunded',
         ];
     }
 
@@ -160,15 +214,6 @@ final class EvaluationRequestResource extends Resource
         }
 
         return $options;
-    }
-
-    private static function requestStatusLabel(mixed $state): string
-    {
-        if ($state instanceof \App\Enums\EvaluationRequestStatus) {
-            return self::statusLabel($state);
-        }
-
-        return self::statusLabel($state);
     }
 
     private static function statusLabel(mixed $state): string

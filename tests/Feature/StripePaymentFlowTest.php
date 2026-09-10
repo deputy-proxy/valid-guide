@@ -62,6 +62,7 @@ function stripeWebhookPayload(string $eventId, string $type, int $paymentId, int
 
 function postSignedStripeWebhook(string $payload): TestResponse
 {
+    config(['stripe.webhook_secret' => 'whsec_test']);
     $timestamp = time();
     $signature = hash_hmac('sha256', $timestamp.'.'.$payload, 'whsec_test');
 

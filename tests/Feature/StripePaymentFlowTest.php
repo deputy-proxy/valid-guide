@@ -2,14 +2,15 @@
 
 declare(strict_types=1);
 
+use App\Enums\EvaluationMaterialType;
 use App\Enums\EvaluationRequestStatus;
 use App\Enums\OrderStatus;
 use App\Enums\PaymentStatus;
-use App\Models\EvaluationRequest;
 use App\Models\Order;
 use App\Models\Payment;
 use App\Models\PaymentWebhookEvent;
 use App\Services\CreatorEvaluationRequestIntake;
+use App\Services\DomainStateTransitionException;
 use App\Services\StripePaymentService;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Testing\TestResponse;
@@ -23,7 +24,7 @@ function stripePaymentFixture(): array
     $request = $intake->selectProduct($user, $request, $product);
     $request = $intake->selectRelease($user, $request, $release);
     $request = $intake->updateScope($user, $request, 'Evaluate the complete learning experience.');
-    $request = $intake->saveMaterialDraft($user, $request, App\Enums\EvaluationMaterialType::Url, 'Course page', null, 'https://example.test/course');
+    $request = $intake->saveMaterialDraft($user, $request, EvaluationMaterialType::Url, 'Course page', null, 'https://example.test/course');
     $request = $intake->confirmClaimsAndAudience($user, $request);
     $request = $intake->applyCommercialTerms($user, $request, $package->id, 'standard');
     $request = $intake->validateForPayment($user, $request);
@@ -196,7 +197,7 @@ it('does not create a second order for an already paid request', function () {
     ]);
 
     expect(fn () => app(StripePaymentService::class)->createCheckout($request, $user))
-        ->toThrow(App\Services\DomainStateTransitionException::class);
+        ->toThrow(DomainStateTransitionException::class);
 
     expect(Order::query()->where('evaluation_request_id', $request->id)->count())->toBe(1);
 });

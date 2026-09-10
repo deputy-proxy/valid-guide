@@ -6,12 +6,12 @@ namespace App\Filament\Pages;
 
 use App\Models\User;
 use App\Services\OrganizationContext;
+use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Select;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Illuminate\Support\Facades\Auth;
-use BackedEnum;
 use UnitEnum;
 
 final class OrganizationContextPage extends Page

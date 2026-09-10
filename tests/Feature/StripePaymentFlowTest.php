@@ -15,6 +15,7 @@ use App\Services\StripePaymentService;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Testing\TestResponse;
 
+/** @return array{0: \App\Models\User, 1: \App\Models\Organization, 2: \App\Models\EvaluationRequest, 3: \App\Models\ServicePackage} */
 function stripePaymentFixture(): array
 {
     [$user, $organization, $product, $release, $package] = creatorWizardFixture();

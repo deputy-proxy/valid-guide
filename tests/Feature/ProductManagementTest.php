@@ -17,6 +17,7 @@ use Filament\Actions\Testing\TestAction;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
+
 use function Pest\Livewire\livewire;
 
 function issue52ProductOrganization(User $user, OrganizationRole $role, string $slug): Organization

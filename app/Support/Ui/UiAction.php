@@ -13,8 +13,7 @@ final readonly class UiAction
         public bool $enabled,
         public ?string $disabledReason = null,
         public ?string $confirmation = null,
-    ) {
-    }
+    ) {}
 
     public static function available(
         string $name,

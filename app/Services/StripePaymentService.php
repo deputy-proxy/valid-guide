@@ -25,7 +25,7 @@ final class StripePaymentService
             throw new DomainStateTransitionException('The evaluation request must be awaiting payment before a Stripe checkout can be created.');
         }
 
-        if ($request->quoted_amount_minor === null || $request->currency === null || $request->service_package_name_snapshot === null) {
+        if ($request->quoted_amount_minor === null || $request->service_package_name_snapshot === null) {
             throw new DomainStateTransitionException('Frozen commercial terms are required before creating a Stripe checkout.');
         }
 

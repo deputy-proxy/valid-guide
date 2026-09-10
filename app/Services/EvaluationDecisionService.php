@@ -135,6 +135,10 @@ class EvaluationDecisionService
                 $applicableDimensions[$dimension] = true;
             }
 
+            $decision = 'insufficient_evidence';
+            $score = null;
+            $counts = [];
+
             if ($criterion->voting_mode === CriterionVotingMode::Majority) {
                 $aggregate = $criterionVoting->aggregate($evaluation, $criterion->id);
 
@@ -160,9 +164,6 @@ class EvaluationDecisionService
                     $result = $auditorEvaluation->criterionResults()->where('criterion_id', $criterion->id)->first();
 
                     if ($result === null) {
-                        $decision = 'insufficient_evidence';
-                        $score = null;
-                        $counts = [];
                         $blockers[] = sprintf('Criterion %s is missing an Auditor result.', $criterion->code);
                         $results = collect();
                         break;
@@ -171,17 +172,11 @@ class EvaluationDecisionService
                     $results->push($result);
                 }
 
-                if ($results->isEmpty() && isset($decision) === false) {
-                    $decision = 'insufficient_evidence';
-                    $score = null;
-                    $counts = [];
-                } elseif ($results->isNotEmpty()) {
+                if ($results->isNotEmpty()) {
                     $counts = $results->countBy(fn ($result): string => $result->assessment->value)->all();
                     $decisions = $results->map(fn ($result): string => $result->assessment->value)->unique();
 
                     if ($decisions->count() !== 1) {
-                        $decision = 'insufficient_evidence';
-                        $score = null;
                         $blockers[] = sprintf('Criterion %s has conflicting Auditor assessments.', $criterion->code);
                     } else {
                         $decision = $decisions->first();

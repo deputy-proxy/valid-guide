@@ -13,31 +13,59 @@ class ProductPolicy
 {
     public function viewAny(User $user): bool
     {
-        return $user->organizations()->exists();
+        return $user->organizations()
+            ->wherePivotIn('role', $this->creatorRoles())
+            ->exists();
     }
 
     public function view(User $user, Product $product): bool
     {
-        return $product->organization->users()->whereKey($user->getKey())->exists();
+        return $this->canManageCreatorResource($user, $product->organization);
     }
 
     public function create(User $user, Organization $organization): bool
     {
-        return $organization->hasMemberWithRole($user, OrganizationRole::Owner)
-            || $organization->hasMemberWithRole($user, OrganizationRole::Admin)
-            || $organization->hasMemberWithRole($user, OrganizationRole::Editor);
+        return $this->canManageCreatorResource($user, $organization);
     }
 
     public function update(User $user, Product $product): bool
     {
-        return $product->organization->hasMemberWithRole($user, OrganizationRole::Owner)
-            || $product->organization->hasMemberWithRole($user, OrganizationRole::Admin)
-            || $product->organization->hasMemberWithRole($user, OrganizationRole::Editor);
+        return $this->canManageCreatorResource($user, $product->organization)
+            && $product->status->value !== 'archived';
+    }
+
+    public function archive(User $user, Product $product): bool
+    {
+        return $this->canManageCreatorResource($user, $product->organization)
+            && $product->status->value !== 'archived';
     }
 
     public function delete(User $user, Product $product): bool
     {
-        return $product->organization->hasMemberWithRole($user, OrganizationRole::Owner)
-            || $product->organization->hasMemberWithRole($user, OrganizationRole::Admin);
+        return $this->canManageOrganizationResource($user, $product->organization);
+    }
+
+    /** @return array<int, string> */
+    private function creatorRoles(): array
+    {
+        return [
+            OrganizationRole::Owner->value,
+            OrganizationRole::Admin->value,
+            OrganizationRole::Editor->value,
+        ];
+    }
+
+    private function canManageCreatorResource(User $user, Organization $organization): bool
+    {
+        return $organization->users()
+            ->whereKey($user->getKey())
+            ->wherePivotIn('role', $this->creatorRoles())
+            ->exists();
+    }
+
+    private function canManageOrganizationResource(User $user, Organization $organization): bool
+    {
+        return $organization->hasMemberWithRole($user, OrganizationRole::Owner)
+            || $organization->hasMemberWithRole($user, OrganizationRole::Admin);
     }
 }

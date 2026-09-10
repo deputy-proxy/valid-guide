@@ -25,12 +25,13 @@ use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
+use UnitEnum;
 
 class ProductReleaseResource extends Resource
 {
     protected static ?string $model = ProductRelease::class;
 
-    protected static ?string $navigationGroup = 'Creator';
+    protected static string|UnitEnum|null $navigationGroup = 'Creator';
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
 
@@ -75,7 +76,7 @@ class ProductReleaseResource extends Resource
                     ProductReleaseStatus::Withdrawn->value => 'Withdrawn',
                 ]),
             ])
-            ->actions([
+            ->recordActions([
                 EditAction::make()
                     ->visible(fn (ProductRelease $record): bool => $record->status === ProductReleaseStatus::Draft),
                 Action::make('publish')
@@ -127,6 +128,7 @@ class ProductReleaseResource extends Resource
             ->where('organization_id', $organization->getKey())
             ->orderBy('title')
             ->pluck('title', 'id')
+            ->map(fn (mixed $title): string => (string) $title)
             ->all();
     }
 

@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Enums\EvaluationRequestStatus;
 use App\Enums\OrganizationRole;
 use App\Models\EvaluationRequest;
+use App\Models\Organization;
 use App\Models\Product;
 use App\Models\ProductRelease;
 use App\Models\ServicePackage;
@@ -16,23 +17,17 @@ use Illuminate\Support\Facades\Gate;
 
 function evaluationRequestForTransition(?User $member = null): EvaluationRequest
 {
-    $organization = DB::table('organizations')->insertGetId([
+    $organization = Organization::create([
         'name' => 'Transition Test',
         'slug' => 'transition-test-'.uniqid(),
         'status' => 'active',
-        'created_at' => now(),
-        'updated_at' => now(),
     ]);
 
     $member ??= User::factory()->create();
-    DB::table('organization_user')->insert([
-        'organization_id' => $organization,
-        'user_id' => $member->getKey(),
-        'role' => OrganizationRole::Editor->value,
-    ]);
+    $organization->users()->attach($member, ['role' => OrganizationRole::Editor->value]);
 
     $product = Product::create([
-        'organization_id' => $organization,
+        'organization_id' => $organization->id,
         'title' => 'Course',
         'slug' => 'transition-course-'.uniqid(),
     ]);
@@ -57,7 +52,7 @@ function evaluationRequestForTransition(?User $member = null): EvaluationRequest
     ]);
 
     return EvaluationRequest::create([
-        'organization_id' => $organization,
+        'organization_id' => $organization->id,
         'product_id' => $product->id,
         'product_release_id' => $release->id,
         'service_package_id' => $package->id,
@@ -109,15 +104,13 @@ it('rejects a product from a different organization', function () {
     $actor = User::factory()->create();
     $request = evaluationRequestForTransition($actor);
 
-    $otherOrganization = DB::table('organizations')->insertGetId([
+    $otherOrganization = Organization::create([
         'name' => 'Other Organization',
         'slug' => 'other-'.uniqid(),
         'status' => 'active',
-        'created_at' => now(),
-        'updated_at' => now(),
     ]);
     $otherProduct = Product::create([
-        'organization_id' => $otherOrganization,
+        'organization_id' => $otherOrganization->id,
         'title' => 'Other Course',
         'slug' => 'other-course-'.uniqid(),
     ]);

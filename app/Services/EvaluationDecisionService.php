@@ -104,8 +104,8 @@ class EvaluationDecisionService
             $blockers[] = 'An active disqualifying finding exists.';
         }
 
-        $overallThreshold = (float) ($standardVersion->overall_threshold ?? 0);
         $overallScore = $totalWeight > 0 ? round($weightedScore / $totalWeight, 2) : null;
+        $overallThreshold = (float) ($standardVersion->overall_threshold ?? 0);
 
         if ($overallScore === null || $overallScore < $overallThreshold) {
             $blockers[] = sprintf('The weighted overall score is below %.0f/100.', $overallThreshold);
@@ -116,7 +116,7 @@ class EvaluationDecisionService
             'overall_score' => $overallScore,
             'blockers' => array_values(array_unique($blockers)),
             'criterion_decisions' => $criterionDecisions,
-            'voter_count' => $voterCount,
+            'voter_count' => $auditorCount,
         ];
     }
 

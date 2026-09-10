@@ -87,11 +87,13 @@ final class EvaluationMaterialSubmission
 
     private function assertSubmissionAllowed(EvaluationRequest $request): void
     {
-        if (! in_array($request->status, [
+        $allowedStatuses = [
             EvaluationRequestStatus::Paid,
             EvaluationRequestStatus::Intake,
             EvaluationRequestStatus::AwaitingCreator,
-        ], true)) {
+        ];
+
+        if (in_array($request->status, $allowedStatuses, true) === false) {
             throw new DomainStateTransitionException('Evaluation materials can only be submitted during the paid intake workflow.');
         }
     }

@@ -13,8 +13,7 @@ class PublicVerificationPublication
 {
     public function __construct(
         private readonly PublicVerificationSnapshotBuilder $snapshotBuilder,
-    ) {
-    }
+    ) {}
 
     public function publish(Validation $validation): PublicVerificationRecord
     {

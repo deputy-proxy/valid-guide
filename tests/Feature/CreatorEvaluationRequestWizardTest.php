@@ -156,15 +156,21 @@ it('rejects cross-tenant products and releases server-side', function () {
     [, , , $otherRelease] = creatorWizardFixture();
     $this->actingAs($user);
 
-    Livewire::test(CreateEvaluationRequest::class, ['organizationId' => $organization->id])
+    $component = Livewire::test(CreateEvaluationRequest::class, ['organizationId' => $organization->id])
         ->set('productId', $otherRelease->product_id)
         ->call('next')
         ->assertHasErrors('form');
 
-    $request = EvaluationRequest::query()->where('organization_id', $organization->id)->firstOrFail();
-    $validRequest = app(CreatorEvaluationRequestIntake::class)->selectProduct($user, $request, $product);
+    $request = app(CreatorEvaluationRequestIntake::class)->selectProduct(
+        $user,
+        app(CreatorEvaluationRequestIntake::class)->start($user, $organization->id),
+        $product,
+    );
 
-    expect(fn () => app(CreatorEvaluationRequestIntake::class)->selectRelease($user, $validRequest, $otherRelease))
+    expect($request->id)->not->toBeNull()
+        ->and($component->get('currentStep'))->toBe(1);
+
+    expect(fn () => app(CreatorEvaluationRequestIntake::class)->selectRelease($user, $request, $otherRelease))
         ->toThrow(DomainStateTransitionException::class);
 });
 

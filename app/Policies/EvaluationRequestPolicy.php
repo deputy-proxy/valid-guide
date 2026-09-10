@@ -57,6 +57,7 @@ class EvaluationRequestPolicy
             EvaluationRequestStatus::Intake,
             EvaluationRequestStatus::AwaitingCreator,
             EvaluationRequestStatus::Ready,
+            EvaluationRequestStatus::Refunded,
         ], true);
 
         if (! $eligibleLifecycle) {

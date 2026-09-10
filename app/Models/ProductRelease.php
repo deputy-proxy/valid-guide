@@ -14,43 +14,82 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
- * @property ProductReleaseStatus|null $status
+ * @property ProductReleaseStatus $status
  * @property CarbonImmutable|null $published_at
+ * @property array<int|string, mixed>|null $quantitative_metadata
  */
 class ProductRelease extends Model
 {
     /** @use HasFactory<Factory> */
     use HasFactory;
 
-    protected $fillable = ['product_id', 'edition', 'version', 'published_at', 'release_identifier', 'product_url_snapshot', 'title_snapshot', 'quantitative_metadata', 'material_change_notes', 'status'];
+    protected $fillable = [
+        'product_id',
+        'edition',
+        'version',
+        'published_at',
+        'release_identifier',
+        'product_url_snapshot',
+        'title_snapshot',
+        'quantitative_metadata',
+        'material_change_notes',
+        'status',
+    ];
 
     protected function casts(): array
     {
-        return ['published_at' => 'datetime', 'quantitative_metadata' => 'array', 'status' => ProductReleaseStatus::class];
+        return [
+            'published_at' => 'immutable_datetime',
+            'quantitative_metadata' => 'array',
+            'status' => ProductReleaseStatus::class,
+        ];
     }
 
     protected static function booted(): void
     {
         static::creating(function (self $release): void {
-            if ($release->status !== null && $release->status !== ProductReleaseStatus::Draft) {
-                throw new DomainStateTransitionException('Product releases must be created as drafts and published through ProductReleaseStateTransition.');
+            $release->status ??= ProductReleaseStatus::Draft;
+
+            if ($release->status !== ProductReleaseStatus::Draft) {
+                throw new DomainStateTransitionException(
+                    'Product releases must be created as drafts and published through ProductReleaseStateTransition.',
+                );
             }
+
             if ($release->published_at !== null) {
-                throw new DomainStateTransitionException('A product release publication timestamp can only be set by ProductReleaseStateTransition.');
+                throw new DomainStateTransitionException(
+                    'A product release publication timestamp can only be set by ProductReleaseStateTransition.',
+                );
             }
         });
+
         static::updating(function (self $release): void {
-            if ($release->isDirty('status') || $release->isDirty('published_at')) {
-                throw new DomainStateTransitionException('Product release lifecycle fields can only be changed through ProductReleaseStateTransition.');
+            if ($release->isDirty('product_id')) {
+                throw new DomainStateTransitionException('A product release cannot be moved between products.');
             }
-            $originalStatus = $release->getOriginal('status');
-            if ($originalStatus !== ProductReleaseStatus::Draft->value) {
-                throw new DomainStateTransitionException('A published product release is immutable. Create a new release for material changes.');
+
+            if ($release->isDirty('status') || $release->isDirty('published_at')) {
+                throw new DomainStateTransitionException(
+                    'Product release lifecycle fields can only be changed through ProductReleaseStateTransition.',
+                );
+            }
+
+            if ($release->getRawOriginal('status') !== ProductReleaseStatus::Draft->value) {
+                throw new DomainStateTransitionException(
+                    'A published product release is immutable. Create a new release for material changes.',
+                );
             }
         });
+
         static::deleting(function (self $release): void {
-            if ($release->status !== null && $release->status !== ProductReleaseStatus::Draft) {
+            if ($release->getRawOriginal('status') !== ProductReleaseStatus::Draft->value) {
                 throw new DomainStateTransitionException('Published product releases cannot be deleted.');
+            }
+
+            if ($release->evaluations()->exists() || $release->validations()->exists()) {
+                throw new DomainStateTransitionException(
+                    'Product releases referenced by historical records cannot be deleted.',
+                );
             }
         });
     }

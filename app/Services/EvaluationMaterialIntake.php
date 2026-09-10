@@ -16,12 +16,12 @@ final class EvaluationMaterialIntake
 {
     /** @var list<EvaluationRequestStatus> */
     private const SUBMISSION_STATES = [
+        EvaluationRequestStatus::Draft,
         EvaluationRequestStatus::Paid,
         EvaluationRequestStatus::Intake,
         EvaluationRequestStatus::AwaitingCreator,
     ];
 
-    /** @param array<string, mixed>|null $metadata */
     /** @param array<string, mixed>|null $metadata */
     public function submit(
         EvaluationRequest $request,

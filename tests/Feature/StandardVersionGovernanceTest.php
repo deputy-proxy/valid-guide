@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Enums\MethodologyDimension;
 use App\Enums\PlatformRole;
 use App\Enums\StandardVersionStatus;
 use App\Models\Criterion;
@@ -10,6 +11,7 @@ use App\Models\EvaluationStandard;
 use App\Models\StandardVersion;
 use App\Models\User;
 use App\Services\DomainStateTransitionException;
+use App\Services\MethodologyV1;
 use App\Services\StandardVersionGovernance;
 
 function standardVersionFixture(): array
@@ -26,18 +28,38 @@ function standardVersionFixture(): array
         'status' => StandardVersionStatus::Draft,
     ]);
 
-    Criterion::create([
-        'standard_version_id' => $version->id,
-        'code' => 'GOV-BASE-01',
-        'name' => 'Baseline criterion',
-        'category' => 'D1',
-        'sequence' => 1,
-        'weight' => 100,
-    ]);
+    populateCompleteMethodology($version, 'GOV');
 
     $admin = User::factory()->create(['platform_role' => PlatformRole::Admin]);
 
     return [$version, $admin];
+}
+
+function populateCompleteMethodology(StandardVersion $version, string $prefix): void
+{
+    $profiles = MethodologyV1::productTypeWeightProfiles();
+    $productTypes = array_keys($profiles);
+    $baseProductType = $productTypes[0];
+
+    foreach (MethodologyDimension::cases() as $index => $dimension) {
+        $weights = [];
+        foreach ($productTypes as $productType) {
+            $weights[$productType] = $profiles[$productType][$dimension->value];
+        }
+
+        $overrides = $weights;
+        unset($overrides[$baseProductType]);
+
+        Criterion::create([
+            'standard_version_id' => $version->id,
+            'code' => sprintf('%s-%02d', $prefix, $index + 1),
+            'name' => sprintf('%s criterion', $dimension->value),
+            'category' => $dimension->value,
+            'sequence' => $index + 1,
+            'weight' => $weights[$baseProductType],
+            'applicability_rules' => ['weight_overrides' => $overrides],
+        ]);
+    }
 }
 
 test('schedules a draft version only with a future effective date and records approval', function () {
@@ -77,15 +99,7 @@ test('freezes standard version content once scheduled', function () {
 
 test('freezes criteria and guidance once their standard version is scheduled', function () {
     [$version, $admin] = standardVersionFixture();
-
-    $criterion = Criterion::create([
-        'standard_version_id' => $version->id,
-        'code' => 'GOV-01',
-        'name' => 'Governance criterion',
-        'category' => 'D2',
-        'sequence' => 2,
-        'weight' => 100,
-    ]);
+    $criterion = $version->criteria()->where('category', MethodologyDimension::D2->value)->firstOrFail();
 
     $guidance = CriterionGuidance::create([
         'criterion_id' => $criterion->id,
@@ -143,14 +157,7 @@ test('does not allow overlapping effective versions of the same standard', funct
         'effective_at' => now()->addDay(),
         'status' => StandardVersionStatus::Draft,
     ]);
-    Criterion::create([
-        'standard_version_id' => $second->id,
-        'code' => 'GOV-BASE-02',
-        'name' => 'Second baseline criterion',
-        'category' => 'D1',
-        'sequence' => 1,
-        'weight' => 100,
-    ]);
+    populateCompleteMethodology($second, 'GOV2');
 
     app(StandardVersionGovernance::class)->schedule($second, $admin);
 

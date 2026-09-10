@@ -414,7 +414,7 @@ This phase establishes the product positioning, business model, actors, bounded 
 
 ### Phase 1 — Application Foundation & Domain Integrity
 
-**Status: In progress**
+**Status: Complete**
 
 Build the technical foundation and make the domain trustworthy before substantial user workflows are layered on top.
 
@@ -445,7 +445,7 @@ Focus areas:
 
 ### Phase 2 — Core Application Workflows
 
-**Status: Planned**
+**Status: Complete**
 
 Turn the stable domain foundation into complete end-to-end application workflows.
 
@@ -462,14 +462,16 @@ Focus areas:
 - evaluation creation;
 - Standard Version freezing;
 - Auditor assignment and conflict clearance;
-- Auditor workspace;
-- evidence and findings;
+- Auditor workspace foundations;
+- evidence and findings foundations;
 - criterion assessment and voting;
 - Evaluation Decision;
 - report generation and versioning;
-- Validation issuance and lifecycle.
+- Validation issuance and lifecycle;
+- creator dashboard application contract;
+- Phase 2 invariant regression audit.
 
-**Exit criterion:** a complete evaluation can move through the application without manual database intervention.
+**Exit criterion:** a complete Phase 2 workflow can move through the application without manual database intervention, trust-sensitive boundaries are covered by regression tests, and the Phase 2 audit is green.
 
 ### Phase 3 — Role-Based Application Experiences
 
@@ -626,28 +628,28 @@ A development item is complete only when:
 ## Current Development State
 
 ```text
-Phase 0 — Product Definition & Architecture
+Phase 0 — Product Definition & Architecture                 COMPLETE
                 │
                 ▼
-Phase 1 — Application Foundation & Domain Integrity
+Phase 1 — Application Foundation & Domain Integrity          COMPLETE
                 │
                 ▼
-Phase 2 — Core Application Workflows
+Phase 2 — Core Application Workflows                         COMPLETE
                 │
                 ▼
-Phase 3 — Role-Based Application Experiences
+Phase 3 — Role-Based Application Experiences                 PLANNED
                 │
                 ▼
-Phase 4 — Public Trust & Discovery
+Phase 4 — Public Trust & Discovery                           PLANNED
                 │
                 ▼
-Phase 5 — Integrations, Automation & Operations
+Phase 5 — Integrations, Automation & Operations              PLANNED
                 │
                 ▼
-Phase 6 — Production Readiness & Launch
+Phase 6 — Production Readiness & Launch                      PLANNED
 ```
 
-The application should not advance to the next development phase merely because a feature can technically be demonstrated. The exit criteria for the current phase must be satisfied first.
+Phase 2 is complete only because its implementation work and final invariant audit have both passed their defined exit criteria. The next development work is Phase 3 role-based application experiences, beginning with the presentation issues that build on the completed Phase 2 contracts.
 
 ## Documentation
 
@@ -656,6 +658,8 @@ The authoritative project documentation is organized as follows:
 - `docs/domain-and-database-specification.md` — domain model and persistence specification
 - `docs/validation-methodology-v1.md` — Validation Methodology v1
 - `docs/phase-1-decisions.md` — approved Phase 1 decisions and invariants
+- `docs/phase-1-invariant-audit.md` — Phase 1 specification-to-code regression matrix
+- `docs/phase-2-invariant-audit.md` — Phase 2 specification-to-code regression matrix and completion audit
 - `docs/implementation-decisions.md` — implementation-level architectural decisions and intentional deviations
 
 The README provides the high-level product and development roadmap. Detailed rules belong in the appropriate specification or decision document.

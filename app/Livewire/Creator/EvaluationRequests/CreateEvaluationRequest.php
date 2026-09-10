@@ -25,54 +25,38 @@ use Throwable;
 final class CreateEvaluationRequest extends Component
 {
     public int $organizationId;
-
-    public EvaluationRequest $request;
-
+    public ?int $evaluationRequestId = null;
     public int $currentStep = 1;
-
     public ?int $productId = null;
-
     public ?int $productReleaseId = null;
-
     public string $scope = '';
-
     public string $completionWindow = '';
-
     public bool $claimsConfirmed = false;
-
     public bool $audienceConfirmed = false;
-
     public string $materialType = 'url';
-
     public string $materialLabel = '';
-
     public string $materialDescription = '';
-
     public string $materialLocation = '';
-
     public ?int $servicePackageId = null;
-
     public string $complexity = 'standard';
 
-    public function mount(
-        int|string $organizationId,
-        int|string|null $evaluationRequestId = null,
-    ): void {
+    public function mount(int|string $organizationId, int|string|null $evaluationRequestId = null): void
+    {
         $this->organizationId = (int) $organizationId;
+        $this->evaluationRequestId = $evaluationRequestId === null ? null : (int) $evaluationRequestId;
         $actor = $this->authenticatedUser();
+        $intake = app(CreatorEvaluationRequestIntake::class);
 
-        $this->request = app(CreatorEvaluationRequestIntake::class)->start(
-            $actor,
-            $this->organizationId,
-            $evaluationRequestId === null ? null : (int) $evaluationRequestId,
-        );
+        $intake->start($actor, $this->organizationId, $this->evaluationRequestId);
 
-        $this->hydrateFromRequest();
+        if ($this->evaluationRequestId !== null) {
+            $this->hydrateFromRequest($this->requestModel());
+        }
     }
 
     public function render(): View
     {
-        return view('livewire.creator.evaluation-requests.create');
+        return view('livewire.creator.evaluation-requests.create', ['request' => $this->requestModel()]);
     }
 
     /** @return array<int, string> */
@@ -83,9 +67,8 @@ final class CreateEvaluationRequest extends Component
             ->where('status', 'active')
             ->orderBy('title')
             ->pluck('title', 'id')
-            ->mapWithKeys(
-                fn (mixed $title, mixed $id): array => [(int) $id => (string) $title],
-            )->all();
+            ->mapWithKeys(fn (mixed $title, mixed $id): array => [(int) $id => (string) $title])
+            ->all();
     }
 
     /** @return array<int, string> */
@@ -95,28 +78,23 @@ final class CreateEvaluationRequest extends Component
             return [];
         }
 
-        $releases = ProductRelease::query()
+        return ProductRelease::query()
             ->where('product_id', $this->productId)
             ->where('status', 'current')
             ->orderByDesc('published_at')
-            ->get(['id', 'release_identifier', 'version', 'edition']);
-
-        return $releases->mapWithKeys(function (ProductRelease $release): array {
-            $label = collect([
-                $release->release_identifier,
-                $release->version !== null ? 'v'.$release->version : null,
-                $release->edition,
-            ])->filter()->implode(' · ');
-
-            return [(int) $release->getKey() => $label !== '' ? $label : 'Current release'];
-        })->all();
+            ->get(['id', 'release_identifier', 'version', 'edition'])
+            ->mapWithKeys(function (ProductRelease $release): array {
+                $label = collect([$release->release_identifier, $release->version !== null ? 'v'.$release->version : null, $release->edition])
+                    ->filter()->implode(' · ');
+                return [(int) $release->getKey() => $label !== '' ? $label : 'Current release'];
+            })->all();
     }
 
     /** @return array<int, string> */
     public function packageOptions(): array
     {
-        $product = $this->request->product;
-        if ($product === null || (int) $product->organization_id !== (int) $this->organizationId) {
+        $product = $this->requestModel()->product;
+        if ($product === null || (int) $product->organization_id !== $this->organizationId) {
             return [];
         }
 
@@ -133,9 +111,8 @@ final class CreateEvaluationRequest extends Component
     public function complexityOptions(): array
     {
         return collect(EvaluationComplexity::cases())
-            ->mapWithKeys(fn (EvaluationComplexity $complexity): array => [
-                $complexity->value => Str::headline($complexity->value),
-            ])->all();
+            ->mapWithKeys(fn (EvaluationComplexity $complexity): array => [$complexity->value => Str::headline($complexity->value)])
+            ->all();
     }
 
     /** @return array<string, mixed> */
@@ -156,7 +133,6 @@ final class CreateEvaluationRequest extends Component
                 4 => $this->saveClaimsAndAudience(),
                 default => null,
             };
-
             if ($this->currentStep < 5) {
                 $this->currentStep++;
             }
@@ -170,10 +146,9 @@ final class CreateEvaluationRequest extends Component
 
     public function back(): void
     {
-        if ($this->request->status !== EvaluationRequestStatus::Draft) {
+        if ($this->requestModel()->status !== EvaluationRequestStatus::Draft) {
             return;
         }
-
         $this->resetValidation();
         $this->currentStep = max(1, $this->currentStep - 1);
     }
@@ -181,22 +156,12 @@ final class CreateEvaluationRequest extends Component
     public function submitForPayment(): void
     {
         $this->resetValidation();
-
         try {
-            $this->validate([
-                'servicePackageId' => ['required', 'integer'],
-                'complexity' => ['required', 'string'],
-            ]);
-
+            $this->validate(['servicePackageId' => ['required', 'integer'], 'complexity' => ['required', 'string']]);
             $actor = $this->authenticatedUser();
             $intake = app(CreatorEvaluationRequestIntake::class);
-            $this->request = $intake->applyCommercialTerms(
-                $actor,
-                $this->request,
-                $this->servicePackageId,
-                $this->complexity,
-            );
-            $this->request = $intake->validateForPayment($actor, $this->request);
+            $request = $intake->applyCommercialTerms($actor, $this->requestModel(), $this->servicePackageId, $this->complexity);
+            $intake->validateForPayment($actor, $request);
             $this->currentStep = 6;
         } catch (AuthorizationException|DomainStateTransitionException $exception) {
             $this->addError('form', $exception->getMessage());
@@ -209,105 +174,74 @@ final class CreateEvaluationRequest extends Component
     private function saveProduct(): void
     {
         $this->validate(['productId' => ['required', 'integer']]);
-
         $actor = $this->authenticatedUser();
-        $product = Product::query()->findOrFail($this->productId);
-        $this->request = app(CreatorEvaluationRequestIntake::class)->selectProduct($actor, $this->request, $product);
+        $request = app(CreatorEvaluationRequestIntake::class)->selectProduct($actor, $this->requestModel(), Product::query()->findOrFail($this->productId));
+        $this->evaluationRequestId = (int) $request->getKey();
         $this->productReleaseId = null;
         $this->servicePackageId = null;
     }
 
     private function saveReleaseAndScope(): void
     {
-        $this->validate([
-            'productReleaseId' => ['required', 'integer'],
-            'scope' => ['required', 'string', 'max:5000'],
-            'completionWindow' => ['nullable', 'string', 'max:255'],
-        ]);
-
+        $this->validate(['productReleaseId' => ['required', 'integer'], 'scope' => ['required', 'string', 'max:5000'], 'completionWindow' => ['nullable', 'string', 'max:255']]);
         $actor = $this->authenticatedUser();
-        $release = ProductRelease::query()->findOrFail($this->productReleaseId);
         $intake = app(CreatorEvaluationRequestIntake::class);
-        $this->request = $intake->selectRelease($actor, $this->request, $release);
-        $this->request = $intake->updateScope(
-            $actor,
-            $this->request,
-            $this->scope,
-            $this->completionWindow !== '' ? $this->completionWindow : null,
-        );
+        $request = $intake->selectRelease($actor, $this->requestModel(), ProductRelease::query()->findOrFail($this->productReleaseId));
+        $intake->updateScope($actor, $request, $this->scope, $this->completionWindow !== '' ? $this->completionWindow : null);
     }
 
     private function saveMaterials(): void
     {
-        $this->validate([
-            'materialType' => ['required', 'string'],
-            'materialLabel' => ['required', 'string', 'max:255'],
-            'materialDescription' => ['nullable', 'string', 'max:5000'],
-            'materialLocation' => ['nullable', 'string', 'max:2048'],
-        ]);
-
-        if ($this->request->materials()->exists()) {
+        $this->validate(['materialType' => ['required', 'string'], 'materialLabel' => ['required', 'string', 'max:255'], 'materialDescription' => ['nullable', 'string', 'max:5000'], 'materialLocation' => ['nullable', 'string', 'max:2048']]);
+        $request = $this->requestModel();
+        if ($request->materials()->exists()) {
             return;
         }
-
         $type = EvaluationMaterialType::tryFrom($this->materialType);
         if ($type === null) {
             throw new DomainStateTransitionException('The selected material type is invalid.');
         }
-
-        $actor = $this->authenticatedUser();
-        app(EvaluationMaterialIntake::class)->submit(
-            $this->request,
-            $actor,
-            $type,
-            $this->materialLabel,
-            $this->materialDescription !== '' ? $this->materialDescription : null,
-            $this->materialLocation !== '' ? $this->materialLocation : null,
-            ['source' => 'creator_wizard'],
-        );
-
-        $this->request = $this->request->refresh()->load(['product', 'productRelease', 'materials', 'servicePackage']);
+        app(EvaluationMaterialIntake::class)->submit($request, $this->authenticatedUser(), $type, $this->materialLabel, $this->materialDescription !== '' ? $this->materialDescription : null, $this->materialLocation !== '' ? $this->materialLocation : null, ['source' => 'creator_wizard']);
     }
 
     private function saveClaimsAndAudience(): void
     {
-        $this->validate([
-            'claimsConfirmed' => ['accepted'],
-            'audienceConfirmed' => ['accepted'],
-        ]);
-
-        $actor = $this->authenticatedUser();
-        $this->request = app(CreatorEvaluationRequestIntake::class)->confirmClaimsAndAudience($actor, $this->request);
+        $this->validate(['claimsConfirmed' => ['accepted'], 'audienceConfirmed' => ['accepted']]);
+        app(CreatorEvaluationRequestIntake::class)->confirmClaimsAndAudience($this->authenticatedUser(), $this->requestModel());
     }
 
-    private function hydrateFromRequest(): void
+    private function hydrateFromRequest(EvaluationRequest $request): void
     {
-        $this->request = $this->request->load(['product', 'productRelease', 'materials', 'servicePackage']);
-        $this->productId = $this->request->product_id;
-        $this->productReleaseId = $this->request->product_release_id;
-        $notes = app(CreatorEvaluationRequestIntake::class)->intakeNotes($this->request);
+        $request->load(['product', 'productRelease', 'materials', 'servicePackage']);
+        $this->productId = $request->product_id;
+        $this->productReleaseId = $request->product_release_id;
+        $notes = app(CreatorEvaluationRequestIntake::class)->intakeNotes($request);
         $this->scope = isset($notes['scope']) && is_string($notes['scope']) ? $notes['scope'] : '';
-        $this->completionWindow = isset($notes['requested_completion_window']) && is_string($notes['requested_completion_window'])
-            ? $notes['requested_completion_window']
-            : '';
+        $this->completionWindow = isset($notes['requested_completion_window']) && is_string($notes['requested_completion_window']) ? $notes['requested_completion_window'] : '';
         $this->claimsConfirmed = ($notes['claims_confirmed'] ?? false) === true;
         $this->audienceConfirmed = ($notes['audience_confirmed'] ?? false) === true;
-        $this->servicePackageId = $this->request->service_package_id;
-        $this->complexity = $this->request->complexity->value;
-
-        if ($this->request->status !== EvaluationRequestStatus::Draft) {
+        $this->servicePackageId = $request->service_package_id;
+        $this->complexity = $request->complexity->value;
+        if ($request->status !== EvaluationRequestStatus::Draft) {
             $this->currentStep = 6;
         }
+    }
+
+    private function requestModel(): EvaluationRequest
+    {
+        if ($this->evaluationRequestId !== null) {
+            return EvaluationRequest::query()->with(['product', 'productRelease', 'materials', 'servicePackage'])->findOrFail($this->evaluationRequestId);
+        }
+
+        return app(CreatorEvaluationRequestIntake::class)->start($this->authenticatedUser(), $this->organizationId);
     }
 
     private function authenticatedUser(): User
     {
         $user = Auth::user();
-
         if (! $user instanceof User) {
             throw new AuthorizationException('Authentication is required.');
         }
-
         return $user;
     }
 }

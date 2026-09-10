@@ -69,9 +69,7 @@ class ProductManagement
         return $product->refresh();
     }
 
-    /**
-     * @return array<string, array<int, mixed>>
-     */
+    /** @return array<string, array<int, mixed>> */
     private function rules(Organization $organization, ?Product $product = null): array
     {
         $slugRule = Rule::unique('products', 'slug')

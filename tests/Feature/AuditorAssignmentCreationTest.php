@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 use App\Enums\EvaluationComplexity;
 use App\Models\AuditorAnnualConflictDeclaration;
+use App\Models\AuditorAssignment;
 use App\Models\AuditorProfile;
+use App\Models\Evaluation;
 use App\Models\User;
 use App\Services\AuditorAssignmentCreation;
 use App\Services\DomainStateTransitionException;
@@ -131,4 +133,130 @@ it('rejects a second assignment of the same auditor', function () {
 
     expect(fn () => $service->create($evaluation, $auditor, $admin, 3, 15000, 'EUR', Carbon::now()->addDays(3)))
         ->toThrow(DomainStateTransitionException::class);
+});
+
+it('rejects an auditor who is a creator or contributor on the product organization', function () {
+    [$auditorEvaluation] = auditorEvaluationFixture();
+    $evaluation = $auditorEvaluation->evaluation;
+    $auditor = eligibleAuditorForEvaluation($evaluation);
+    $admin = User::factory()->create(['platform_role' => 'admin']);
+    $organization = $evaluation->productRelease->product->organization;
+
+    $organization->users()->attach($auditor->id, ['role' => 'editor']);
+
+    expect(fn () => app(AuditorAssignmentCreation::class)->create(
+        $evaluation,
+        $auditor,
+        $admin,
+        1,
+        15000,
+        'EUR',
+        Carbon::now()->addDays(3),
+    ))->toThrow(DomainStateTransitionException::class, 'previously participated in this product');
+});
+
+it('uses persisted organization membership instead of stale in-memory relationship state', function () {
+    [$auditorEvaluation] = auditorEvaluationFixture();
+    $evaluation = $auditorEvaluation->evaluation;
+    $auditor = eligibleAuditorForEvaluation($evaluation);
+    $admin = User::factory()->create(['platform_role' => 'admin']);
+    $organization = $evaluation->productRelease->product->organization;
+
+    $organization->load('users');
+    $organization->users()->attach($auditor->id, ['role' => 'owner']);
+
+    expect($organization->relationLoaded('users'))->toBeTrue()
+        ->and(fn () => app(AuditorAssignmentCreation::class)->create(
+            $evaluation,
+            $auditor,
+            $admin,
+            1,
+            15000,
+            'EUR',
+            Carbon::now()->addDays(3),
+        ))->toThrow(DomainStateTransitionException::class, 'previously participated in this product');
+});
+
+it('rejects an auditor with prior participation through an earlier evaluation of the same product', function () {
+    [$auditorEvaluation] = auditorEvaluationFixture();
+    $evaluation = $auditorEvaluation->evaluation;
+    $evaluation->request->update(['complexity' => EvaluationComplexity::Complex]);
+    $auditor = eligibleAuditorForEvaluation($evaluation);
+    $admin = User::factory()->create(['platform_role' => 'admin']);
+
+    AuditorAssignment::query()->create([
+        'evaluation_id' => $evaluation->id,
+        'auditor_id' => $auditor->id,
+        'sequence' => 1,
+        'status' => 'completed',
+        'assigned_at' => now()->subDays(10),
+        'accepted_at' => now()->subDays(9),
+        'completed_at' => now()->subDays(1),
+        'compensation_amount_minor' => 15000,
+        'compensation_currency' => 'EUR',
+        'compensation_status' => 'pending',
+    ]);
+
+    $laterEvaluation = Evaluation::query()->create([
+        'evaluation_request_id' => $evaluation->evaluation_request_id,
+        'product_release_id' => $evaluation->product_release_id,
+        'standard_version_id' => $evaluation->standard_version_id,
+        'status' => 'pending',
+    ]);
+
+    expect(fn () => app(AuditorAssignmentCreation::class)->create(
+        $laterEvaluation,
+        $auditor,
+        $admin,
+        1,
+        15000,
+        'EUR',
+        Carbon::now()->addDays(3),
+    ))->toThrow(DomainStateTransitionException::class, 'previously participated in this product');
+});
+
+it('allows an auditor who participated in a different product', function () {
+    [$firstAuditorEvaluation] = auditorEvaluationFixture();
+    $firstEvaluation = $firstAuditorEvaluation->evaluation;
+    $auditor = eligibleAuditorForEvaluation($firstEvaluation);
+    $admin = User::factory()->create(['platform_role' => 'admin']);
+
+    [$secondAuditorEvaluation] = auditorEvaluationFixture();
+    $secondEvaluation = $secondAuditorEvaluation->evaluation;
+    $secondEvaluation->request->update(['complexity' => EvaluationComplexity::Complex]);
+    $secondEvaluation->productRelease->product->update(['subject_area' => 'instructional design']);
+
+    $assignment = app(AuditorAssignmentCreation::class)->create(
+        $secondEvaluation,
+        $auditor,
+        $admin,
+        1,
+        15000,
+        'EUR',
+        Carbon::now()->addDays(3),
+    );
+
+    expect($assignment->auditor_id)->toBe($auditor->id);
+});
+
+it('does not treat a billing-only organization membership as product participation', function () {
+    [$auditorEvaluation] = auditorEvaluationFixture();
+    $evaluation = $auditorEvaluation->evaluation;
+    $auditor = eligibleAuditorForEvaluation($evaluation);
+    $admin = User::factory()->create(['platform_role' => 'admin']);
+    $organization = $evaluation->productRelease->product->organization;
+
+    $organization->users()->attach($auditor->id, ['role' => 'billing']);
+
+    $assignment = app(AuditorAssignmentCreation::class)->create(
+        $evaluation,
+        $auditor,
+        $admin,
+        1,
+        15000,
+        'EUR',
+        Carbon::now()->addDays(3),
+    );
+
+    expect($assignment->auditor_id)->toBe($auditor->id);
 });

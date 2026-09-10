@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Enums\AuditorProfileStatus;
+use App\Enums\OrganizationRole;
 use App\Models\AuditorAssignment;
 use App\Models\ConflictDeclaration;
 use App\Models\Evaluation;
@@ -57,7 +58,7 @@ class AuditorAssignmentCreation
                 throw new DomainStateTransitionException('Auditors can only be assigned to pending or in-progress evaluations.');
             }
             app(AuditorStaffing::class)->assertCanAdd($evaluation);
-            $this->assertEligible($evaluation, $auditor);
+            $this->assertEligible($evaluation, $auditor, $assignedBy);
             if ($evaluation->assignments()->where('auditor_id', $auditor->id)->exists()) {
                 throw new DomainStateTransitionException('The same Auditor cannot be assigned twice to one evaluation.');
             }
@@ -117,7 +118,7 @@ class AuditorAssignmentCreation
         return true;
     }
 
-    private function assertEligible(Evaluation $evaluation, User $auditor): void
+    private function assertEligible(Evaluation $evaluation, User $auditor, ?User $assignedBy = null): void
     {
         $profile = $auditor->auditorProfile()->with('competencies')->first();
 
@@ -153,5 +154,55 @@ class AuditorAssignmentCreation
         if (! app(AuditorAnnualConflictDeclarationService::class)->isCurrentAndCleared($auditor)) {
             throw new DomainStateTransitionException('The Auditor does not have a current annual conflict declaration cleared.');
         }
+
+        if ($this->hasPriorProductParticipation($evaluation, $auditor)) {
+            if ($assignedBy !== null) {
+                AuditLogger::record(
+                    event: 'auditor_assignment.conflict_detected',
+                    auditable: $evaluation,
+                    after: [
+                        'auditor_id' => $auditor->id,
+                        'conflict' => 'prior_product_participation',
+                    ],
+                    metadata: [
+                        'determined_by' => $assignedBy->id,
+                    ],
+                );
+            }
+
+            throw new DomainStateTransitionException('The Auditor cannot be assigned because they previously participated in this product.');
+        }
+    }
+
+    private function hasPriorProductParticipation(Evaluation $evaluation, User $auditor): bool
+    {
+        $productId = $evaluation->productRelease?->product_id;
+
+        if ($productId === null) {
+            return false;
+        }
+
+        $organizationId = DB::table('products')
+            ->where('id', $productId)
+            ->value('organization_id');
+
+        if ($organizationId !== null && DB::table('organization_memberships')
+            ->where('organization_id', $organizationId)
+            ->where('user_id', $auditor->getKey())
+            ->whereIn('role', [
+                OrganizationRole::Owner->value,
+                OrganizationRole::Admin->value,
+                OrganizationRole::Editor->value,
+            ])
+            ->exists()) {
+            return true;
+        }
+
+        return AuditorAssignment::query()
+            ->where('auditor_id', $auditor->getKey())
+            ->whereHas('evaluation.productRelease', function ($query) use ($productId): void {
+                $query->where('product_id', $productId);
+            })
+            ->exists();
     }
 }

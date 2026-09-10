@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Enums\EvaluationComplexity;
 use App\Enums\EvaluationRequestStatus;
 use App\Models\EvaluationRequest;
 use App\Models\Organization;
@@ -39,6 +40,9 @@ final class CreatorEvaluationRequestIntake
         return new EvaluationRequest([
             'organization_id' => $organization->getKey(),
             'status' => EvaluationRequestStatus::Draft,
+            'service_package' => '',
+            'complexity' => EvaluationComplexity::Standard,
+            'currency' => '',
         ]);
     }
 
@@ -70,6 +74,9 @@ final class CreatorEvaluationRequestIntake
                 'organization_id' => $organizationId,
                 'product_id' => $product->getKey(),
                 'status' => EvaluationRequestStatus::Draft,
+                'service_package' => '',
+                'complexity' => EvaluationComplexity::Standard,
+                'currency' => '',
             ]);
         } else {
             $this->authorizeDraft($actor, $request);
@@ -220,14 +227,14 @@ final class CreatorEvaluationRequestIntake
     private function clearCommercialTerms(EvaluationRequest $request): void
     {
         $request->service_package_id = null;
-        $request->service_package = null;
+        $request->service_package = '';
         $request->service_package_name_snapshot = null;
         $request->service_package_description_snapshot = null;
         $request->service_package_terms_snapshot = null;
-        $request->complexity = null;
+        $request->complexity = EvaluationComplexity::Standard;
         $request->quoted_price = null;
         $request->quoted_amount_minor = null;
-        $request->currency = null;
+        $request->currency = '';
     }
 
     private function assertComplete(EvaluationRequest $request): void
@@ -260,7 +267,7 @@ final class CreatorEvaluationRequestIntake
             throw new DomainStateTransitionException('At least one access or material item is required before payment.');
         }
 
-        if ($request->service_package_id === null || $request->complexity === null || $request->quoted_amount_minor === null || $request->quoted_price === null || blank($request->currency)) {
+        if ($request->service_package_id === null || $request->quoted_amount_minor === null || $request->quoted_price === null || blank($request->currency)) {
             throw new DomainStateTransitionException('Complete commercial terms are required before payment.');
         }
     }

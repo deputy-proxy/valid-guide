@@ -7,7 +7,8 @@ use App\Models\User;
 use Livewire\Livewire;
 
 it('renders the representative Filament UI foundation page', function (): void {
-    $user = User::factory()->create(['platform_role' => 'admin']);
+    $user = User::factory()->create();
+    $user->forceFill(['platform_role' => 'admin'])->save();
 
     Livewire::actingAs($user)
         ->test(UiFoundation::class)

@@ -53,7 +53,7 @@ class ServicePackage extends Model
                 throw new DomainStateTransitionException('A service package must have a positive price.');
             }
 
-            if ($package->currency !== strtoupper($package->currency) || ! preg_match('/^[A-Z]{3}$/', $package->currency)) {
+            if ($package->currency !== strtoupper($package->currency) || !preg_match('/^[A-Z]{3}$/', $package->currency)) {
                 throw new DomainStateTransitionException('A service package must use a valid three-letter currency code.');
             }
 

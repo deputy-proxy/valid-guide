@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 use App\Enums\EvaluationRequestStatus;
-use App\Enums\OrderStatus;
 use App\Enums\OrganizationRole;
 use App\Enums\PaymentStatus;
 use App\Models\EvaluationRequest;
@@ -131,7 +130,7 @@ it('returns billing commerce data without creator product or intake data', funct
         'evaluation_request_id' => $request->id,
         'amount_minor' => 25000,
         'currency' => 'EUR',
-        'status' => OrderStatus::Pending,
+        'status' => 'pending',
         'provider' => 'stripe',
     ]);
     Payment::create([
@@ -220,7 +219,7 @@ it('exposes refund eligibility only when the backend refund preconditions are me
         'evaluation_request_id' => $request->id,
         'amount_minor' => 25000,
         'currency' => 'EUR',
-        'status' => OrderStatus::Paid,
+        'status' => 'paid',
         'provider' => 'stripe',
     ]);
     Payment::create([
@@ -238,7 +237,7 @@ it('exposes refund eligibility only when the backend refund preconditions are me
     expect($summary['commerce']['refund_eligible'])->toBeTrue()
         ->and($summary['next_action'])->toBe('request_refund');
 
-    $order->update(['status' => OrderStatus::Refunded]);
+    $order->update(['status' => 'refunded']);
 
     expect(app(CreatorDashboard::class)->forOrganization($user, $organization->id)['evaluation_requests'][0]['commerce']['refund_eligible'])
         ->toBeFalse();

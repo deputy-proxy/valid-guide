@@ -48,14 +48,32 @@ function releaseIntegrityRelease(Product $product, ProductReleaseStatus $status 
         'status' => ProductReleaseStatus::Draft,
     ]);
 
-    if ($status !== ProductReleaseStatus::Draft) {
-        $user = $product->organization->users()->wherePivotIn('role', [
-            OrganizationRole::Owner->value,
-            OrganizationRole::Admin->value,
-            OrganizationRole::Editor->value,
-        ])->firstOrFail();
+    if ($status === ProductReleaseStatus::Current) {
+        return app(ProductReleaseStateTransition::class)->publish($release, $product->organization->users()->firstOrFail());
+    }
 
-        $release = app(ProductReleaseStateTransition::class)->transition($release, $status, $user);
+    if ($status === ProductReleaseStatus::Superseded) {
+        $release = app(ProductReleaseStateTransition::class)->publish(
+            $release,
+            $product->organization->users()->firstOrFail(),
+        );
+
+        return app(ProductReleaseStateTransition::class)->supersede(
+            $release,
+            $product->organization->users()->firstOrFail(),
+        );
+    }
+
+    if ($status === ProductReleaseStatus::Withdrawn) {
+        $release = app(ProductReleaseStateTransition::class)->publish(
+            $release,
+            $product->organization->users()->firstOrFail(),
+        );
+
+        return app(ProductReleaseStateTransition::class)->withdraw(
+            $release,
+            $product->organization->users()->firstOrFail(),
+        );
     }
 
     return $release;

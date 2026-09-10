@@ -70,7 +70,9 @@ class User extends Authenticatable implements PasskeyUser
 
     public function canAccessPanel(Panel $panel): bool
     {
-        return $panel->getId() !== 'admin' || $this->isPlatformAdmin();
+        return $panel->getId() !== 'admin'
+            || $this->isPlatformAdmin()
+            || $this->organizations()->exists();
     }
 
     public function initials(): string

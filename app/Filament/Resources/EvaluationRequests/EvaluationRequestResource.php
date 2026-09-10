@@ -17,10 +17,10 @@ use App\Services\StripePaymentService;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Actions\ViewAction;
-use Filament\Infolists\Components\Section;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
+use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
@@ -195,7 +195,7 @@ final class EvaluationRequestResource extends Resource
         $options = [];
 
         foreach ($cases as $case) {
-            $options[$case->value] = self::statusLabel($case);
+            $options[(string) $case->value] = self::statusLabel($case);
         }
 
         return $options;

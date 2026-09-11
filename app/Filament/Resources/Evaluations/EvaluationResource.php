@@ -11,6 +11,7 @@ use App\Models\Evaluation;
 use App\Models\User;
 use App\Services\DomainStateTransitionException;
 use App\Services\EvaluationDecisionService;
+use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Actions\ViewAction;
 use Filament\Notifications\Notification;
@@ -22,7 +23,6 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
 use Throwable;
 use UnitEnum;
-use BackedEnum;
 
 final class EvaluationResource extends Resource
 {

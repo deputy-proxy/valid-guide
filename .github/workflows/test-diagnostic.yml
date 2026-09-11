@@ -39,7 +39,7 @@ jobs:
           PR_URL: ${{ github.event.repository.html_url }}/pull/105
         run: |
           set +e
-          composer test -- tests/Feature/CreatorReportAccessTest.php > test.txt 2>&1
+          php artisan test tests/Feature/CreatorReportAccessTest.php > test.txt 2>&1
           {
             echo '### Test diagnostic'
             echo

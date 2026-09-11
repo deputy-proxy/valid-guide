@@ -7,7 +7,6 @@ use App\Models\Organization;
 use App\Models\User;
 use App\Services\CreatorEvaluationRequestIntake;
 use Illuminate\Support\Facades\Route;
-use Livewire\Exceptions\CannotUpdateLockedPropertyException;
 use Livewire\Livewire;
 
 // UI restrictions are regression-tested at the transport boundary, not treated as authorization.
@@ -43,7 +42,7 @@ it('does not allow Livewire clients to replace the creator tenant context', func
     ]);
 
     expect(fn () => $component->set('organizationId', $otherOrganization->id))
-        ->toThrow(CannotUpdateLockedPropertyException::class);
+        ->toThrow('Cannot update locked property: [organizationId]');
 });
 
 it('does not allow Livewire clients to replace the resumed request identifier', function (): void {
@@ -65,7 +64,7 @@ it('does not allow Livewire clients to replace the resumed request identifier', 
     ]);
 
     expect(fn () => $component->set('evaluationRequestId', $otherRequest->id))
-        ->toThrow(CannotUpdateLockedPropertyException::class);
+        ->toThrow('Cannot update locked property: [evaluationRequestId]');
 });
 
 it('keeps the public verification route outside authentication middleware', function (): void {

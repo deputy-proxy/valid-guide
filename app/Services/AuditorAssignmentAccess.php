@@ -36,7 +36,7 @@ final class AuditorAssignmentAccess
                 'evaluation.product',
                 'evaluation.productRelease',
                 'evaluation.standardVersion',
-                'evaluation.evaluationRequest',
+                'evaluation.request',
             ])
             ->orderByRaw('CASE WHEN due_at IS NULL THEN 1 ELSE 0 END')
             ->orderBy('due_at')

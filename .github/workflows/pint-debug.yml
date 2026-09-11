@@ -13,9 +13,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        file:
-          - app/Services/AuditorProfileManagement.php
-          - app/Services/AuditorEligibility.php
+        include:
+          - file: app/Services/AuditorProfileManagement.php
+            name: auditor-profile-management
+          - file: app/Services/AuditorEligibility.php
+            name: auditor-eligibility
     steps:
       - name: Checkout code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -41,5 +43,5 @@ jobs:
       - name: Upload diff
         uses: actions/upload-artifact@v4
         with:
-          name: pint-diff-${{ matrix.file }}
+          name: pint-diff-${{ matrix.name }}
           path: pint.diff

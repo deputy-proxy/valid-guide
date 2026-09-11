@@ -22,13 +22,16 @@ use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
+use Livewire\Attributes\Locked;
 use Livewire\Component;
 use Throwable;
 
 final class CreateEvaluationRequest extends Component
 {
+    #[Locked]
     public int $organizationId;
 
+    #[Locked]
     public ?int $evaluationRequestId = null;
 
     public int $currentStep = 1;

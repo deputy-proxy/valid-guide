@@ -65,6 +65,7 @@ class PublicVerificationSnapshotBuilder
         $status = $validation->status->value;
         $decision = $evaluation->decision;
         $overallScore = $evaluation->overall_score;
+        $reportVersion = $evaluation->report?->currentVersion;
 
         return [
             'schema_version' => 1,
@@ -163,7 +164,8 @@ class PublicVerificationSnapshotBuilder
                 'disclosed' => $publicAuditors,
             ],
             'report' => [
-                'abstract' => $evaluation->report?->currentVersion?->abstract,
+                'abstract' => $reportVersion?->abstract,
+                'content' => $fullReportVisible ? $reportVersion?->content_structure : null,
             ],
             'visibility' => [
                 'directory' => $directoryVisible,

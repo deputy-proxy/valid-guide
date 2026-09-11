@@ -14,17 +14,8 @@ jobs:
       fail-fast: false
       matrix:
         file:
-          - app/Services/AuditorAssignmentAccess.php
-          - app/Services/AuditorConflictDeclarationService.php
-          - app/Services/AuditorEligibility.php
           - app/Services/AuditorProfileManagement.php
-          - app/Filament/Auditor/Pages/AnnualConflictDeclaration.php
-          - app/Filament/Auditor/Pages/Assignment.php
-          - app/Filament/Auditor/Pages/Profile.php
-          - tests/Feature/AuditorConflictDeclarationTest.php
-          - tests/Feature/AuditorEligibilityTest.php
-          - tests/Feature/AuditorOnboardingPagesTest.php
-          - tests/Feature/AuditorProfileManagementTest.php
+          - app/Services/AuditorEligibility.php
     steps:
       - name: Checkout code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -41,5 +32,14 @@ jobs:
       - name: Setup application
         run: composer install --no-interaction --prefer-dist
 
-      - name: Check Pint
-        run: vendor/bin/pint --test "${{ matrix.file }}"
+      - name: Apply Pint
+        run: vendor/bin/pint "${{ matrix.file }}"
+
+      - name: Capture diff
+        run: git diff --no-ext-diff -- "${{ matrix.file }}" > pint.diff
+
+      - name: Upload diff
+        uses: actions/upload-artifact@v4
+        with:
+          name: pint-diff-${{ matrix.file }}
+          path: pint.diff

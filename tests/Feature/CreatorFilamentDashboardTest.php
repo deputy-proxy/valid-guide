@@ -20,7 +20,7 @@ function filamentCreatorDashboardFixture(string $role): array
 {
     $user = User::factory()->create();
     $organization = Organization::create([
-        'name' => 'Filament Dashboard Organization',
+        'name' => 'Filament Dashboard Organization '.$user->id,
         'slug' => 'filament-dashboard-organization-'.$user->id,
         'status' => 'active',
     ]);

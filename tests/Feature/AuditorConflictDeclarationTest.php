@@ -7,13 +7,14 @@ use App\Models\User;
 use App\Services\AuditorConflictDeclarationService;
 use App\Services\ConflictDeclarationDecision;
 use App\Services\DomainStateTransitionException;
+use Illuminate\Support\Facades\DB;
 
 it('allows an auditor to submit a declaration for their own assignment', function () {
     [$auditorEvaluation, , $declaration] = auditorEvaluationFixture();
     $assignment = $auditorEvaluation->assignment;
     $auditor = $assignment->auditor;
 
-    $declaration->update([
+    DB::table('conflict_declarations')->where('id', $declaration->id)->update([
         'outcome' => null,
         'determined_by' => null,
         'determined_at' => null,
@@ -58,7 +59,7 @@ it('does not replace a determined assignment declaration', function () {
     $auditor = $assignment->auditor;
     $admin = User::factory()->create(['platform_role' => 'admin']);
 
-    $declaration->update([
+    DB::table('conflict_declarations')->where('id', $declaration->id)->update([
         'outcome' => null,
         'determined_by' => null,
         'determined_at' => null,

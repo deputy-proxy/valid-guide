@@ -1,0 +1,50 @@
+Note: Using configuration file /home/runner/work/valid-guide/valid-guide/phpstan.neon.
+   0/241 [░░░░░░░░░░░░░░░░░░░░░░░░░░░░]   0%
+ 241/241 [▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓] 100%
+
+::error file=app/Filament/Resources/Evaluations/Pages/ViewEvaluation.php,line=71,col=0::Access to an undefined property Illuminate\Database\Eloquent\Model::$status.
+::error file=app/Filament/Resources/Evaluations/Pages/ViewEvaluation.php,line=82,col=0::Access to an undefined property Illuminate\Database\Eloquent\Model::$decision.
+::error file=app/Filament/Resources/Evaluations/Pages/ViewEvaluation.php,line=82,col=0::Access to an undefined property Illuminate\Database\Eloquent\Model::$status.
+::error file=app/Filament/Resources/Evaluations/Pages/ViewEvaluation.php,line=82,col=0::Access to an undefined property Illuminate\Database\Eloquent\Model::$validation.
+::error file=app/Filament/Resources/Evaluations/Pages/ViewEvaluation.php,line=98,col=0::Parameter #1 of callable callable(App\Models\Evaluation, App\Models\User): void expects App\Models\Evaluation, Illuminate\Database\Eloquent\Model given.
+::error file=app/Filament/Resources/Reports/ReportResource.php,line=63,col=0::Using nullsafe property access "?->content_structure" on left side of ?? is unnecessary. Use -> instead.
+ ------ ----------------------------------------------------------------------- 
+  Line   app/Filament/Resources/Evaluations/Pages/ViewEvaluation.php            
+ ------ ----------------------------------------------------------------------- 
+  71     Access to an undefined property                                        
+         Illuminate\Database\Eloquent\Model::$status.                           
+         🪪  property.notFound                                                  
+         💡  Learn more: https://phpstan.org/blog/solving-phpstan-access-to-und  
+         efined-property                                                        
+  82     Access to an undefined property                                        
+         Illuminate\Database\Eloquent\Model::$decision.                         
+         🪪  property.notFound                                                  
+         💡  Learn more: https://phpstan.org/blog/solving-phpstan-access-to-und  
+         efined-property                                                        
+  82     Access to an undefined property                                        
+         Illuminate\Database\Eloquent\Model::$status.                           
+         🪪  property.notFound                                                  
+         💡  Learn more: https://phpstan.org/blog/solving-phpstan-access-to-und  
+         efined-property                                                        
+  82     Access to an undefined property                                        
+         Illuminate\Database\Eloquent\Model::$validation.                       
+         🪪  property.notFound                                                  
+         💡  Learn more: https://phpstan.org/blog/solving-phpstan-access-to-und  
+         efined-property                                                        
+  98     Parameter #1 of callable callable(App\Models\Evaluation,               
+         App\Models\User): void expects App\Models\Evaluation,                  
+         Illuminate\Database\Eloquent\Model given.                              
+         🪪  argument.type                                                      
+ ------ ----------------------------------------------------------------------- 
+
+ ------ ----------------------------------------------------------------------- 
+  Line   app/Filament/Resources/Reports/ReportResource.php                      
+ ------ ----------------------------------------------------------------------- 
+  63     Using nullsafe property access "?->content_structure" on left side of  
+         ?? is unnecessary. Use -> instead.                                     
+         🪪  nullsafe.neverNull                                                 
+ ------ ----------------------------------------------------------------------- 
+
+ [ERROR] Found 6 errors                                                         
+
+Script phpstan analyse handling the types:check event returned with error code 1

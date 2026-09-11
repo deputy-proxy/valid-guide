@@ -10,6 +10,7 @@ use App\Models\AuditorAssignment;
 use App\Models\AuditorEvaluation;
 use App\Models\ClarificationRequest;
 use App\Models\Dispute;
+use App\Models\EvaluationDecision;
 use App\Models\Report;
 use App\Models\User;
 use App\Notifications\WorkflowNotification;
@@ -39,6 +40,24 @@ final class WorkflowNotificationService
             'Auditor evaluation submitted',
             'An Auditor has submitted an evaluation requiring platform review.',
             ['auditor_evaluation_id' => $auditorEvaluation->getKey(), 'evaluation_id' => $auditorEvaluation->evaluation_id],
+        );
+    }
+
+    public function evaluationDecisionRecorded(EvaluationDecision $decision): void
+    {
+        $decision->loadMissing('evaluation.request.organization');
+        $organization = $decision->evaluation?->request?->organization;
+        if ($organization === null) {
+            return;
+        }
+
+        $this->sendToOrganization(
+            (int) $organization->getKey(),
+            NotificationCategory::Decision,
+            NotificationEventType::EvaluationDecisionRecorded,
+            'Evaluation decision recorded',
+            'An authorized decision has been recorded for your evaluation.',
+            ['evaluation_decision_id' => $decision->getKey(), 'evaluation_id' => $decision->evaluation_id],
         );
     }
 

@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
+use App\Enums\PlatformRole;
+use App\Enums\ValidationStatus;
 use App\Models\PublicVerificationRecord;
 use App\Models\Report;
 use App\Models\ReportVersion;
+use App\Models\User;
 use App\Services\PublicVerificationPublication;
 use App\Services\PublicVerificationReader;
 use App\Services\ValidationStateTransition;
-use App\Enums\PlatformRole;
-use App\Enums\ValidationStatus;
-use App\Models\User;
 
 it('renders a public verification record from the persisted snapshot', function (): void {
     $validation = publicVerificationFixture();

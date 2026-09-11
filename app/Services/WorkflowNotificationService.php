@@ -21,7 +21,7 @@ final class WorkflowNotificationService
     public function auditorAssignmentCreated(AuditorAssignment $assignment): void
     {
         $assignment->loadMissing('evaluation.product', 'auditor');
-        $productTitle = $assignment->evaluation?->product?->title ?? 'the assigned product';
+        $productTitle = $assignment->evaluation->product->title;
 
         $this->send(
             $assignment->auditor,
@@ -92,7 +92,7 @@ final class WorkflowNotificationService
             return;
         }
 
-        $productTitle = $report->evaluation?->product?->title ?? 'your product';
+        $productTitle = $report->evaluation->product->title;
         $this->sendToOrganization(
             (int) $organization->getKey(),
             NotificationCategory::Report,

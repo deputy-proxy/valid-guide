@@ -55,6 +55,9 @@ class PublicVerificationController extends Controller
         $product = is_array($snapshot['product'] ?? null)
             ? $snapshot['product']
             : [];
+        $canonicalIdentifier = is_string($verification['identifier'] ?? null)
+            ? $verification['identifier']
+            : $verificationIdentifier;
 
         return view('public.pages.verification', [
             'snapshot' => $snapshot,
@@ -65,11 +68,11 @@ class PublicVerificationController extends Controller
             'description' => sprintf(
                 'Public verification record for %s, verification %s.',
                 is_string($product['title'] ?? null) ? $product['title'] : 'this learning product',
-                is_string($verification['identifier'] ?? null) ? $verification['identifier'] : $verificationIdentifier,
+                $canonicalIdentifier,
             ),
             'robots' => ($visibility['directory'] ?? false) === true ? 'index,follow' : 'noindex,follow',
             'canonicalUrl' => route('public.verify.show', [
-                'verificationIdentifier' => $verificationIdentifier,
+                'verificationIdentifier' => $canonicalIdentifier,
             ]),
         ]);
     }

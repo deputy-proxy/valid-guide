@@ -93,8 +93,8 @@ final class CreatorReportAccess
                     ->all(),
             ],
             'findings' => $this->creatorFindings($evaluation),
-            'strengths' => $this->creatorFindingsByType($evaluation, ['strength', 'strengths']),
-            'weaknesses' => $this->creatorFindingsByType($evaluation, ['weakness', 'weaknesses']),
+            'strengths' => $this->creatorFindingsByType($evaluation, 'strength', 'strengths'),
+            'weaknesses' => $this->creatorFindingsByType($evaluation, 'weakness', 'weaknesses'),
             'validation' => $this->validation($evaluation),
             'clarifications' => $evaluation->clarificationRequests
                 ->map(fn ($clarification): array => [
@@ -159,11 +159,8 @@ final class CreatorReportAccess
             ->all();
     }
 
-    /**
-     * @param array<int, string>              $types
-     * @return array<int, array<string, mixed>>
-     */
-    private function creatorFindingsByType(Evaluation $evaluation, array $types): array
+    /** @return array<int, array<string, mixed>> */
+    private function creatorFindingsByType(Evaluation $evaluation, string ...$types): array
     {
         return $evaluation->findings
             ->filter(fn (Finding $finding): bool => in_array(strtolower((string) $finding->type), $types, true))

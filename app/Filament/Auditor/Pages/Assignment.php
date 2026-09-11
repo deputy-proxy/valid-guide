@@ -5,8 +5,11 @@ declare(strict_types=1);
 namespace App\Filament\Auditor\Pages;
 
 use App\Models\AuditorAssignment;
+use App\Models\ConflictDeclaration;
 use App\Models\User;
 use App\Services\AuditorAssignmentAccess;
+use App\Services\AuditorConflictDeclarationService;
+use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Illuminate\Auth\Access\AuthorizationException;
 
@@ -22,6 +25,8 @@ final class Assignment extends Page
 
     public AuditorAssignment $assignment;
 
+    public string $conflictDisclosure = '';
+
     public function mount(string $assignment): void
     {
         $user = auth()->user();
@@ -31,6 +36,7 @@ final class Assignment extends Page
         }
 
         $this->assignment = app(AuditorAssignmentAccess::class)->findFor($user, $assignment);
+        $this->conflictDisclosure = $this->conflictDeclaration()?->disclosure ?? '';
     }
 
     public function statusLabel(): string
@@ -63,6 +69,62 @@ final class Assignment extends Page
         return is_array($decoded) && is_string($decoded['scope'] ?? null)
             ? $decoded['scope']
             : 'Not specified';
+    }
+
+    public function conflictDeclaration(): ?ConflictDeclaration
+    {
+        return $this->assignment->conflictDeclarations()
+            ->where('declaration_type', 'assignment')
+            ->latest('id')
+            ->first();
+    }
+
+    public function conflictStatusLabel(): string
+    {
+        $declaration = $this->conflictDeclaration();
+
+        if ($declaration === null) {
+            return 'Declaration required';
+        }
+
+        if ($declaration->determined_at === null) {
+            return 'Pending determination';
+        }
+
+        return match ($declaration->outcome) {
+            'cleared' => 'Cleared',
+            'disqualified' => 'Disqualified',
+            default => 'Determined',
+        };
+    }
+
+    public function canEditConflictDeclaration(): bool
+    {
+        return $this->conflictDeclaration()?->determined_at === null;
+    }
+
+    public function submitConflictDeclaration(): void
+    {
+        $user = auth()->user();
+
+        if (! $user instanceof User) {
+            throw new AuthorizationException('You are not authorized to submit this declaration.');
+        }
+
+        if (! $this->canEditConflictDeclaration()) {
+            throw new AuthorizationException('A determined assignment conflict declaration cannot be changed.');
+        }
+
+        app(AuditorConflictDeclarationService::class)->submit(
+            $this->assignment,
+            $user,
+            $this->conflictDisclosure,
+        );
+
+        Notification::make()
+            ->title('Conflict declaration submitted')
+            ->success()
+            ->send();
     }
 
     public function canContinue(): bool

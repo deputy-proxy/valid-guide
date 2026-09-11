@@ -6,6 +6,7 @@ namespace App\Services;
 
 use App\Enums\ValidationStatus;
 use App\Models\PublicVerificationRecord;
+use App\Models\User;
 use App\Models\Validation;
 use Illuminate\Support\Str;
 
@@ -65,6 +66,39 @@ class PublicVerificationPublication
             $record->full_report_visible,
         );
         $record->save();
+
+        return $record->refresh();
+    }
+
+    public function setVisibility(
+        PublicVerificationRecord $record,
+        bool $directoryVisible,
+        bool $fullReportVisible,
+        User $changedBy,
+    ): PublicVerificationRecord {
+        if (! $changedBy->isPlatformAdmin()) {
+            throw new DomainStateTransitionException('Only a platform administrator can change public verification visibility.');
+        }
+
+        $record = PublicVerificationRecord::query()->whereKey($record->getKey())->firstOrFail();
+        $record->directory_visible = $directoryVisible;
+        $record->full_report_visible = $fullReportVisible;
+        $record->snapshot = $this->snapshotBuilder->build(
+            $record->validation()->firstOrFail(),
+            $directoryVisible,
+            $fullReportVisible,
+        );
+        $record->save();
+
+        AuditLogger::record(
+            event: 'public_verification.visibility_changed',
+            auditable: $record,
+            after: [
+                'directory_visible' => $directoryVisible,
+                'full_report_visible' => $fullReportVisible,
+                'changed_by' => $changedBy->id,
+            ],
+        );
 
         return $record->refresh();
     }

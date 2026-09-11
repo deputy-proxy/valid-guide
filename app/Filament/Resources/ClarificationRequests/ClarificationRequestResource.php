@@ -10,6 +10,7 @@ use App\Models\ClarificationRequest;
 use App\Models\User;
 use App\Services\ClarificationWorkflow;
 use App\Services\DomainStateTransitionException;
+use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Textarea;
 use Filament\Notifications\Notification;
@@ -21,7 +22,6 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
 use Throwable;
 use UnitEnum;
-use BackedEnum;
 
 final class ClarificationRequestResource extends Resource
 {

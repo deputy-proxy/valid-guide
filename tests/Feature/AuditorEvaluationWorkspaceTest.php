@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Enums\CriterionAssessment;
+use App\Enums\EvidenceSufficiency;
 use App\Models\Criterion;
 use App\Models\CriterionResult;
 use App\Models\StandardVersion;
@@ -24,7 +25,10 @@ it('renders the authenticated auditors frozen evaluation workspace', function ()
         ->assertSee('Course')
         ->assertSee('TEST-01')
         ->assertSee('Test criterion')
-        ->assertSee('Meets');
+        ->assertSee('Meets')
+        ->assertSee('Decision gates')
+        ->assertSee('Evidence references')
+        ->assertSee('Auditor findings');
 });
 
 it('rejects another auditors evaluation workspace', function () {
@@ -103,6 +107,41 @@ it('saves a methodology controlled scored draft', function () {
     expect($result->assessment)->toBe(CriterionAssessment::Exceeds)
         ->and((float) $result->score)->toBe(95.0)
         ->and($result->rationale)->toContain('strongly supported');
+});
+
+it('saves explicit decision gate conclusions through the workspace service', function () {
+    [$auditorEvaluation] = auditorEvaluationFixture();
+    $auditor = $auditorEvaluation->assignment->auditor;
+    clearAuditor($auditor);
+
+    $saved = app(AuditorEvaluationWorkspace::class)->saveDecisionGates(
+        $auditor,
+        $auditorEvaluation,
+        EvidenceSufficiency::Sufficient->value,
+        'coherent',
+    );
+
+    expect($saved->evidence_sufficiency)->toBe(EvidenceSufficiency::Sufficient)
+        ->and($saved->audience_promise_coherence->value)->toBe('coherent');
+});
+
+it('rejects invalid decision gate conclusions and locked gate mutation', function () {
+    [$auditorEvaluation] = auditorEvaluationFixture();
+    $auditor = $auditorEvaluation->assignment->auditor;
+    clearAuditor($auditor);
+    $workspace = app(AuditorEvaluationWorkspace::class);
+
+    expect(fn () => $workspace->saveDecisionGates($auditor, $auditorEvaluation, 'invalid', 'coherent'))
+        ->toThrow(ValidationException::class);
+
+    $auditorEvaluation->update([
+        'status' => 'submitted',
+        'submitted_at' => now(),
+        'locked_at' => now(),
+    ]);
+
+    expect(fn () => $workspace->saveDecisionGates($auditor, $auditorEvaluation, 'sufficient', 'coherent'))
+        ->toThrow(AuthorizationException::class);
 });
 
 it('rejects invalid assessment values and criteria from another standard version', function () {

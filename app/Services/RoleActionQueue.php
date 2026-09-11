@@ -11,6 +11,7 @@ use App\Models\AuditorEvaluation;
 use App\Models\ClarificationRequest;
 use App\Models\Dispute;
 use App\Models\Evaluation;
+use App\Models\EvaluationRequest;
 use App\Models\Report;
 use App\Models\User;
 use Carbon\CarbonImmutable;
@@ -51,7 +52,7 @@ final class RoleActionQueue
             ->orderByDesc('updated_at')
             ->limit(25)
             ->get()
-            ->each(function ($request) use ($items): void {
+            ->each(function (EvaluationRequest $request) use ($items): void {
                 $items->push(new ActionQueueItem(
                     'evaluation-request:'.$request->getKey(),
                     'creator',
@@ -80,7 +81,7 @@ final class RoleActionQueue
                     'report',
                     (int) $report->getKey(),
                     false,
-                    CarbonImmutable::instance($report->delivered_at),
+                    CarbonImmutable::parse($report->delivered_at ?? $report->updated_at ?? now()),
                 ));
             });
 
@@ -140,8 +141,8 @@ final class RoleActionQueue
             ->limit(25)
             ->get()
             ->each(function (AuditorAssignment $assignment) use ($items): void {
-                $product = $assignment->evaluation?->product;
-                $title = $product?->title ?? 'an evaluation';
+                $product = $assignment->evaluation->product;
+                $title = $product->title;
                 $items->push(new ActionQueueItem(
                     'assignment:'.$assignment->getKey(),
                     'assignment',
@@ -150,7 +151,7 @@ final class RoleActionQueue
                     'auditor_assignment',
                     (int) $assignment->getKey(),
                     false,
-                    CarbonImmutable::instance($assignment->assigned_at),
+                    CarbonImmutable::parse($assignment->assigned_at ?? $assignment->created_at ?? now()),
                 ));
             });
 
@@ -162,8 +163,8 @@ final class RoleActionQueue
             ->limit(25)
             ->get()
             ->each(function (AuditorEvaluation $evaluation) use ($items): void {
-                $product = $evaluation->evaluation?->product;
-                $title = $product?->title ?? 'the assigned product';
+                $product = $evaluation->evaluation->product;
+                $title = $product->title;
                 $items->push(new ActionQueueItem(
                     'auditor-evaluation:'.$evaluation->getKey(),
                     'submission',
@@ -213,7 +214,7 @@ final class RoleActionQueue
                 'auditor_evaluation',
                 (int) $evaluation->getKey(),
                 false,
-                CarbonImmutable::instance($evaluation->submitted_at ?? $evaluation->updated_at),
+                CarbonImmutable::parse($evaluation->submitted_at ?? $evaluation->updated_at ?? now()),
             )));
 
         ClarificationRequest::query()
@@ -229,7 +230,7 @@ final class RoleActionQueue
                 'clarification',
                 (int) $request->getKey(),
                 false,
-                CarbonImmutable::instance($request->submitted_at ?? $request->updated_at),
+                CarbonImmutable::parse($request->submitted_at ?? $request->updated_at ?? now()),
             )));
 
         Dispute::query()
@@ -245,7 +246,7 @@ final class RoleActionQueue
                 'dispute',
                 (int) $dispute->getKey(),
                 false,
-                CarbonImmutable::instance($dispute->submitted_at ?? $dispute->updated_at),
+                CarbonImmutable::parse($dispute->submitted_at ?? $dispute->updated_at ?? now()),
             )));
 
         Report::query()

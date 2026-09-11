@@ -23,13 +23,6 @@ final class Assignments extends Page
 
     protected static ?string $title = 'My Assignments';
 
-    public static function canAccess(): bool
-    {
-        $user = auth()->user();
-
-        return $user instanceof User && app(AuditorAssignmentAccess::class)->isClearedAuditor($user);
-    }
-
     /**
      * @return Collection<int, AuditorAssignment>
      */

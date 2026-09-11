@@ -118,6 +118,7 @@ final class ValidationResource extends Resource
         try {
             app(ValidationStateTransition::class)->transition($record, $status, $user, $reason);
             Notification::make()->success()->title('Validation status updated')->send();
+
             return true;
         } catch (DomainStateTransitionException $exception) {
             Notification::make()->danger()->title('Validation status change blocked')->body($exception->getMessage())->send();

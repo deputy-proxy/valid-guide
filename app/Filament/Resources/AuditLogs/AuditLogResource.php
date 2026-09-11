@@ -14,7 +14,6 @@ use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
-use Throwable;
 use UnitEnum;
 
 final class AuditLogResource extends Resource

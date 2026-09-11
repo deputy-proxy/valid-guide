@@ -47,12 +47,12 @@ final class CreatorDashboard
             ],
             'products' => $isCreator ? $this->products($actor, $organization) : [],
             'evaluation_requests' => $this->evaluationRequests($actor, $organization, $role),
-            'improvement_opportunities' => $isCreator ? $this->improvementOpportunities($actor, $organization) : [],
+            'improvement_opportunities' => $isCreator ? $this->improvementOpportunities($organization) : [],
         ];
     }
 
     /** @return array<int, array<string, mixed>> */
-    private function improvementOpportunities(User $actor, Organization $organization): array
+    private function improvementOpportunities(Organization $organization): array
     {
         return ImprovementOpportunity::query()
             ->where('organization_id', $organization->getKey())

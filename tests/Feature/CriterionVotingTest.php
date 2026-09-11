@@ -19,8 +19,9 @@ use App\Services\DomainStateTransitionException;
 
 it('records a criterion vote only when the methodology designates collective determination', function () {
     [$auditorEvaluation, $result] = auditorEvaluationFixture(CriterionVotingMode::Majority);
+    $auditor = $auditorEvaluation->assignment->auditor;
 
-    app(AuditorEvaluationSubmission::class)->submit($auditorEvaluation);
+    app(AuditorEvaluationSubmission::class)->submit($auditorEvaluation, $auditor);
     $votes = app(CriterionVoting::class)->record($auditorEvaluation);
 
     expect($votes)->toHaveCount(1)
@@ -30,8 +31,9 @@ it('records a criterion vote only when the methodology designates collective det
 
 it('does not create votes for non-collective criteria', function () {
     [$auditorEvaluation] = auditorEvaluationFixture();
+    $auditor = $auditorEvaluation->assignment->auditor;
 
-    app(AuditorEvaluationSubmission::class)->submit($auditorEvaluation);
+    app(AuditorEvaluationSubmission::class)->submit($auditorEvaluation, $auditor);
     $votes = app(CriterionVoting::class)->record($auditorEvaluation);
 
     expect($votes)->toHaveCount(0)
@@ -41,8 +43,9 @@ it('does not create votes for non-collective criteria', function () {
 it('aggregates a collective criterion by simple majority with three auditors and preserves minority counts', function () {
     [$auditorEvaluation, $result] = auditorEvaluationFixture(CriterionVotingMode::Majority);
     $criterion = $result->criterion;
+    $auditor = $auditorEvaluation->assignment->auditor;
 
-    app(AuditorEvaluationSubmission::class)->submit($auditorEvaluation);
+    app(AuditorEvaluationSubmission::class)->submit($auditorEvaluation, $auditor);
     app(CriterionVoting::class)->record($auditorEvaluation);
 
     addSubmittedAuditorEvaluation($auditorEvaluation->evaluation, $criterion, 'meets', 2);
@@ -61,8 +64,9 @@ it('aggregates a collective criterion by simple majority with three auditors and
 it('aggregates a collective criterion with five auditors by simple majority', function () {
     [$auditorEvaluation, $result] = auditorEvaluationFixture(CriterionVotingMode::Majority);
     $criterion = $result->criterion;
+    $auditor = $auditorEvaluation->assignment->auditor;
 
-    app(AuditorEvaluationSubmission::class)->submit($auditorEvaluation);
+    app(AuditorEvaluationSubmission::class)->submit($auditorEvaluation, $auditor);
     app(CriterionVoting::class)->record($auditorEvaluation);
 
     addSubmittedAuditorEvaluation($auditorEvaluation->evaluation, $criterion, 'meets', 2);
@@ -82,7 +86,8 @@ it('aggregates a collective criterion with five auditors by simple majority', fu
 
 it('rejects majority aggregation for a non-collective criterion', function () {
     [$auditorEvaluation, $result] = auditorEvaluationFixture();
-    app(AuditorEvaluationSubmission::class)->submit($auditorEvaluation);
+    $auditor = $auditorEvaluation->assignment->auditor;
+    app(AuditorEvaluationSubmission::class)->submit($auditorEvaluation, $auditor);
 
     expect(fn () => app(CriterionVoting::class)->aggregate($auditorEvaluation->evaluation, $result->criterion_id))
         ->toThrow(DomainStateTransitionException::class);
@@ -90,7 +95,8 @@ it('rejects majority aggregation for a non-collective criterion', function () {
 
 it('keeps independent non-collective assessments vote-free with one, three and five auditors', function (int $additionalAuditors) {
     [$auditorEvaluation, $result] = auditorEvaluationFixture();
-    app(AuditorEvaluationSubmission::class)->submit($auditorEvaluation);
+    $auditor = $auditorEvaluation->assignment->auditor;
+    app(AuditorEvaluationSubmission::class)->submit($auditorEvaluation, $auditor);
 
     for ($sequence = 2; $sequence <= $additionalAuditors + 1; $sequence++) {
         addSubmittedAuditorEvaluation($auditorEvaluation->evaluation, $result->criterion, 'meets', $sequence);
@@ -104,7 +110,8 @@ it('keeps independent non-collective assessments vote-free with one, three and f
 
 it('rejects aggregation with an even number of auditors', function () {
     [$auditorEvaluation, $result] = auditorEvaluationFixture(CriterionVotingMode::Majority);
-    app(AuditorEvaluationSubmission::class)->submit($auditorEvaluation);
+    $auditor = $auditorEvaluation->assignment->auditor;
+    app(AuditorEvaluationSubmission::class)->submit($auditorEvaluation, $auditor);
     app(CriterionVoting::class)->record($auditorEvaluation);
 
     $auditor = User::factory()->create();
@@ -123,7 +130,8 @@ it('rejects aggregation with an even number of auditors', function () {
 
 it('keeps recorded criterion votes immutable', function () {
     [$auditorEvaluation] = auditorEvaluationFixture(CriterionVotingMode::Majority);
-    app(AuditorEvaluationSubmission::class)->submit($auditorEvaluation);
+    $auditor = $auditorEvaluation->assignment->auditor;
+    app(AuditorEvaluationSubmission::class)->submit($auditorEvaluation, $auditor);
     $vote = app(CriterionVoting::class)->record($auditorEvaluation)->first();
 
     expect(fn () => $vote->update(['decision' => 'does_not_meet']))
@@ -177,7 +185,7 @@ function addSubmittedAuditorEvaluation(
         'confidence' => 90,
     ]);
 
-    $submitted = app(AuditorEvaluationSubmission::class)->submit($auditorEvaluation);
+    $submitted = app(AuditorEvaluationSubmission::class)->submit($auditorEvaluation, $auditor);
     app(CriterionVoting::class)->record($submitted);
 
     return $submitted;

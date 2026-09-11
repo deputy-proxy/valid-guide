@@ -11,6 +11,7 @@ use App\Models\Criterion;
 use App\Models\CriterionResult;
 use App\Models\User;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -19,7 +20,8 @@ final class AuditorEvaluationWorkspace
 {
     public function __construct(
         private readonly AuditorAssignmentAccess $assignmentAccess,
-    ) {}
+    ) {
+    }
 
     public function findFor(User $user, string|int $assignmentId): AuditorEvaluation
     {
@@ -36,7 +38,7 @@ final class AuditorEvaluationWorkspace
                 'evaluation.productRelease',
                 'evaluation.request',
                 'evaluation.standardVersion',
-                'evaluation.standardVersion.criteria' => fn ($query) => $query->orderBy('sequence'),
+                'evaluation.standardVersion.criteria' => fn (Builder $query): Builder => $query->orderBy('sequence'),
                 'evaluation.standardVersion.criteria.guidance',
                 'criterionResults',
                 'evidence',
@@ -57,14 +59,6 @@ final class AuditorEvaluationWorkspace
         return $evaluation->evaluation->standardVersion->criteria
             ->sortBy('sequence')
             ->values();
-    }
-
-    /** @return array<int,CriterionResult> */
-    public function resultMap(AuditorEvaluation $evaluation): array
-    {
-        return $evaluation->criterionResults
-            ->keyBy('criterion_id')
-            ->all();
     }
 
     public function saveDraft(

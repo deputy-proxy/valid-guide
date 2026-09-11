@@ -294,7 +294,7 @@ final class Evaluation extends Page
         }
 
         try {
-            app(AuditorEvaluationSubmission::class)->submit($this->auditorEvaluation);
+            app(AuditorEvaluationSubmission::class)->submit($this->auditorEvaluation, $user);
             $this->auditorEvaluation->refresh();
 
             app(AuditorEvaluationFinalization::class)->finalize($this->auditorEvaluation, $user);

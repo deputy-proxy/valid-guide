@@ -10,6 +10,7 @@ use App\Enums\ValidationStatus;
 use App\Models\PublicDirectoryEntry;
 use App\Models\User;
 use App\Services\ProductSuitability;
+use App\Services\PublicVerificationPublication;
 use App\Services\ValidationIssuance;
 use App\Services\ValidationStateTransition;
 
@@ -90,7 +91,7 @@ it('removes a hidden directory record from public discovery without deleting ver
     [$validation, $product, , $admin] = validatedDirectoryFixture();
     $record = $validation->publicVerificationRecord()->firstOrFail();
 
-    app(\App\Services\PublicVerificationPublication::class)->setVisibility($record, false, false, $admin);
+    app(PublicVerificationPublication::class)->setVisibility($record, false, false, $admin);
 
     expect($validation->publicVerificationRecord()->first())->not->toBeNull()
         ->and(PublicDirectoryEntry::query()

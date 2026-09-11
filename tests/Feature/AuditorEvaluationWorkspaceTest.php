@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Enums\AuditorProfileStatus;
 use App\Enums\CriterionAssessment;
 use App\Models\AuditorAnnualConflictDeclaration;
 use App\Models\AuditorProfile;
@@ -12,6 +13,28 @@ use App\Services\AuditorEvaluationWorkspace;
 use App\Services\DomainStateTransitionException;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Validation\ValidationException;
+
+function clearAuditor(User $auditor): void
+{
+    $reviewer = User::factory()->create();
+
+    AuditorProfile::query()->create([
+        'auditor_id' => $auditor->id,
+        'status' => AuditorProfileStatus::Approved,
+        'approved_by' => $reviewer->id,
+        'approved_at' => now(),
+    ]);
+
+    AuditorAnnualConflictDeclaration::query()->create([
+        'auditor_id' => $auditor->id,
+        'year' => now()->year,
+        'disclosure' => 'No known conflicts.',
+        'outcome' => 'cleared',
+        'submitted_at' => now(),
+        'determined_by' => $reviewer->id,
+        'determined_at' => now(),
+    ]);
+}
 
 it('renders the authenticated auditors frozen evaluation workspace', function () {
     [$auditorEvaluation] = auditorEvaluationFixture();
@@ -150,21 +173,7 @@ it('does not allow a second auditor to overwrite the first auditors result', fun
     clearAuditor($auditor);
 
     $otherAuditor = User::factory()->create();
-    AuditorProfile::query()->create([
-        'auditor_id' => $otherAuditor->id,
-        'status' => 'approved',
-        'approved_by' => $auditor->id,
-        'approved_at' => now(),
-    ]);
-    AuditorAnnualConflictDeclaration::query()->create([
-        'auditor_id' => $otherAuditor->id,
-        'year' => now()->year,
-        'disclosure' => 'No known conflicts.',
-        'outcome' => 'cleared',
-        'submitted_at' => now(),
-        'determined_by' => $auditor->id,
-        'determined_at' => now(),
-    ]);
+    clearAuditor($otherAuditor);
 
     $criterionId = $auditorEvaluation->criterionResults->first()->criterion_id;
 

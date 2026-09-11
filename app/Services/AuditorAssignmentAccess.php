@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace App\Services;
 
-use App\Enums\AuditorProfileStatus;
-use App\Models\AuditorAnnualConflictDeclaration;
 use App\Models\AuditorAssignment;
 use App\Models\User;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -13,12 +11,14 @@ use Illuminate\Database\Eloquent\Builder;
 
 final class AuditorAssignmentAccess
 {
+    public function __construct(private readonly AuditorEligibility $eligibility) {}
+
     /**
      * @return Builder<AuditorAssignment>
      */
     public function queryFor(User $user): Builder
     {
-        if (! $this->isClearedAuditor($user)) {
+        if (! $this->eligibility->canAccessAssignments($user)) {
             return AuditorAssignment::query()->whereKey('__no_assignments__');
         }
 
@@ -56,22 +56,13 @@ final class AuditorAssignmentAccess
 
     public function isClearedAuditor(User $user): bool
     {
-        $profile = $user->auditorProfile;
-
-        if ($profile === null || $profile->status !== AuditorProfileStatus::Approved) {
-            return false;
-        }
-
-        return AuditorAnnualConflictDeclaration::query()
-            ->where('auditor_id', $user->getKey())
-            ->where('year', now()->year)
-            ->where('outcome', 'cleared')
-            ->whereNotNull('determined_at')
-            ->exists();
+        return $this->eligibility->canAccessAssignments($user);
     }
 
     public function hasSubstantiveWorkAccess(AuditorAssignment $assignment): bool
     {
-        return in_array($assignment->status, ['accepted', 'cleared'], true);
+        $auditor = $assignment->auditor;
+
+        return $this->eligibility->canStartSubstantiveWork($auditor, $assignment);
     }
 }

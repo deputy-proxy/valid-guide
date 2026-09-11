@@ -8,6 +8,7 @@ use App\Enums\PlatformRole;
 use App\Livewire\Creator\Reports\ShowReport;
 use App\Models\CreatorAction;
 use App\Models\Finding;
+use App\Models\Organization;
 use App\Models\User;
 use App\Services\CreatorActionPlanner;
 use App\Services\CreatorActionWorkflow;
@@ -136,9 +137,13 @@ it('rejects cross-tenant action management and assignment', function () {
         'Clarify the first-use experience.',
     );
 
+    $otherOrganization = Organization::query()->create([
+        'name' => 'Other Organization',
+        'slug' => 'other-organization-'.uniqid(),
+        'status' => 'active',
+    ]);
     $otherUser = User::factory()->create();
-    $otherOrganization = $evaluation->request->organization()->firstOrFail();
-    $otherOrganization->users()->attach($otherUser, ['role' => 'billing']);
+    $otherOrganization->users()->attach($otherUser, ['role' => 'editor']);
 
     expect(fn () => app(CreatorActionWorkflow::class)->transition($action, $otherUser, CreatorActionStatus::InProgress))
         ->toThrow(DomainStateTransitionException::class);

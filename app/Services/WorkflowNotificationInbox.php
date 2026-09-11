@@ -57,7 +57,6 @@ final class WorkflowNotificationInbox
         $user->unreadNotifications()->update(['read_at' => now()]);
     }
 
-    /** @param mixed $context */
     private function isStale(?NotificationEventType $eventType, mixed $context): bool
     {
         if (! is_array($context)) {

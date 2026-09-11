@@ -14,6 +14,9 @@ use Illuminate\Database\Eloquent\Builder;
 
 class PublicDirectory
 {
+    /**
+     * @return LengthAwarePaginator<int, PublicDirectoryEntry>
+     */
     public function search(
         ?string $query = null,
         ?ProductAudience $audience = null,

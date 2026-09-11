@@ -660,6 +660,7 @@ The authoritative project documentation is organized as follows:
 - `docs/phase-1-decisions.md` — approved Phase 1 decisions and invariants
 - `docs/phase-1-invariant-audit.md` — Phase 1 specification-to-code regression matrix
 - `docs/phase-2-invariant-audit.md` — Phase 2 specification-to-code regression matrix and completion audit
+- `docs/phase-2-ui-regression-audit.md` — Phase 2 UI integration, accessibility and security regression audit
 - `docs/implementation-decisions.md` — implementation-level architectural decisions and intentional deviations
 
 The README provides the high-level product and development roadmap. Detailed rules belong in the appropriate specification or decision document.

@@ -66,12 +66,12 @@
             </div>
             <nav aria-label="Footer navigation">
                 <ul class="grid grid-cols-2 gap-x-8 gap-y-3 text-sm text-zinc-600 dark:text-zinc-400 sm:grid-cols-3">
-                    <li><a class="hover:text-zinc-950 dark:hover:text-white" href="{{ route('public.about') }}">About</a></li>
-                    <li><a class="hover:text-zinc-950 dark:hover:text-white" href="{{ route('public.pricing') }}">Pricing</a></li>
-                    <li><a class="hover:text-zinc-950 dark:hover:text-white" href="{{ route('public.faq') }}">FAQ</a></li>
-                    <li><a class="hover:text-zinc-950 dark:hover:text-white" href="{{ route('public.how-it-works') }}">Methodology</a></li>
-                    <li><a class="hover:text-zinc-950 dark:hover:text-white" href="{{ route('public.verify') }}">Verify a badge</a></li>
-                    <li><a class="hover:text-zinc-950 dark:hover:text-white" href="{{ route('home') }}#contact">Contact</a></li>
+                    <li><a class="rounded-md focus:outline-none focus:ring-2 focus:ring-zinc-900 focus:ring-offset-2 hover:text-zinc-950 dark:focus:ring-white dark:hover:text-white" href="{{ route('public.about') }}">About</a></li>
+                    <li><a class="rounded-md focus:outline-none focus:ring-2 focus:ring-zinc-900 focus:ring-offset-2 hover:text-zinc-950 dark:focus:ring-white dark:hover:text-white" href="{{ route('public.pricing') }}">Pricing</a></li>
+                    <li><a class="rounded-md focus:outline-none focus:ring-2 focus:ring-zinc-900 focus:ring-offset-2 hover:text-zinc-950 dark:focus:ring-white dark:hover:text-white" href="{{ route('public.faq') }}">FAQ</a></li>
+                    <li><a class="rounded-md focus:outline-none focus:ring-2 focus:ring-zinc-900 focus:ring-offset-2 hover:text-zinc-950 dark:focus:ring-white dark:hover:text-white" href="{{ route('public.how-it-works') }}">Methodology</a></li>
+                    <li><a class="rounded-md focus:outline-none focus:ring-2 focus:ring-zinc-900 focus:ring-offset-2 hover:text-zinc-950 dark:focus:ring-white dark:hover:text-white" href="{{ route('public.verify') }}">Verify a badge</a></li>
+                    <li><a class="rounded-md focus:outline-none focus:ring-2 focus:ring-zinc-900 focus:ring-offset-2 hover:text-zinc-950 dark:focus:ring-white dark:hover:text-white" href="{{ route('home') }}#contact">Contact</a></li>
                 </ul>
             </nav>
         </div>

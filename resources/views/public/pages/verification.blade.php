@@ -67,7 +67,7 @@
     @endif
 
     <x-public.section title="Product and validation" description="The public identity and result are tied to the exact evaluated release and methodology version.">
-        <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+        <dl class="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
             <div><dt class="text-sm text-zinc-500 dark:text-zinc-400">Creator</dt><dd class="mt-1 font-medium">{{ $product['creator'] ?? 'Not disclosed' }}</dd></div>
             <div><dt class="text-sm text-zinc-500 dark:text-zinc-400">Release</dt><dd class="mt-1 font-medium">{{ $product['release_identifier'] ?? 'Not available' }}</dd></div>
             <div><dt class="text-sm text-zinc-500 dark:text-zinc-400">Version</dt><dd class="mt-1 font-medium">{{ $product['version'] ?? 'Not available' }}</dd></div>
@@ -76,7 +76,7 @@
             <div><dt class="text-sm text-zinc-500 dark:text-zinc-400">Standard version</dt><dd class="mt-1 font-medium">{{ $standard['version'] ?? 'Not available' }}</dd></div>
             <div><dt class="text-sm text-zinc-500 dark:text-zinc-400">Decision</dt><dd class="mt-1 font-medium">{{ $result['decision'] ?? 'Not available' }}</dd></div>
             <div><dt class="text-sm text-zinc-500 dark:text-zinc-400">Overall score</dt><dd class="mt-1 font-medium">{{ $result['overall_score'] ?? 'Not scored' }}</dd></div>
-        </div>
+        </dl>
     </x-public.section>
 
     <x-public.section title="Evaluation scope">

@@ -41,6 +41,11 @@ final class CreatorDashboardPage extends Page
         $this->loadDashboard();
     }
 
+    public static function canAccess(): bool
+    {
+        return true;
+    }
+
     public function requestRefund(int $evaluationRequestId): void
     {
         $actor = self::authenticatedUser();

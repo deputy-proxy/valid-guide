@@ -186,9 +186,10 @@ final class Evaluation extends Page
     {
         $result = $this->resultFor($criterionId);
         $assessment = $result === null ? null : CriterionAssessment::tryFrom((string) $result->getRawOriginal('assessment'));
+        $assessmentValue = $assessment instanceof CriterionAssessment ? $assessment->value : '';
 
         $this->drafts[$criterionId] = [
-            'assessment' => $assessment?->value ?? '',
+            'assessment' => $assessmentValue,
             'score' => $result === null || $result->score === null ? '' : (string) $result->score,
             'rationale' => $result === null ? '' : $result->rationale,
             'confidence' => $result === null || $result->confidence === null ? '' : (string) $result->confidence,

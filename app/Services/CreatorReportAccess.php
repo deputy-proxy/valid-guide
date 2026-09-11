@@ -37,7 +37,11 @@ final class CreatorReportAccess
             ->findOrFail($evaluationId);
 
         $organization = $evaluation->request?->organization;
-        if ($organization === null || ! $this->canAccess($user, $organization->id)) {
+        if ($organization === null) {
+            throw new AuthorizationException('You are not authorized to access this creator report.');
+        }
+
+        if (! $this->canAccess($user, $organization->id)) {
             throw new AuthorizationException('You are not authorized to access this creator report.');
         }
 
@@ -197,16 +201,14 @@ final class CreatorReportAccess
     /** @return array<string, string> */
     private function creatorContentStructure(mixed $contentStructure): array
     {
-        if (! is_array($contentStructure)) {
-            return [];
+        if (is_array($contentStructure)) {
+            $summary = $contentStructure['sections']['summary'] ?? null;
+            if (is_scalar($summary)) {
+                return ['summary' => (string) $summary];
+            }
         }
 
-        $summary = $contentStructure['sections']['summary'] ?? null;
-        if (! is_scalar($summary)) {
-            return [];
-        }
-
-        return ['summary' => (string) $summary];
+        return [];
     }
 
     /** @return array<string, mixed>|null */

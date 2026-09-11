@@ -27,11 +27,13 @@ final class WorkflowNotificationInbox
             ->map(function (DatabaseNotification $notification): array {
                 $data = $notification->data;
                 $eventType = NotificationEventType::tryFrom((string) ($data['event_type'] ?? ''));
+                /** @var string|null $eventTypeValue */
+                $eventTypeValue = $eventType?->value;
 
                 return [
                     'id' => (string) $notification->getKey(),
                     'category' => (string) ($data['category'] ?? 'system'),
-                    'event_type' => $eventType?->value,
+                    'event_type' => $eventTypeValue,
                     'title' => (string) ($data['title'] ?? 'Notification'),
                     'body' => (string) ($data['body'] ?? ''),
                     'read' => $notification->read(),

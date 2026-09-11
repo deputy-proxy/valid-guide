@@ -3,11 +3,14 @@
 declare(strict_types=1);
 
 use App\Enums\CreatorActionPriority;
+use App\Enums\CreatorActionStatus;
 use App\Enums\ImprovementOpportunityStatus;
 use App\Models\Finding;
 use App\Models\ImprovementOpportunity;
 use App\Models\Organization;
 use App\Models\User;
+use App\Services\CreatorActionPlanner;
+use App\Services\CreatorActionWorkflow;
 use App\Services\DomainStateTransitionException;
 use App\Services\ImprovementOpportunityWorkflow;
 
@@ -47,7 +50,7 @@ it('generates opportunities idempotently and links the existing creator action',
         'description' => 'Clarify the first-use experience.',
     ]);
 
-    $planner = app(\App\Services\CreatorActionPlanner::class);
+    $planner = app(CreatorActionPlanner::class);
     $first = $planner->generate($evaluation, $organization, $creator);
     $second = $planner->generate($evaluation->refresh(), $organization, $creator);
 
@@ -58,7 +61,30 @@ it('generates opportunities idempotently and links the existing creator action',
         ->and($second->first()->improvement_opportunity_id)->toBe($first->first()->improvement_opportunity_id);
 });
 
-it('requires evidence before completion and preserves source provenance', function () {
+it('synchronizes creator action progress with its improvement opportunity', function () {
+    [$evaluation, $organization, $creator] = creatorActionEvaluationFixture();
+
+    $finding = Finding::query()->create([
+        'evaluation_id' => $evaluation->id,
+        'type' => 'weakness',
+        'severity' => 'high',
+        'title' => 'Improve onboarding',
+        'description' => 'Clarify the first-use experience.',
+    ]);
+
+    $actions = app(CreatorActionPlanner::class)->generate($evaluation, $organization, $creator);
+    $action = $actions->firstOrFail();
+    $opportunity = $action->improvementOpportunity()->firstOrFail();
+
+    app(CreatorActionWorkflow::class)->transition($action, $creator, CreatorActionStatus::InProgress);
+    expect($opportunity->fresh()->status)->toBe(ImprovementOpportunityStatus::InProgress);
+
+    app(CreatorActionWorkflow::class)->transition($action->refresh(), $creator, CreatorActionStatus::Completed);
+    expect($opportunity->fresh()->status)->toBe(ImprovementOpportunityStatus::Completed)
+        ->and($opportunity->fresh()->completion_evidence)->toContain('Creator action completed:');
+});
+
+it('requires evidence before direct opportunity completion and preserves source provenance', function () {
     [$evaluation, $organization, $creator] = creatorActionEvaluationFixture();
 
     $finding = Finding::query()->create([

@@ -2,8 +2,6 @@
 
 declare(strict_types=1);
 
-use App\Models\Evidence;
-use App\Models\Finding;
 use App\Models\User;
 use App\Services\AuditorEvidenceManagement;
 use App\Services\AuditorFindingManagement;

@@ -10,6 +10,7 @@ use App\Models\AuditorAssignment;
 use App\Models\AuditorEvaluation;
 use App\Models\ClarificationRequest;
 use App\Models\Dispute;
+use App\Models\DisputeReviewer;
 use App\Models\Evaluation;
 use App\Models\EvaluationRequest;
 use App\Models\Report;
@@ -28,6 +29,10 @@ final class RoleActionQueue
 
         if ($user->auditorProfile()->exists()) {
             return $this->forAuditor($user);
+        }
+
+        if ($user->disputeReviewerAssignments()->where('status', 'assigned')->exists()) {
+            return $this->forReviewer($user);
         }
 
         return $this->forCreator($user);
@@ -108,8 +113,8 @@ final class RoleActionQueue
         Dispute::query()
             ->whereIn('organization_id', $organizationIds)
             ->where('status', 'resolved')
-            ->whereNull('resolved_at')
-            ->orderByDesc('updated_at')
+            ->whereNotNull('resolved_at')
+            ->orderByDesc('resolved_at')
             ->limit(25)
             ->get()
             ->each(function (Dispute $dispute) use ($items): void {
@@ -121,7 +126,34 @@ final class RoleActionQueue
                     'dispute',
                     (int) $dispute->getKey(),
                     false,
-                    CarbonImmutable::instance($dispute->updated_at),
+                    CarbonImmutable::instance($dispute->resolved_at ?? $dispute->updated_at),
+                ));
+            });
+
+        return $items->sortByDesc(fn (ActionQueueItem $item): CarbonImmutable => $item->createdAt)->values();
+    }
+
+    /** @return Collection<int, ActionQueueItem> */
+    public function forReviewer(User $user): Collection
+    {
+        $items = collect();
+
+        DisputeReviewer::query()
+            ->where('reviewer_id', $user->getKey())
+            ->where('status', 'assigned')
+            ->orderByDesc('assigned_at')
+            ->limit(25)
+            ->get()
+            ->each(function (DisputeReviewer $review) use ($items): void {
+                $items->push(new ActionQueueItem(
+                    'dispute-review:'.$review->getKey(),
+                    'dispute',
+                    'Dispute review required',
+                    'Complete your independent review of the assigned formal dispute.',
+                    'dispute_reviewer',
+                    (int) $review->getKey(),
+                    false,
+                    CarbonImmutable::parse($review->assigned_at ?? $review->created_at ?? now()),
                 ));
             });
 

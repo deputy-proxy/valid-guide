@@ -15,6 +15,8 @@ use Illuminate\Support\Facades\DB;
 
 class ClarificationWorkflow
 {
+    public function __construct(private readonly WorkflowNotificationService $notifications) {}
+
     public function submit(
         Evaluation $evaluation,
         Organization $organization,
@@ -38,7 +40,7 @@ class ClarificationWorkflow
             throw new DomainStateTransitionException('A clarification request requires a message.');
         }
 
-        return DB::transaction(function () use ($evaluation, $organization, $submittedBy, $type, $message): ClarificationRequest {
+        $request = DB::transaction(function () use ($evaluation, $organization, $submittedBy, $type, $message): ClarificationRequest {
             $request = ClarificationRequest::query()->create([
                 'evaluation_id' => $evaluation->id,
                 'organization_id' => $organization->id,
@@ -57,6 +59,10 @@ class ClarificationWorkflow
 
             return $request->refresh();
         });
+
+        $this->notifications->clarificationSubmitted($request);
+
+        return $request;
     }
 
     public function answer(ClarificationRequest $request, User $answeredBy, string $response): ClarificationRequest
@@ -73,8 +79,12 @@ class ClarificationWorkflow
             throw new DomainStateTransitionException('A clarification answer requires a response.');
         }
 
-        return DB::transaction(function () use ($request, $answeredBy, $response): ClarificationRequest {
+        $request = DB::transaction(function () use ($request, $answeredBy, $response): ClarificationRequest {
             $request = ClarificationRequest::query()->whereKey($request->id)->lockForUpdate()->firstOrFail();
+            if ($request->status !== ClarificationRequestStatus::Open) {
+                throw new DomainStateTransitionException('Only open clarification requests can be answered.');
+            }
+
             $request->response = trim($response);
             $request->status = ClarificationRequestStatus::Answered;
             $request->save();
@@ -87,6 +97,10 @@ class ClarificationWorkflow
 
             return $request->refresh();
         });
+
+        $this->notifications->clarificationAnswered($request);
+
+        return $request;
     }
 
     public function close(ClarificationRequest $request, User $closedBy): ClarificationRequest
@@ -101,6 +115,10 @@ class ClarificationWorkflow
 
         return DB::transaction(function () use ($request, $closedBy): ClarificationRequest {
             $request = ClarificationRequest::query()->whereKey($request->id)->lockForUpdate()->firstOrFail();
+            if ($request->status !== ClarificationRequestStatus::Answered) {
+                throw new DomainStateTransitionException('Only answered clarification requests can be closed.');
+            }
+
             $request->status = ClarificationRequestStatus::Closed;
             $request->resolved_at = now();
             $request->resolved_by = $closedBy->id;

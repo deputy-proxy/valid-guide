@@ -17,6 +17,8 @@ use Illuminate\Support\Facades\DB;
 
 class DisputeWorkflow
 {
+    public function __construct(private readonly WorkflowNotificationService $notifications) {}
+
     /** @param array<int, DisputeGround|string> $grounds */
     public function submit(
         Evaluation $evaluation,
@@ -43,11 +45,16 @@ class DisputeWorkflow
         if ($normalizedGrounds === [] || collect($normalizedGrounds)->contains(fn (string $ground): bool => DisputeGround::tryFrom($ground) === null)) {
             throw new DomainStateTransitionException('A formal dispute must use only the approved dispute grounds.');
         }
-        if ($evaluation->disputes()->whereIn('status', [DisputeStatus::Submitted->value, DisputeStatus::UnderReview->value])->exists()) {
-            throw new DomainStateTransitionException('The evaluation already has an active formal dispute.');
-        }
 
-        return DB::transaction(function () use ($evaluation, $organization, $submittedBy, $normalizedGrounds, $statement): Dispute {
+        $dispute = DB::transaction(function () use ($evaluation, $organization, $submittedBy, $normalizedGrounds, $statement): Dispute {
+            $evaluation = Evaluation::query()->whereKey($evaluation->id)->lockForUpdate()->firstOrFail();
+            if ($evaluation->status !== EvaluationStatus::Completed) {
+                throw new DomainStateTransitionException('A formal dispute can only be submitted after an evaluation is completed.');
+            }
+            if ($evaluation->disputes()->whereIn('status', [DisputeStatus::Submitted->value, DisputeStatus::UnderReview->value])->exists()) {
+                throw new DomainStateTransitionException('The evaluation already has an active formal dispute.');
+            }
+
             $dispute = Dispute::query()->create([
                 'evaluation_id' => $evaluation->id,
                 'organization_id' => $organization->id,
@@ -66,6 +73,10 @@ class DisputeWorkflow
 
             return $dispute->refresh();
         });
+
+        $this->notifications->disputeSubmitted($dispute);
+
+        return $dispute;
     }
 
     public function assignReviewer(Dispute $dispute, User $reviewer, User $assignedBy): DisputeReviewer
@@ -81,7 +92,15 @@ class DisputeWorkflow
             throw new DomainStateTransitionException('The user is already assigned to this dispute.');
         }
 
-        return DB::transaction(function () use ($dispute, $reviewer, $assignedBy): DisputeReviewer {
+        [$review, $transitioned] = DB::transaction(function () use ($dispute, $reviewer, $assignedBy): array {
+            $dispute = Dispute::query()->whereKey($dispute->id)->lockForUpdate()->firstOrFail();
+            if (! in_array($dispute->status, [DisputeStatus::Submitted, DisputeStatus::UnderReview], true)) {
+                throw new DomainStateTransitionException('Reviewers can only be assigned to active disputes.');
+            }
+            if ($dispute->reviewers()->where('reviewer_id', $reviewer->id)->exists()) {
+                throw new DomainStateTransitionException('The user is already assigned to this dispute.');
+            }
+
             $review = DisputeReviewer::query()->create([
                 'dispute_id' => $dispute->id,
                 'reviewer_id' => $reviewer->id,
@@ -89,7 +108,8 @@ class DisputeWorkflow
                 'status' => 'assigned',
                 'assigned_at' => now(),
             ]);
-            if ($dispute->status === DisputeStatus::Submitted) {
+            $transitioned = $dispute->status === DisputeStatus::Submitted;
+            if ($transitioned) {
                 $dispute->status = DisputeStatus::UnderReview;
                 $dispute->save();
             }
@@ -98,8 +118,12 @@ class DisputeWorkflow
                 'assigned_by' => $assignedBy->id,
             ]);
 
-            return $review->refresh();
+            return [$review->refresh(), $transitioned];
         });
+
+        $this->notifications->disputeReviewerAssigned($dispute->refresh(), $reviewer, (int) $review->getKey());
+
+        return $review;
     }
 
     public function completeReview(DisputeReviewer $review, User $reviewer, string $notes): DisputeReviewer
@@ -116,6 +140,9 @@ class DisputeWorkflow
 
         return DB::transaction(function () use ($review, $reviewer, $notes): DisputeReviewer {
             $review = DisputeReviewer::query()->whereKey($review->id)->lockForUpdate()->firstOrFail();
+            if ($review->reviewer_id !== $reviewer->id || $review->status !== 'assigned') {
+                throw new DomainStateTransitionException('This dispute review is no longer active.');
+            }
             $review->status = 'completed';
             $review->completed_at = now();
             $review->review_notes = trim($notes);
@@ -140,8 +167,15 @@ class DisputeWorkflow
             throw new DomainStateTransitionException('A formal dispute resolution requires a rationale.');
         }
 
-        return DB::transaction(function () use ($dispute, $resolvedBy, $outcome, $rationale): array {
+        $result = DB::transaction(function () use ($dispute, $resolvedBy, $outcome, $rationale): array {
             $dispute = Dispute::query()->whereKey($dispute->id)->lockForUpdate()->firstOrFail();
+            if ($dispute->status !== DisputeStatus::UnderReview) {
+                throw new DomainStateTransitionException('Only disputes under review can be resolved.');
+            }
+            if ($dispute->reviewers()->where('status', 'completed')->doesntExist()) {
+                throw new DomainStateTransitionException('A formal dispute requires at least one completed independent review.');
+            }
+
             $dispute->status = DisputeStatus::Resolved;
             $dispute->outcome = $outcome;
             $dispute->decision_rationale = trim($rationale);
@@ -169,6 +203,10 @@ class DisputeWorkflow
                 'new_evaluation' => $newEvaluation?->refresh(),
             ];
         });
+
+        $this->notifications->disputeResolved($result['dispute']);
+
+        return $result;
     }
 
     private function isOriginalParticipant(Evaluation $evaluation, User $user): bool

@@ -127,7 +127,7 @@ final class CreatorReportAccess
         $results = $evaluation->auditorEvaluations
             ->filter(fn (AuditorEvaluation $auditorEvaluation): bool => $auditorEvaluation->locked_at !== null)
             ->flatMap(fn (AuditorEvaluation $auditorEvaluation) => $auditorEvaluation->criterionResults)
-            ->sortBy(fn ($result): int => $result->criterion?->sequence ?? PHP_INT_MAX)
+            ->sortBy(fn ($result): int => $result->criterion->sequence ?? PHP_INT_MAX)
             ->groupBy('criterion_id');
 
         return $results->map(function ($criterionResults): array {
@@ -156,6 +156,7 @@ final class CreatorReportAccess
     }
 
     /** @param array<int, string> $types */
+    /** @return array<int, array<string, mixed>> */
     private function creatorFindingsByType(Evaluation $evaluation, array $types): array
     {
         return $evaluation->findings

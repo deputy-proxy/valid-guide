@@ -4,8 +4,11 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Enums\EvaluationStatus;
 use App\Enums\OrganizationRole;
+use App\Models\AuditorEvaluation;
 use App\Models\Evaluation;
+use App\Models\Finding;
 use App\Models\ReportVersion;
 use App\Models\User;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -27,12 +30,23 @@ final class CreatorReportAccess
                 'validation.publicVerificationRecord',
                 'clarificationRequests',
                 'disputes',
+                'auditorEvaluations.criterionResults.criterion',
+                'findings.criterion',
+                'findings.auditorEvaluation',
             ])
             ->findOrFail($evaluationId);
 
         $organization = $evaluation->request?->organization;
-        if ($organization === null || ! $this->canAccess($user, $organization->id)) {
+        if ($organization === null) {
             throw new AuthorizationException('You are not authorized to access this creator report.');
+        }
+
+        if ($this->canAccess($user, $organization->id) === false) {
+            throw new AuthorizationException('You are not authorized to access this creator report.');
+        }
+
+        if ($evaluation->status !== EvaluationStatus::Completed) {
+            throw new AuthorizationException('This evaluation is not yet available to creators.');
         }
 
         $report = $evaluation->report;
@@ -67,6 +81,7 @@ final class CreatorReportAccess
                 'name' => $evaluation->standardVersion->standard?->name,
                 'version' => $evaluation->standardVersion->version,
             ],
+            'criteria' => $this->creatorCriteria($evaluation),
             'report' => [
                 'id' => $report->getKey(),
                 'current_version_id' => $currentVersion?->getKey(),
@@ -77,7 +92,9 @@ final class CreatorReportAccess
                     ->values()
                     ->all(),
             ],
-            'findings' => $currentVersion === null ? [] : $this->creatorFindings($currentVersion),
+            'findings' => $this->creatorFindings($evaluation),
+            'strengths' => $this->creatorFindingsByType($evaluation, 'strength', 'strengths'),
+            'weaknesses' => $this->creatorFindingsByType($evaluation, 'weakness', 'weaknesses'),
             'validation' => $this->validation($evaluation),
             'clarifications' => $evaluation->clarificationRequests
                 ->map(fn ($clarification): array => [
@@ -108,6 +125,64 @@ final class CreatorReportAccess
         ];
     }
 
+    /** @return array<int, array<string, mixed>> */
+    private function creatorCriteria(Evaluation $evaluation): array
+    {
+        $results = $evaluation->auditorEvaluations
+            ->filter(fn (AuditorEvaluation $auditorEvaluation): bool => $auditorEvaluation->locked_at !== null)
+            ->flatMap(fn (AuditorEvaluation $auditorEvaluation) => $auditorEvaluation->criterionResults)
+            ->sortBy(fn ($result): int => $result->criterion->sequence ?? PHP_INT_MAX)
+            ->groupBy('criterion_id');
+
+        return $results->map(function ($criterionResults): array {
+            $result = $criterionResults->sortByDesc('id')->first();
+            $criterion = $result?->criterion;
+
+            return [
+                'criterion_id' => $criterion?->getKey(),
+                'code' => $criterion?->code,
+                'name' => $criterion?->name,
+                'category' => $criterion?->category,
+                'assessment' => $this->enumValue($result?->getAttribute('assessment')),
+                'score' => $result?->getAttribute('score'),
+            ];
+        })->values()->all();
+    }
+
+    /** @return array<int, array<string, mixed>> */
+    private function creatorFindings(Evaluation $evaluation): array
+    {
+        return $evaluation->findings
+            ->filter(fn (Finding $finding): bool => $finding->auditor_evaluation_id === null || $finding->auditorEvaluation?->locked_at !== null)
+            ->map(fn (Finding $finding): array => $this->creatorFinding($finding))
+            ->values()
+            ->all();
+    }
+
+    /** @return array<int, array<string, mixed>> */
+    private function creatorFindingsByType(Evaluation $evaluation, string ...$types): array
+    {
+        return $evaluation->findings
+            ->filter(fn (Finding $finding): bool => in_array(strtolower((string) $finding->type), $types, true))
+            ->filter(fn (Finding $finding): bool => $finding->auditor_evaluation_id === null || $finding->auditorEvaluation?->locked_at !== null)
+            ->map(fn (Finding $finding): array => $this->creatorFinding($finding))
+            ->values()
+            ->all();
+    }
+
+    /** @return array<string, mixed> */
+    private function creatorFinding(Finding $finding): array
+    {
+        return [
+            'id' => $finding->getKey(),
+            'type' => (string) $finding->getAttribute('type'),
+            'severity' => $finding->getAttribute('severity'),
+            'criterion' => $finding->criterion?->code,
+            'title' => (string) $finding->getAttribute('title'),
+            'description' => (string) $finding->getAttribute('description'),
+        ];
+    }
+
     /** @return array<string, mixed> */
     private function reportVersion(ReportVersion $version): array
     {
@@ -115,28 +190,22 @@ final class CreatorReportAccess
             'id' => $version->getKey(),
             'version_number' => $version->version_number,
             'abstract' => $version->abstract,
-            'content_structure' => $version->content_structure,
+            'content_structure' => $this->creatorContentStructure($version->content_structure),
             'created_at' => $this->dateString($version->getAttribute('created_at')),
         ];
     }
 
-    /** @return array<int, array<string, mixed>> */
-    private function creatorFindings(ReportVersion $version): array
+    /** @return array<string, string> */
+    private function creatorContentStructure(mixed $contentStructure): array
     {
-        $content = $version->getAttribute('content_structure');
-        if (! is_array($content)) {
-            return [];
+        if (is_array($contentStructure)) {
+            $summary = $contentStructure['sections']['summary'] ?? null;
+            if (is_scalar($summary)) {
+                return ['summary' => (string) $summary];
+            }
         }
 
-        $findings = $content['findings'] ?? [];
-        if (! is_array($findings)) {
-            return [];
-        }
-
-        return array_values(array_filter(
-            $findings,
-            static fn (mixed $finding): bool => is_array($finding),
-        ));
+        return [];
     }
 
     /** @return array<string, mixed>|null */

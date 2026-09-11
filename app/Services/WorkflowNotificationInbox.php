@@ -67,12 +67,14 @@ final class WorkflowNotificationInbox
         return match ($eventType) {
             NotificationEventType::AuditorAssignmentCreated => $this->assignmentIsStale($context),
             NotificationEventType::AuditorEvaluationSubmitted => $this->auditorEvaluationIsStale($context),
+            NotificationEventType::EvaluationDecisionRecorded,
+            NotificationEventType::ValidationIssued,
+            NotificationEventType::DisputeResolved => false,
             NotificationEventType::ReportDelivered => $this->reportIsStale($context),
             NotificationEventType::ClarificationSubmitted => $this->clarificationIsStale($context, 'open'),
             NotificationEventType::ClarificationAnswered => $this->clarificationIsStale($context, 'answered'),
             NotificationEventType::DisputeSubmitted => $this->disputeIsStale($context),
             NotificationEventType::DisputeReviewerAssigned => $this->reviewerIsStale($context),
-            NotificationEventType::DisputeResolved => $this->disputeIsStale($context, true),
             null => true,
         };
     }

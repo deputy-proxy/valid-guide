@@ -16,17 +16,20 @@ Suspended, revoked or superseded Validation records are excluded. A Validation f
 
 Recommendations use only explicit public matching signals supplied by the discovery context. Each matching signal contributes one point:
 
-1. audience;
-2. use case/goal;
-3. product type;
-4. subject area;
-5. language.
+1. search query, when present;
+2. audience;
+3. use case/goal;
+4. product type;
+5. subject area;
+6. language.
+
+A text search narrows the candidate set to the same public title, creator or subject-area search fields used by the directory. Every candidate surviving that search receives one search-match point.
+
+For structured criteria, a candidate receives a point only when its public metadata explicitly matches the supplied value. A candidate with at least one supplied structured criterion must have at least one matching signal to be recommended. With no criteria at all, eligible validated products are returned in deterministic order.
 
 A product with more matching signals ranks above one with fewer matching signals. Ties are resolved by title and then verification identifier, both case-insensitively, so the same input produces stable ordering.
 
 The numeric score is an internal relevance mechanism. It is not presented as a product-quality or Validation score.
-
-A text search query narrows the candidate set to the same public title, creator or subject-area search fields used by the directory. Other supplied criteria contribute to recommendation relevance rather than silently changing Validation status.
 
 ## Explanations
 
@@ -38,7 +41,7 @@ Explanations must not claim guaranteed learner outcomes, universal suitability, 
 
 Missing audience, goal, subject-area or language metadata receives no match credit. Missing data does not cause an exception or create an inferred match.
 
-If no matching signals are supplied, eligible validated products are still returned in deterministic order so the directory can degrade safely into public discovery. If no eligible products exist, the recommendation module is omitted and the directory's existing no-results state is shown.
+If structured criteria are supplied but no candidate has a matching signal, the recommendation module is omitted. If no eligible products exist, the recommendation module is also omitted and the directory's existing no-results state is shown.
 
 ## Commercial independence
 

@@ -9,7 +9,5 @@ use Illuminate\Contracts\Events\ShouldDispatchAfterCommit;
 
 final readonly class ReportDelivered implements ShouldDispatchAfterCommit
 {
-    public function __construct(public Report $report)
-    {
-    }
+    public function __construct(public Report $report) {}
 }

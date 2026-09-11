@@ -30,6 +30,7 @@ class CreatorAction extends Model
         'evaluation_id',
         'finding_id',
         'improvement_guidance_id',
+        'improvement_opportunity_id',
         'created_by',
         'assigned_to',
         'title',
@@ -74,6 +75,14 @@ class CreatorAction extends Model
                     throw new DomainStateTransitionException('A creator action guidance must belong to the action evaluation and organization.');
                 }
             }
+
+            if ($action->improvement_opportunity_id !== null) {
+                $opportunity = ImprovementOpportunity::query()->find($action->improvement_opportunity_id);
+
+                if ($opportunity === null || $opportunity->evaluation_id !== $action->evaluation_id || $opportunity->organization_id !== $action->organization_id) {
+                    throw new DomainStateTransitionException('A creator action opportunity must belong to the action evaluation and organization.');
+                }
+            }
         });
     }
 
@@ -99,6 +108,12 @@ class CreatorAction extends Model
     public function improvementGuidance(): BelongsTo
     {
         return $this->belongsTo(ImprovementGuidance::class);
+    }
+
+    /** @return BelongsTo<ImprovementOpportunity, $this> */
+    public function improvementOpportunity(): BelongsTo
+    {
+        return $this->belongsTo(ImprovementOpportunity::class);
     }
 
     /** @return BelongsTo<User, $this> */

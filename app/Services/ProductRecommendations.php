@@ -9,6 +9,7 @@ use App\Enums\ProductGoal;
 use App\Enums\ProductType;
 use App\Enums\ValidationStatus;
 use App\Models\PublicDirectoryEntry;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 
 class ProductRecommendations
@@ -32,8 +33,8 @@ class ProductRecommendations
         $entries = PublicDirectoryEntry::query()
             ->where('directory_visible', true)
             ->where('validation_status', ValidationStatus::Active->value)
-            ->when($query !== null && $query !== '', function ($builder) use ($query): void {
-                $builder->where(function ($builder) use ($query): void {
+            ->when($query !== null && $query !== '', function (Builder $builder) use ($query): void {
+                $builder->where(function (Builder $builder) use ($query): void {
                     $builder->where('title', 'like', '%'.$query.'%')
                         ->orWhere('creator_name', 'like', '%'.$query.'%')
                         ->orWhere('subject_area', 'like', '%'.$query.'%');
@@ -76,6 +77,7 @@ class ProductRecommendations
         ?string $language,
     ): ProductRecommendation {
         $score = 0;
+        /** @var list<string> $reasons */
         $reasons = [];
 
         if ($audience !== null && $this->contains($entry->matching_audiences, $audience->value)) {
@@ -106,7 +108,6 @@ class ProductRecommendations
         $reasons[] = sprintf('Currently validated for release %s.', $entry->release_identifier);
 
         return new ProductRecommendation(
-            productId: (int) $entry->getKey(),
             title: (string) $entry->title,
             slug: (string) $entry->slug,
             productType: $entry->product_type,

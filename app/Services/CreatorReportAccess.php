@@ -186,9 +186,24 @@ final class CreatorReportAccess
             'id' => $version->getKey(),
             'version_number' => $version->version_number,
             'abstract' => $version->abstract,
-            'content_structure' => $version->content_structure,
+            'content_structure' => $this->creatorContentStructure($version->content_structure),
             'created_at' => $this->dateString($version->getAttribute('created_at')),
         ];
+    }
+
+    /** @return array<string, string> */
+    private function creatorContentStructure(mixed $contentStructure): array
+    {
+        if (! is_array($contentStructure)) {
+            return [];
+        }
+
+        $summary = $contentStructure['sections']['summary'] ?? null;
+        if (! is_scalar($summary)) {
+            return [];
+        }
+
+        return ['summary' => (string) $summary];
     }
 
     /** @return array<string, mixed>|null */

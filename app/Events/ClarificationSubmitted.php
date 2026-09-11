@@ -9,7 +9,5 @@ use Illuminate\Contracts\Events\ShouldDispatchAfterCommit;
 
 final readonly class ClarificationSubmitted implements ShouldDispatchAfterCommit
 {
-    public function __construct(public ClarificationRequest $request)
-    {
-    }
+    public function __construct(public ClarificationRequest $request) {}
 }

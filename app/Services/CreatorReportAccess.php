@@ -201,7 +201,7 @@ final class CreatorReportAccess
         }
 
         return in_array(
-            (string) $membership->getAttribute('pivot_role'),
+            (string) $membership->pivot->getAttribute('role'),
             [
                 OrganizationRole::Owner->value,
                 OrganizationRole::Admin->value,

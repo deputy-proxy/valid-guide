@@ -92,7 +92,11 @@
             </x-filament::button>
 
             @if ($this->canContinue())
-                <x-filament::button disabled icon="heroicon-m-arrow-right">
+                <x-filament::button
+                    tag="a"
+                    :href="\App\Filament\Auditor\Pages\Evaluation::getUrl(['assignment' => $assignment->getKey()])"
+                    icon="heroicon-m-arrow-right"
+                >
                     Evaluation workspace
                 </x-filament::button>
             @endif

@@ -6,9 +6,10 @@ namespace App\Filament\Auditor\Pages;
 
 use App\Models\User;
 use App\Services\AuditorProfileManagement;
-use Illuminate\Auth\Access\AuthorizationException;
+use BackedEnum;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
+use Illuminate\Auth\Access\AuthorizationException;
 
 final class Profile extends Page
 {
@@ -18,7 +19,7 @@ final class Profile extends Page
 
     protected static ?string $navigationLabel = 'My Profile';
 
-    protected static ?string $navigationIcon = 'heroicon-o-user-circle';
+    protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-user-circle';
 
     protected static ?string $title = 'My Auditor Profile';
 

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Filament\Pages;
 
+use App\Enums\RefundStatus;
 use App\Models\EvaluationRequest;
 use App\Models\User;
 use App\Services\CreatorDashboard as CreatorDashboardService;
@@ -57,9 +58,9 @@ final class CreatorDashboardPage extends Page
         try {
             $refund = app(CreatorRefundService::class)->refund($request, $actor);
 
-            if ($refund->status->value === 'succeeded') {
+            if ($refund->status === RefundStatus::Succeeded) {
                 Notification::make()->success()->title('Refund completed')->send();
-            } elseif ($refund->status->value === 'processing') {
+            } elseif ($refund->status === RefundStatus::Processing) {
                 Notification::make()->warning()->title('Refund is processing')->send();
             } else {
                 Notification::make()->danger()->title('Refund was not completed')->send();
@@ -76,7 +77,6 @@ final class CreatorDashboardPage extends Page
         $this->loadDashboard();
     }
 
-    /** @return array<string, mixed> */
     public function actionUrl(string $action, int|string $requestId): ?string
     {
         $requestId = (int) $requestId;

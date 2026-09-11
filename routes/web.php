@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\CreatorPaymentStatusController;
+use App\Http\Controllers\PublicDirectoryController;
 use App\Http\Controllers\PublicVerificationController;
 use App\Http\Controllers\StripeWebhookController;
 use App\Livewire\Creator\EvaluationRequests\CreateEvaluationRequest;
@@ -28,6 +29,7 @@ Route::view('for-buyers', 'public.pages.placeholder', [
     'message' => 'The buyer and learner information experience is being prepared for publication.',
 ])->name('public.buyers');
 
+Route::get('directory', [PublicDirectoryController::class, 'index'])->name('public.directory');
 Route::get('verify', [PublicVerificationController::class, 'index'])->name('public.verify');
 Route::get('verify/{verificationIdentifier}', [PublicVerificationController::class, 'show'])
     ->where('verificationIdentifier', '[A-Za-z0-9][A-Za-z0-9._-]{0,99}')

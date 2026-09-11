@@ -53,7 +53,7 @@ final class AuditorEvaluationWorkspace
     public function criteria(AuditorEvaluation $evaluation): Collection
     {
         return $evaluation->evaluation->standardVersion->criteria
-            ->sortBy('sequence')
+            ->sortBy(fn (Criterion $criterion): int => $criterion->sequence ?? PHP_INT_MAX)
             ->values();
     }
 

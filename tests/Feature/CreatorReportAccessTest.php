@@ -125,7 +125,7 @@ it('blocks Livewire report access for another tenant', function () {
     [$evaluation, $admin] = creatorReportFixture();
     app(ReportVersioning::class)->createInitial($evaluation, $admin);
 
-    expect(fn () => Livewire::actingAs(User::factory()->create())
-        ->test(ShowReport::class, ['evaluationId' => $evaluation->id]))
-        ->toThrow(AuthorizationException::class);
+    Livewire::actingAs(User::factory()->create())
+        ->test(ShowReport::class, ['evaluationId' => $evaluation->id])
+        ->assertStatus(403);
 });

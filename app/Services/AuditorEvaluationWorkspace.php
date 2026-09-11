@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Enums\AudiencePromiseCoherence;
 use App\Enums\CriterionAssessment;
+use App\Enums\EvidenceSufficiency;
 use App\Models\AuditorEvaluation;
 use App\Models\Criterion;
 use App\Models\CriterionResult;
@@ -36,8 +38,10 @@ final class AuditorEvaluationWorkspace
                 'evaluation.request',
                 'evaluation.standardVersion',
                 'evaluation.standardVersion.criteria.guidance',
-                'criterionResults',
+                'criterionResults.evidence',
+                'criterionResults.criterion',
                 'evidence',
+                'findings.criterion',
             ])
             ->latest('version')
             ->first();
@@ -141,6 +145,53 @@ final class AuditorEvaluationWorkspace
             $result->save();
 
             return $result->refresh();
+        });
+    }
+
+    public function saveDecisionGates(
+        User $user,
+        AuditorEvaluation $evaluation,
+        string $evidenceSufficiency,
+        string $audiencePromiseCoherence,
+    ): AuditorEvaluation {
+        return DB::transaction(function () use ($user, $evaluation, $evidenceSufficiency, $audiencePromiseCoherence): AuditorEvaluation {
+            $lockedEvaluation = AuditorEvaluation::query()
+                ->whereKey($evaluation->getKey())
+                ->lockForUpdate()
+                ->firstOrFail();
+            $assignment = $lockedEvaluation->assignment()->lockForUpdate()->firstOrFail();
+
+            if ((int) $assignment->auditor_id !== (int) $user->getKey()
+                || $this->assignmentAccess->hasSubstantiveWorkAccess($assignment) === false) {
+                throw new AuthorizationException('You are not authorized to modify this evaluation.');
+            }
+
+            if ($lockedEvaluation->locked_at !== null || $lockedEvaluation->status !== 'draft') {
+                throw new AuthorizationException('Submitted Auditor evaluations are immutable.');
+            }
+
+            $evidence = EvidenceSufficiency::tryFrom($evidenceSufficiency);
+            $coherence = AudiencePromiseCoherence::tryFrom($audiencePromiseCoherence);
+
+            if ($evidence === null) {
+                throw ValidationException::withMessages([
+                    'evidenceSufficiency' => 'Select a valid evidence sufficiency conclusion.',
+                ]);
+            }
+
+            if ($coherence === null) {
+                throw ValidationException::withMessages([
+                    'audiencePromiseCoherence' => 'Select a valid audience and promise coherence conclusion.',
+                ]);
+            }
+
+            $lockedEvaluation->fill([
+                'evidence_sufficiency' => $evidence,
+                'audience_promise_coherence' => $coherence,
+            ]);
+            $lockedEvaluation->save();
+
+            return $lockedEvaluation->refresh();
         });
     }
 }

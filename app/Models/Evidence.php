@@ -1,7 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models;
 
+use App\Services\DomainStateTransitionException;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -32,6 +35,27 @@ class Evidence extends Model
         return [
             'captured_at' => 'datetime',
         ];
+    }
+
+    protected static function booted(): void
+    {
+        static::saving(function (self $evidence): void {
+            if ($evidence->auditor_evaluation_id === null) {
+                return;
+            }
+
+            $auditorEvaluation = AuditorEvaluation::query()->find($evidence->auditor_evaluation_id);
+            if ($auditorEvaluation?->locked_at !== null) {
+                throw new DomainStateTransitionException('Evidence belonging to a submitted Auditor evaluation is immutable.');
+            }
+        });
+
+        static::deleting(function (self $evidence): void {
+            $auditorEvaluation = $evidence->auditorEvaluation()->first();
+            if ($auditorEvaluation?->locked_at !== null) {
+                throw new DomainStateTransitionException('Evidence belonging to a submitted Auditor evaluation is immutable.');
+            }
+        });
     }
 
     /** @return BelongsTo<Evaluation, $this> */

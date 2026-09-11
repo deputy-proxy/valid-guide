@@ -4,12 +4,18 @@ declare(strict_types=1);
 
 namespace App\Filament\Auditor\Pages;
 
+use App\Enums\AudiencePromiseCoherence;
 use App\Enums\CriterionAssessment;
+use App\Enums\EvidenceSufficiency;
 use App\Models\AuditorEvaluation;
 use App\Models\CriterionResult;
+use App\Models\Evidence;
+use App\Models\Finding;
 use App\Models\User;
 use App\Services\AuditorEvaluationSubmission;
 use App\Services\AuditorEvaluationWorkspace;
+use App\Services\AuditorEvidenceManagement;
+use App\Services\AuditorFindingManagement;
 use App\Services\DomainStateTransitionException;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
@@ -31,6 +37,29 @@ final class Evaluation extends Page
     /** @var array<int,array{assessment:string,score:string,rationale:string,confidence:string}> */
     public array $drafts = [];
 
+    /** @var array{criterion_id:string,type:string,title:string,description:string,source_url:string,provenance:string} */
+    public array $evidenceDraft = [
+        'criterion_id' => '',
+        'type' => 'link',
+        'title' => '',
+        'description' => '',
+        'source_url' => '',
+        'provenance' => 'observed',
+    ];
+
+    /** @var array{criterion_id:string,type:string,severity:string,title:string,description:string} */
+    public array $findingDraft = [
+        'criterion_id' => '',
+        'type' => 'weakness',
+        'severity' => 'medium',
+        'title' => '',
+        'description' => '',
+    ];
+
+    public string $evidenceSufficiency = '';
+
+    public string $audiencePromiseCoherence = '';
+
     public string $saveState = 'saved';
 
     public function mount(string $assignment): void
@@ -42,6 +71,8 @@ final class Evaluation extends Page
         }
 
         $this->auditorEvaluation = app(AuditorEvaluationWorkspace::class)->findFor($user, $assignment);
+        $this->evidenceSufficiency = $this->auditorEvaluation->evidence_sufficiency->value;
+        $this->audiencePromiseCoherence = $this->auditorEvaluation->audience_promise_coherence->value;
         $this->hydrateDrafts();
     }
 
@@ -88,6 +119,154 @@ final class Evaluation extends Page
         }
     }
 
+    public function saveDecisionGates(): void
+    {
+        $user = auth()->user();
+
+        if (! $user instanceof User) {
+            throw new AuthorizationException('You are not authorized to modify this evaluation.');
+        }
+
+        try {
+            app(AuditorEvaluationWorkspace::class)->saveDecisionGates(
+                $user,
+                $this->auditorEvaluation,
+                $this->evidenceSufficiency,
+                $this->audiencePromiseCoherence,
+            );
+            $this->auditorEvaluation->refresh();
+            $this->saveState = 'saved';
+
+            Notification::make()
+                ->title('Decision gates saved')
+                ->success()
+                ->send();
+        } catch (AuthorizationException|ValidationException|DomainStateTransitionException $exception) {
+            $this->saveState = 'failed';
+
+            Notification::make()
+                ->title('Unable to save decision gates')
+                ->body($exception->getMessage())
+                ->danger()
+                ->send();
+        }
+    }
+
+    public function addEvidence(): void
+    {
+        $user = auth()->user();
+
+        if (! $user instanceof User) {
+            throw new AuthorizationException('You are not authorized to add evidence.');
+        }
+
+        try {
+            app(AuditorEvidenceManagement::class)->create($user, $this->auditorEvaluation, $this->evidenceDraft);
+            $this->auditorEvaluation->refresh();
+            $this->evidenceDraft = [
+                'criterion_id' => '',
+                'type' => 'link',
+                'title' => '',
+                'description' => '',
+                'source_url' => '',
+                'provenance' => 'observed',
+            ];
+            $this->saveState = 'saved';
+
+            Notification::make()
+                ->title('Evidence reference saved')
+                ->success()
+                ->send();
+        } catch (AuthorizationException|ValidationException|DomainStateTransitionException $exception) {
+            $this->saveState = 'failed';
+
+            Notification::make()
+                ->title('Unable to save evidence')
+                ->body($exception->getMessage())
+                ->danger()
+                ->send();
+        }
+    }
+
+    public function deleteEvidence(int $evidenceId): void
+    {
+        $user = auth()->user();
+
+        if (! $user instanceof User) {
+            throw new AuthorizationException('You are not authorized to delete evidence.');
+        }
+
+        $evidence = Evidence::query()->findOrFail($evidenceId);
+
+        try {
+            app(AuditorEvidenceManagement::class)->delete($user, $evidence);
+            $this->auditorEvaluation->refresh();
+        } catch (AuthorizationException|DomainStateTransitionException $exception) {
+            Notification::make()
+                ->title('Unable to delete evidence')
+                ->body($exception->getMessage())
+                ->danger()
+                ->send();
+        }
+    }
+
+    public function addFinding(): void
+    {
+        $user = auth()->user();
+
+        if (! $user instanceof User) {
+            throw new AuthorizationException('You are not authorized to add findings.');
+        }
+
+        try {
+            app(AuditorFindingManagement::class)->create($user, $this->auditorEvaluation, $this->findingDraft);
+            $this->auditorEvaluation->refresh();
+            $this->findingDraft = [
+                'criterion_id' => '',
+                'type' => 'weakness',
+                'severity' => 'medium',
+                'title' => '',
+                'description' => '',
+            ];
+            $this->saveState = 'saved';
+
+            Notification::make()
+                ->title('Finding saved')
+                ->success()
+                ->send();
+        } catch (AuthorizationException|ValidationException|DomainStateTransitionException $exception) {
+            $this->saveState = 'failed';
+
+            Notification::make()
+                ->title('Unable to save finding')
+                ->body($exception->getMessage())
+                ->danger()
+                ->send();
+        }
+    }
+
+    public function deleteFinding(int $findingId): void
+    {
+        $user = auth()->user();
+
+        if (! $user instanceof User) {
+            throw new AuthorizationException('You are not authorized to delete findings.');
+        }
+
+        $finding = Finding::query()->findOrFail($findingId);
+
+        try {
+            app(AuditorFindingManagement::class)->delete($user, $finding);
+            $this->auditorEvaluation->refresh();
+        } catch (AuthorizationException|DomainStateTransitionException $exception) {
+            Notification::make()
+                ->title('Unable to delete finding')
+                ->body($exception->getMessage())
+                ->danger()
+                ->send();
+        }
+    }
+
     public function submit(): void
     {
         $user = auth()->user();
@@ -106,6 +285,11 @@ final class Evaluation extends Page
             if ($this->saveState === 'failed') {
                 return;
             }
+        }
+
+        $this->saveDecisionGates();
+        if ($this->saveState === 'failed') {
+            return;
         }
 
         try {
@@ -147,6 +331,71 @@ final class Evaluation extends Page
                 $assessment->value => str($assessment->value)->replace('_', ' ')->headline()->toString(),
             ])
             ->all();
+    }
+
+    /** @return array<string,string> */
+    public function evidenceSufficiencyOptions(): array
+    {
+        return collect(EvidenceSufficiency::cases())
+            ->mapWithKeys(fn (EvidenceSufficiency $value): array => [
+                $value->value => str($value->value)->replace('_', ' ')->headline()->toString(),
+            ])
+            ->all();
+    }
+
+    /** @return array<string,string> */
+    public function audiencePromiseCoherenceOptions(): array
+    {
+        return collect(AudiencePromiseCoherence::cases())
+            ->mapWithKeys(fn (AudiencePromiseCoherence $value): array => [
+                $value->value => str($value->value)->replace('_', ' ')->headline()->toString(),
+            ])
+            ->all();
+    }
+
+    /** @return array<string,string> */
+    public function evidenceTypeOptions(): array
+    {
+        return [
+            'observation' => 'Observation',
+            'document' => 'Document',
+            'link' => 'Link',
+            'reference' => 'Reference',
+        ];
+    }
+
+    /** @return array<string,string> */
+    public function evidenceProvenanceOptions(): array
+    {
+        return [
+            'observed' => 'Observed evidence',
+            'creator_supplied' => 'Creator-supplied evidence',
+            'external' => 'External evidence',
+            'professional_judgement' => 'Professional judgement',
+        ];
+    }
+
+    /** @return array<string,string> */
+    public function findingTypeOptions(): array
+    {
+        return [
+            'strength' => 'Strength',
+            'weakness' => 'Weakness',
+            'risk' => 'Risk',
+            'recommendation' => 'Recommendation',
+            'factual_clarification' => 'Factual clarification',
+        ];
+    }
+
+    /** @return array<string,string> */
+    public function findingSeverityOptions(): array
+    {
+        return [
+            'low' => 'Low',
+            'medium' => 'Medium',
+            'high' => 'High',
+            'critical' => 'Critical',
+        ];
     }
 
     public function resultFor(int $criterionId): ?CriterionResult

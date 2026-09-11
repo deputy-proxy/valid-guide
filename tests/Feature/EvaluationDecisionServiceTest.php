@@ -6,6 +6,7 @@ use App\Enums\AudiencePromiseCoherence;
 use App\Enums\CriterionVotingMode;
 use App\Enums\EvaluationStatus;
 use App\Enums\EvidenceSufficiency;
+use App\Enums\NotificationEventType;
 use App\Enums\PlatformRole;
 use App\Models\AuditorAssignment;
 use App\Models\AuditorEvaluation;
@@ -20,9 +21,11 @@ use App\Models\Product;
 use App\Models\ProductRelease;
 use App\Models\StandardVersion;
 use App\Models\User;
+use App\Notifications\WorkflowNotification;
 use App\Services\DomainStateTransitionException;
 use App\Services\EvaluationDecisionService;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Notifications\DatabaseNotification;
 
 function decisionFixture(float $score = 80, bool $withSubmission = true): array
 {
@@ -249,4 +252,25 @@ test('evaluation decisions cannot be changed or deleted', function () {
 
     expect(fn () => $decision->delete())
         ->toThrow(DomainStateTransitionException::class);
+});
+
+test('recording an evaluation decision notifies the creator organization', function () {
+    [$evaluation, $decider] = decisionFixture();
+    $creator = User::factory()->create();
+    $evaluation->request->organization->users()->attach($creator, ['role' => 'owner']);
+
+    $decision = app(EvaluationDecisionService::class)->decide($evaluation, $decider);
+
+    $notification = DatabaseNotification::query()
+        ->where('notifiable_type', User::class)
+        ->where('notifiable_id', $creator->id)
+        ->where('type', WorkflowNotification::class)
+        ->first();
+
+    expect($notification)->not->toBeNull()
+        ->and($notification?->data['event_type'])->toBe(NotificationEventType::EvaluationDecisionRecorded->value)
+        ->and($notification?->data['context'])->toMatchArray([
+            'evaluation_decision_id' => $decision->id,
+            'evaluation_id' => $evaluation->id,
+        ]);
 });

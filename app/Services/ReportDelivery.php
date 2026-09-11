@@ -19,7 +19,7 @@ class ReportDelivery
             throw new DomainStateTransitionException('Only platform administrators can record report delivery.');
         }
 
-        return DB::transaction(function () use ($report): Report {
+        $deliveredReport = DB::transaction(function () use ($report): Report {
             $report = Report::query()->whereKey($report->getKey())->lockForUpdate()->firstOrFail();
             /** @var Report $report */
             if ($report->delivered_at !== null) {
@@ -68,5 +68,9 @@ class ReportDelivery
 
             return $report;
         });
+
+        app(WorkflowNotificationService::class)->reportDelivered($deliveredReport);
+
+        return $deliveredReport;
     }
 }

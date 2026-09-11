@@ -10,6 +10,7 @@ use App\Models\AuditorEvaluation;
 use App\Models\ClarificationRequest;
 use App\Models\Dispute;
 use App\Models\DisputeReviewer;
+use App\Models\EvaluationDecision;
 use App\Models\Report;
 use App\Services\WorkflowNotificationService;
 
@@ -25,6 +26,9 @@ final class DispatchWorkflowNotification
                 : null,
             'auditor_evaluation.submitted' => $event->auditable instanceof AuditorEvaluation
                 ? $service->auditorEvaluationSubmitted($event->auditable)
+                : null,
+            'evaluation.decision_recorded' => $event->auditable instanceof EvaluationDecision
+                ? $service->evaluationDecisionRecorded($event->auditable)
                 : null,
             'report.delivered' => $event->auditable instanceof Report
                 ? $service->reportDelivered($event->auditable)

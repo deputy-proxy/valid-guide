@@ -13,7 +13,6 @@ final readonly class ProductRecommendation
      * @param list<string> $reasons
      */
     public function __construct(
-        public int $productId,
         public string $title,
         public string $slug,
         public ProductType $productType,

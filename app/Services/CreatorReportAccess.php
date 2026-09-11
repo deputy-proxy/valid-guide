@@ -45,7 +45,7 @@ final class CreatorReportAccess
         return [
             'evaluation' => [
                 'id' => $evaluation->getKey(),
-                'status' => (string) $evaluation->getAttribute('status'),
+                'status' => $this->enumValue($evaluation->getAttribute('status')),
                 'decision' => (string) $evaluation->getAttribute('decision'),
                 'overall_score' => $evaluation->getAttribute('overall_score'),
                 'completed_at' => $this->dateString($evaluation->getAttribute('completed_at')),

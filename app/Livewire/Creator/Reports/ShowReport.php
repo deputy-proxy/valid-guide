@@ -5,11 +5,14 @@ declare(strict_types=1);
 namespace App\Livewire\Creator\Reports;
 
 use App\Enums\ClarificationRequestType;
+use App\Enums\CreatorActionStatus;
 use App\Enums\DisputeGround;
 use App\Models\Evaluation;
 use App\Models\Organization;
 use App\Models\User;
 use App\Services\ClarificationWorkflow;
+use App\Services\CreatorActionPlanner;
+use App\Services\CreatorActionWorkflow;
 use App\Services\CreatorReportAccess;
 use App\Services\DisputeWorkflow;
 use App\Services\DomainStateTransitionException;
@@ -43,6 +46,8 @@ final class ShowReport extends Component
     {
         $this->evaluationId = (int) $evaluationId;
         $this->loadReport();
+        $this->generateActionPlan();
+        $this->loadReport();
     }
 
     public function render(): View
@@ -71,6 +76,37 @@ final class ShowReport extends Component
 
         $this->resetErrorBag('version');
         $this->selectedVersionId = $versionId;
+    }
+
+    public function transitionAction(int $actionId, string $status): void
+    {
+        $this->resetErrorBag('action');
+
+        try {
+            $actionStatus = CreatorActionStatus::tryFrom($status);
+            if ($actionStatus === null) {
+                throw new DomainStateTransitionException('The creator action status is invalid.');
+            }
+
+            $action = $this->evaluation()
+                ->creatorActions()
+                ->whereKey($actionId)
+                ->firstOrFail();
+
+            app(CreatorActionWorkflow::class)->transition(
+                $action,
+                $this->authenticatedUser(),
+                $actionStatus,
+            );
+
+            $this->loadReport();
+            session()->flash('success', 'Creator action updated.');
+        } catch (AuthorizationException|DomainStateTransitionException $exception) {
+            $this->addError('action', $exception->getMessage());
+        } catch (Throwable $exception) {
+            report($exception);
+            $this->addError('action', 'The creator action could not be updated.');
+        }
     }
 
     public function submitClarification(): void
@@ -162,6 +198,16 @@ final class ShowReport extends Component
                 $ground->value => str($ground->value)->replace('_', ' ')->headline()->toString(),
             ])
             ->all();
+    }
+
+    private function generateActionPlan(): void
+    {
+        $evaluation = $this->evaluation();
+        app(CreatorActionPlanner::class)->generate(
+            $evaluation,
+            $this->creatorOrganization($evaluation),
+            $this->authenticatedUser(),
+        );
     }
 
     private function loadReport(): void

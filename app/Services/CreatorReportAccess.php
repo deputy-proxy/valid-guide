@@ -7,6 +7,7 @@ namespace App\Services;
 use App\Enums\EvaluationStatus;
 use App\Enums\OrganizationRole;
 use App\Models\AuditorEvaluation;
+use App\Models\CreatorAction;
 use App\Models\Evaluation;
 use App\Models\Finding;
 use App\Models\ReportVersion;
@@ -33,6 +34,8 @@ final class CreatorReportAccess
                 'auditorEvaluations.criterionResults.criterion',
                 'findings.criterion',
                 'findings.auditorEvaluation',
+                'creatorActions.assignee',
+                'creatorActions.finding',
             ])
             ->findOrFail($evaluationId);
 
@@ -118,9 +121,54 @@ final class CreatorReportAccess
                 ])
                 ->values()
                 ->all(),
-            'actions' => [
-                'can_request_clarification' => true,
-                'can_dispute' => true,
+            'actions' => $this->creatorActions($evaluation),
+        ];
+    }
+
+    /** @return array<string, mixed> */
+    private function creatorActions(Evaluation $evaluation): array
+    {
+        $items = $evaluation->creatorActions
+            ->map(fn (CreatorAction $action): array => [
+                'id' => $action->getKey(),
+                'title' => (string) $action->getAttribute('title'),
+                'description' => (string) $action->getAttribute('description'),
+                'priority' => $this->enumValue($action->getAttribute('priority')),
+                'status' => $this->enumValue($action->getAttribute('status')),
+                'due_at' => $this->dateString($action->getAttribute('due_at')),
+                'completed_at' => $this->dateString($action->getAttribute('completed_at')),
+                'assigned_to' => $action->assignee?->getKey(),
+                'assignee_name' => $action->assignee?->name,
+                'finding_id' => $action->finding?->getKey(),
+                'finding_title' => $action->finding?->title,
+            ])
+            ->values()
+            ->all();
+
+        $statuses = [
+            'pending' => 0,
+            'in_progress' => 0,
+            'completed' => 0,
+            'cancelled' => 0,
+        ];
+
+        foreach ($items as $item) {
+            $status = $item['status'];
+            if (array_key_exists($status, $statuses)) {
+                $statuses[$status] += 1;
+            }
+        }
+
+        return [
+            'items' => $items,
+            'summary' => [
+                'total' => count($items),
+                ...$statuses,
+            ],
+            'permissions' => [
+                'can_create' => true,
+                'can_update' => true,
+                'can_assign' => true,
             ],
         ];
     }

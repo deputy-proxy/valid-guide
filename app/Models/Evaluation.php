@@ -151,6 +151,12 @@ class Evaluation extends Model
         return $this->hasMany(Finding::class);
     }
 
+    /** @return HasMany<CreatorAction, $this> */
+    public function creatorActions(): HasMany
+    {
+        return $this->hasMany(CreatorAction::class);
+    }
+
     /** @return HasMany<Dispute, $this> */
     public function disputes(): HasMany
     {

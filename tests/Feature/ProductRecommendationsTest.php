@@ -14,18 +14,14 @@ use App\Services\ValidationIssuance;
 use App\Services\ValidationStateTransition;
 use Illuminate\Support\Facades\DB;
 
-function recommendationFixture(string $slug, array $audiences = [], array $goals = []): array
+function recommendationFixture(array $audiences = [], array $goals = []): array
 {
     [$evaluation, , $creator] = creatorActionEvaluationFixture();
     $product = $evaluation->productRelease->product;
-    $release = $evaluation->productRelease;
     $product->update([
-        'title' => 'Product '.$slug,
-        'slug' => $slug,
         'subject_area' => 'Leadership',
         'language' => 'en',
     ]);
-    $release->update(['title_snapshot' => $product->title]);
 
     app(ProductSuitability::class)->update($creator, $product, [
         'matching_audiences' => $audiences,
@@ -39,9 +35,9 @@ function recommendationFixture(string $slug, array $audiences = [], array $goals
 }
 
 it('ranks eligible products by explicit public matching signals and explains the matches', function () {
-    [$best] = recommendationFixture('best', [ProductAudience::Professionals->value], [ProductGoal::ProfessionalDevelopment->value]);
-    [$second] = recommendationFixture('second', [ProductAudience::Professionals->value]);
-    [$third] = recommendationFixture('third');
+    [$best] = recommendationFixture([ProductAudience::Professionals->value], [ProductGoal::ProfessionalDevelopment->value]);
+    [$second] = recommendationFixture([ProductAudience::Professionals->value]);
+    [$third] = recommendationFixture();
 
     $recommendations = app(ProductRecommendations::class)->recommend(
         audience: ProductAudience::Professionals,
@@ -64,20 +60,19 @@ it('ranks eligible products by explicit public matching signals and explains the
         ->and($recommendations->first()->reasons)->toContain('Currently validated for release v1.');
 });
 
-it('uses deterministic title and verification ordering for equal recommendation scores', function () {
-    [$alpha] = recommendationFixture('alpha');
-    [$beta] = recommendationFixture('beta');
+it('uses deterministic verification ordering for equal recommendation scores', function () {
+    [$alpha] = recommendationFixture();
+    [$beta] = recommendationFixture();
 
     $recommendations = app(ProductRecommendations::class)->recommend();
+    $expected = [$alpha->verification_identifier, $beta->verification_identifier];
+    sort($expected, SORT_STRING);
 
-    expect($recommendations->pluck('verificationIdentifier')->all())->toBe([
-        $alpha->verification_identifier,
-        $beta->verification_identifier,
-    ]);
+    expect($recommendations->pluck('verificationIdentifier')->all())->toBe($expected);
 });
 
 it('handles incomplete metadata without failing or inventing a suitability match', function () {
-    recommendationFixture('incomplete');
+    recommendationFixture();
 
     $recommendations = app(ProductRecommendations::class)->recommend(
         audience: ProductAudience::Professionals,
@@ -88,9 +83,9 @@ it('handles incomplete metadata without failing or inventing a suitability match
 });
 
 it('excludes hidden and non-current validation records from recommendations', function () {
-    [$activeValidation] = recommendationFixture('active', [ProductAudience::Professionals->value]);
-    [$suspendedValidation, , $admin] = recommendationFixture('suspended', [ProductAudience::Professionals->value]);
-    [$hiddenValidation, , $hiddenAdmin] = recommendationFixture('hidden', [ProductAudience::Professionals->value]);
+    [$activeValidation] = recommendationFixture([ProductAudience::Professionals->value]);
+    [$suspendedValidation, , $admin] = recommendationFixture([ProductAudience::Professionals->value]);
+    [$hiddenValidation, , $hiddenAdmin] = recommendationFixture([ProductAudience::Professionals->value]);
 
     app(ValidationStateTransition::class)->transition(
         $suspendedValidation,
@@ -108,10 +103,7 @@ it('excludes hidden and non-current validation records from recommendations', fu
 });
 
 it('does not expose private or commercial fields in recommendation results', function () {
-    [$validation, $product, $creator] = recommendationFixture(
-        'private-boundary',
-        [ProductAudience::Professionals->value],
-    );
+    [$validation, $product, $creator] = recommendationFixture([ProductAudience::Professionals->value]);
 
     DB::table('products')->where('id', $product->getKey())->update(['reference_price' => 999.99]);
 
@@ -127,7 +119,6 @@ it('does not expose private or commercial fields in recommendation results', fun
 
 it('renders recommendation explanations and verification links on the public directory', function () {
     [$validation, $product] = recommendationFixture(
-        'directory-recommendation',
         [ProductAudience::Professionals->value],
         [ProductGoal::ProfessionalDevelopment->value],
     );

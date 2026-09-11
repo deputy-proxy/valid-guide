@@ -17,6 +17,8 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 /**
  * @property CreatorActionPriority $priority
  * @property ImprovementOpportunityStatus $status
+ * @property int|null $assigned_to
+ * @property int|null $superseded_by_id
  * @property CarbonImmutable|null $due_at
  * @property CarbonImmutable|null $completed_at
  * @property CarbonImmutable|null $dismissed_at

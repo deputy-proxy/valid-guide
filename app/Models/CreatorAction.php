@@ -17,6 +17,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property CreatorActionPriority $priority
  * @property CreatorActionStatus $status
  * @property int|null $assigned_to
+ * @property int|null $improvement_opportunity_id
  * @property CarbonImmutable|null $due_at
  * @property CarbonImmutable|null $completed_at
  */

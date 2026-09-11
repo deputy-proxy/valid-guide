@@ -49,6 +49,7 @@ final class WorkflowNotificationInbox
     public function markRead(User $user, string $notificationId): void
     {
         $notification = $user->notifications()->whereKey($notificationId)->firstOrFail();
+
         $notification->markAsRead();
     }
 
@@ -87,6 +88,7 @@ final class WorkflowNotificationInbox
         }
 
         $assignment = AuditorAssignment::query()->find((int) $id);
+
         return $assignment === null || $assignment->status !== 'offered';
     }
 
@@ -99,6 +101,7 @@ final class WorkflowNotificationInbox
         }
 
         $evaluation = AuditorEvaluation::query()->find((int) $id);
+
         return $evaluation === null || $evaluation->status !== 'submitted';
     }
 
@@ -111,6 +114,7 @@ final class WorkflowNotificationInbox
         }
 
         $report = Report::query()->find((int) $id);
+
         return $report === null || $report->delivered_at === null;
     }
 
@@ -123,6 +127,7 @@ final class WorkflowNotificationInbox
         }
 
         $request = ClarificationRequest::query()->find((int) $id);
+
         return $request === null || $request->status->value !== $expectedStatus;
     }
 
@@ -155,6 +160,7 @@ final class WorkflowNotificationInbox
         }
 
         $reviewer = DisputeReviewer::query()->find((int) $id);
+
         return $reviewer === null || $reviewer->status !== 'assigned';
     }
 }

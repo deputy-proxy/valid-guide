@@ -9,6 +9,7 @@ use App\Enums\EvaluationStatus;
 use App\Models\CreatorAction;
 use App\Models\Evaluation;
 use App\Models\Finding;
+use App\Models\ImprovementGuidance;
 use App\Models\Organization;
 use App\Models\User;
 use Illuminate\Support\Collection;
@@ -30,24 +31,38 @@ final class CreatorActionPlanner
             throw new DomainStateTransitionException('The user cannot generate creator actions for this organization.');
         }
 
-        $workflow = app(CreatorActionWorkflow::class);
+        $actionWorkflow = app(CreatorActionWorkflow::class);
+        $opportunityWorkflow = app(ImprovementOpportunityWorkflow::class);
         $findings = $evaluation->findings()
             ->with('auditorEvaluation')
             ->get()
             ->filter(fn (Finding $finding): bool => $finding->auditor_evaluation_id === null || $finding->auditorEvaluation?->locked_at !== null)
             ->filter(fn (Finding $finding): bool => in_array(strtolower((string) $finding->type), ['weakness', 'recommendation', 'improvement', 'gap'], true));
 
-        return $findings->map(function (Finding $finding) use ($evaluation, $organization, $createdBy, $workflow): CreatorAction {
+        return $findings->map(function (Finding $finding) use ($evaluation, $organization, $createdBy, $actionWorkflow, $opportunityWorkflow): CreatorAction {
+            $guidance = ImprovementGuidance::query()
+                ->where('evaluation_id', $evaluation->id)
+                ->where('finding_id', $finding->id)
+                ->whereNotNull('creator_visible_at')
+                ->latest('id')
+                ->first();
+
+            $opportunity = $opportunityWorkflow->createFromFinding($finding, $organization, $createdBy, $guidance);
             $existing = CreatorAction::query()
                 ->where('evaluation_id', $evaluation->id)
                 ->where('finding_id', $finding->id)
                 ->first();
 
             if ($existing !== null) {
+                if ($existing->improvement_opportunity_id !== $opportunity->id) {
+                    $existing->improvement_opportunity_id = $opportunity->id;
+                    $existing->save();
+                }
+
                 return $existing;
             }
 
-            return $workflow->create(
+            return $actionWorkflow->create(
                 $evaluation,
                 $organization,
                 $createdBy,
@@ -55,6 +70,8 @@ final class CreatorActionPlanner
                 $this->description($finding),
                 $this->priority($finding),
                 $finding,
+                $guidance,
+                $opportunity,
             );
         })->values();
     }

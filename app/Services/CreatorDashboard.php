@@ -9,6 +9,7 @@ use App\Enums\OrganizationRole;
 use App\Enums\PaymentStatus;
 use App\Enums\RefundStatus;
 use App\Models\EvaluationRequest;
+use App\Models\ImprovementOpportunity;
 use App\Models\Organization;
 use App\Models\Product;
 use App\Models\ProductRelease;
@@ -46,7 +47,33 @@ final class CreatorDashboard
             ],
             'products' => $isCreator ? $this->products($actor, $organization) : [],
             'evaluation_requests' => $this->evaluationRequests($actor, $organization, $role),
+            'improvement_opportunities' => $isCreator ? $this->improvementOpportunities($actor, $organization) : [],
         ];
+    }
+
+    /** @return array<int, array<string, mixed>> */
+    private function improvementOpportunities(User $actor, Organization $organization): array
+    {
+        return ImprovementOpportunity::query()
+            ->where('organization_id', $organization->getKey())
+            ->whereIn('status', ['open', 'in_progress'])
+            ->with(['evaluation.product', 'assignee'])
+            ->latest('updated_at')
+            ->limit(10)
+            ->get()
+            ->map(fn (ImprovementOpportunity $opportunity): array => [
+                'id' => $opportunity->getKey(),
+                'evaluation_id' => $opportunity->evaluation_id,
+                'title' => (string) $opportunity->title,
+                'priority' => $opportunity->priority->value,
+                'status' => $opportunity->status->value,
+                'target_outcome' => (string) $opportunity->target_outcome,
+                'due_at' => $opportunity->due_at?->toISOString(),
+                'assignee_name' => $opportunity->assignee?->name,
+                'product_title' => $opportunity->evaluation?->product?->title,
+            ])
+            ->values()
+            ->all();
     }
 
     /** @return array<int, array<string, mixed>> */

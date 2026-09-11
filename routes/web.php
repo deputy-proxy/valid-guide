@@ -4,6 +4,7 @@ use App\Http\Controllers\CreatorPaymentStatusController;
 use App\Http\Controllers\PublicVerificationController;
 use App\Http\Controllers\StripeWebhookController;
 use App\Livewire\Creator\EvaluationRequests\CreateEvaluationRequest;
+use App\Livewire\Creator\Reports\ShowReport;
 use Illuminate\Support\Facades\Route;
 
 Route::view('/', 'public.pages.home')->name('home');
@@ -59,6 +60,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->whereNumber('organizationId')
         ->whereNumber('evaluationRequestId')
         ->name('creator.evaluation-requests.create');
+
+    Route::get('creator/evaluations/{evaluationId}/report', ShowReport::class)
+        ->whereNumber('evaluationId')
+        ->name('creator.reports.show');
 
     Route::get('creator/payment/success', CreatorPaymentStatusController::class)->name('creator.payment.success');
     Route::get('creator/payment/cancelled', CreatorPaymentStatusController::class)->name('creator.payment.cancelled');

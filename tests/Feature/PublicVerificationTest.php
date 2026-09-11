@@ -11,6 +11,7 @@ use App\Models\User;
 use App\Services\PublicVerificationPublication;
 use App\Services\PublicVerificationReader;
 use App\Services\ValidationStateTransition;
+use Illuminate\Support\Facades\Route;
 
 it('renders a public verification record from the persisted snapshot', function (): void {
     $validation = publicVerificationFixture();
@@ -119,7 +120,7 @@ it('serves the lookup page without authentication', function (): void {
         ->assertSee('verification-identifier', false)
         ->assertSee('noindex,follow');
 
-    $route = Illuminate\Support\Facades\Route::getRoutes()->getByName('public.verify');
+    $route = Route::getRoutes()->getByName('public.verify');
 
     expect($route)->not->toBeNull();
     expect($route?->gatherMiddleware())->not->toContain('auth');

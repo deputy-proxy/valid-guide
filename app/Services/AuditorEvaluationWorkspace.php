@@ -46,11 +46,6 @@ final class AuditorEvaluationWorkspace
             throw new AuthorizationException('No Auditor evaluation is available for this assignment.');
         }
 
-        $evaluation->evaluation->standardVersion->load([
-            'criteria' => fn ($query) => $query->orderBy('sequence'),
-            'criteria.guidance',
-        ]);
-
         return $evaluation;
     }
 

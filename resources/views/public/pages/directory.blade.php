@@ -21,7 +21,7 @@
 
                     <div>
                         <label for="directory-audience" class="block text-sm font-medium text-zinc-950 dark:text-white">Audience</label>
-                        <select id="directory-audience" name="audience" class="mt-2 block w-full rounded-lg border border-zinc-300 bg-white px-3 py-2.5 text-sm text-zinc-950 shadow-sm focus:border-zinc-950 focus:ring-2 focus:ring-zinc-950 dark:border-zinc-700 dark:bg-zinc-950 dark:text-white dark:focus:border-white dark:focus:ring-white">
+                        <select id="directory-audience" name="audience" class="mt-2 block w-full rounded-lg border border-zinc-300 bg-white px-3 py-2.5 text-sm text-zinc-950 shadow-sm focus:border-zinc-950 focus:ring-2 focus:ring-zinc-950 dark:border-zinc-700 dark:bg-zinc-950 dark:text-white dark:focus:ring-white">
                             <option value="">Any audience</option>
                             @foreach ($audiences as $option)
                                 <option value="{{ $option->value }}" @selected($audience === $option->value)>{{ str($option->value)->replace('_', ' ')->title() }}</option>
@@ -31,7 +31,7 @@
 
                     <div>
                         <label for="directory-goal" class="block text-sm font-medium text-zinc-950 dark:text-white">Use case</label>
-                        <select id="directory-goal" name="goal" class="mt-2 block w-full rounded-lg border border-zinc-300 bg-white px-3 py-2.5 text-sm text-zinc-950 shadow-sm focus:border-zinc-950 focus:ring-2 focus:ring-zinc-950 dark:border-zinc-700 dark:bg-zinc-950 dark:text-white dark:focus:ring-white">
+                        <select id="directory-goal" name="goal" class="mt-2 block w-full rounded-lg border border-zinc-300 bg-white px-3 py-2.5 text-sm text-zinc-950 shadow-sm focus:border-zinc-950 focus:ring-2 focus:ring-zinc-950 dark:border-zinc-700 dark:bg-zinc-950 dark:text-white dark:focus:border-white dark:focus:ring-white">
                             <option value="">Any use case</option>
                             @foreach ($goals as $option)
                                 <option value="{{ $option->value }}" @selected($goal === $option->value)>{{ str($option->value)->replace('_', ' ')->title() }}</option>
@@ -51,12 +51,12 @@
 
                     <div>
                         <label for="directory-subject" class="block text-sm font-medium text-zinc-950 dark:text-white">Subject area</label>
-                        <input id="directory-subject" name="subject_area" type="text" value="{{ $subjectArea }}" class="mt-2 block w-full rounded-lg border border-zinc-300 bg-white px-3 py-2.5 text-sm text-zinc-950 dark:border-zinc-700 dark:bg-zinc-950 dark:text-white dark:focus:ring-white">
+                        <input id="directory-subject" name="subject_area" type="text" value="{{ $subjectArea }}" class="mt-2 block w-full rounded-lg border border-zinc-300 bg-white px-3 py-2.5 text-sm text-zinc-950 shadow-sm focus:border-zinc-950 focus:ring-2 focus:ring-zinc-950 dark:border-zinc-700 dark:bg-zinc-950 dark:text-white dark:focus:border-white dark:focus:ring-white">
                     </div>
 
                     <div>
                         <label for="directory-language" class="block text-sm font-medium text-zinc-950 dark:text-white">Language</label>
-                        <input id="directory-language" name="language" type="text" value="{{ $language }}" placeholder="e.g. en" class="mt-2 block w-full rounded-lg border border-zinc-300 bg-white px-3 py-2.5 text-sm text-zinc-950 dark:border-zinc-700 dark:bg-zinc-950 dark:text-white dark:focus:ring-white">
+                        <input id="directory-language" name="language" type="text" value="{{ $language }}" placeholder="e.g. en" class="mt-2 block w-full rounded-lg border border-zinc-300 bg-white px-3 py-2.5 text-sm text-zinc-950 shadow-sm focus:border-zinc-950 focus:ring-2 focus:ring-zinc-950 dark:border-zinc-700 dark:bg-zinc-950 dark:text-white dark:focus:ring-white">
                     </div>
                 </div>
 

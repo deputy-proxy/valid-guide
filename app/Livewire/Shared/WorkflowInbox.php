@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Livewire\Shared;
 
 use App\Models\User;
+use App\Services\ActionQueueItem;
 use App\Services\RoleActionQueue;
 use App\Services\WorkflowNotificationInbox;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -35,7 +36,7 @@ final class WorkflowInbox extends Component
         $this->notifications = $inbox->for($user)->all();
         $this->unreadCount = $inbox->unreadCount($user);
         $this->actions = app(RoleActionQueue::class)->for($user)
-            ->map(fn ($item): array => $item->toArray())
+            ->map(fn (ActionQueueItem $item): array => $item->toArray())
             ->all();
     }
 

@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 use App\Enums\NotificationCategory;
 use App\Enums\NotificationEventType;
+use App\Models\Finding;
 use App\Models\User;
 use App\Notifications\WorkflowNotification;
+use App\Services\ImprovementOpportunityWorkflow;
 use App\Services\RoleActionQueue;
 use App\Services\WorkflowNotificationInbox;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -34,6 +36,29 @@ test('workflow notifications persist only structured workflow context', function
         'body' => 'An Auditor evaluation requires platform review.',
     ]);
     expect($data['context'])->toBe(['auditor_evaluation_id' => 10, 'evaluation_id' => 20]);
+});
+
+test('improvement opportunity creation notifies authorized creator members', function () {
+    [$evaluation, $organization, $creator] = creatorActionEvaluationFixture();
+
+    $finding = Finding::query()->create([
+        'evaluation_id' => $evaluation->id,
+        'type' => 'weakness',
+        'severity' => 'high',
+        'title' => 'Improve onboarding',
+        'description' => 'Clarify the first-use experience.',
+    ]);
+
+    $opportunity = app(ImprovementOpportunityWorkflow::class)->createFromFinding($finding, $organization, $creator);
+
+    $notification = DatabaseNotification::query()
+        ->where('notifiable_id', $creator->id)
+        ->where('data->event_type', NotificationEventType::ImprovementOpportunityCreated->value)
+        ->first();
+
+    expect($notification)->not->toBeNull()
+        ->and($notification?->data['context']['improvement_opportunity_id'])->toBe($opportunity->id)
+        ->and($notification?->data['context']['evaluation_id'])->toBe($evaluation->id);
 });
 
 test('notification inbox is isolated to the authenticated user', function () {

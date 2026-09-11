@@ -11,8 +11,9 @@ use App\Models\Validation;
 use App\Services\DomainStateTransitionException;
 use App\Services\ValidationStateTransition;
 use Filament\Actions\Action;
-use Filament\Resources\Resource;
+use Filament\Forms\Components\Textarea;
 use Filament\Notifications\Notification;
+use Filament\Resources\Resource;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
@@ -59,25 +60,29 @@ final class ValidationResource extends Resource
                     ->color('warning')
                     ->requiresConfirmation()
                     ->visible(fn (Validation $record): bool => $record->status === ValidationStatus::Active)
-                    ->action(fn (Validation $record): bool => self::transition($record, ValidationStatus::Suspended)),
+                    ->form([Textarea::make('reason')->label('Reason')->required()->rows(4)])
+                    ->action(fn (Validation $record, array $data): bool => self::transition($record, ValidationStatus::Suspended, (string) $data['reason'])),
                 Action::make('reactivate')
                     ->label('Reactivate')
                     ->color('success')
                     ->requiresConfirmation()
                     ->visible(fn (Validation $record): bool => $record->status === ValidationStatus::Suspended)
-                    ->action(fn (Validation $record): bool => self::transition($record, ValidationStatus::Active)),
+                    ->form([Textarea::make('reason')->label('Reason')->required()->rows(4)])
+                    ->action(fn (Validation $record, array $data): bool => self::transition($record, ValidationStatus::Active, (string) $data['reason'])),
                 Action::make('revoke')
                     ->label('Revoke')
                     ->color('danger')
                     ->requiresConfirmation()
                     ->visible(fn (Validation $record): bool => in_array($record->status, [ValidationStatus::Active, ValidationStatus::Suspended], true))
-                    ->action(fn (Validation $record): bool => self::transition($record, ValidationStatus::Revoked)),
+                    ->form([Textarea::make('reason')->label('Reason')->required()->rows(4)])
+                    ->action(fn (Validation $record, array $data): bool => self::transition($record, ValidationStatus::Revoked, (string) $data['reason'])),
                 Action::make('supersede')
                     ->label('Supersede')
                     ->color('danger')
                     ->requiresConfirmation()
                     ->visible(fn (Validation $record): bool => in_array($record->status, [ValidationStatus::Active, ValidationStatus::Suspended], true))
-                    ->action(fn (Validation $record): bool => self::transition($record, ValidationStatus::Superseded)),
+                    ->form([Textarea::make('reason')->label('Reason')->required()->rows(4)])
+                    ->action(fn (Validation $record, array $data): bool => self::transition($record, ValidationStatus::Superseded, (string) $data['reason'])),
             ]);
     }
 
@@ -106,12 +111,12 @@ final class ValidationResource extends Resource
             ->all();
     }
 
-    private static function transition(Validation $record, ValidationStatus $status): bool
+    private static function transition(Validation $record, ValidationStatus $status, string $reason): bool
     {
         $user = self::authenticatedUser();
 
         try {
-            app(ValidationStateTransition::class)->transition($record, $status, $user, 'Platform administrator action');
+            app(ValidationStateTransition::class)->transition($record, $status, $user, $reason);
             Notification::make()->success()->title('Validation status updated')->send();
             return true;
         } catch (DomainStateTransitionException $exception) {

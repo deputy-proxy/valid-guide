@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Enums\OrganizationRole;
 use App\Enums\PaymentStatus;
+use App\Filament\Pages\CreatorDashboardPage;
 use App\Models\EvaluationRequest;
 use App\Models\Order;
 use App\Models\Organization;
@@ -13,6 +14,7 @@ use App\Models\ProductRelease;
 use App\Models\ServicePackage;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
+use Livewire\Livewire;
 
 function filamentCreatorDashboardFixture(string $role): array
 {
@@ -90,9 +92,9 @@ it('renders the creator dashboard with product, release, intake and next action'
     [$user, $organization, $product, $release, , $request] = filamentCreatorDashboardFixture(OrganizationRole::Editor->value);
     session(['creator.organization_id' => $organization->id]);
 
-    $this->actingAs($user)
-        ->get('/admin/creator-dashboard')
-        ->assertSuccessful()
+    $this->actingAs($user);
+
+    Livewire::test(CreatorDashboardPage::class)
         ->assertSee('Creator Dashboard')
         ->assertSee($product->title)
         ->assertSee($release->release_identifier)
@@ -124,9 +126,9 @@ it('renders commerce-only data for billing users', function () {
         'status' => PaymentStatus::Pending,
     ]);
 
-    $this->actingAs($user)
-        ->get('/admin/creator-dashboard')
-        ->assertSuccessful()
+    $this->actingAs($user);
+
+    Livewire::test(CreatorDashboardPage::class)
         ->assertSee($package->name)
         ->assertSee('EUR')
         ->assertSee('Pending')
@@ -140,9 +142,9 @@ it('does not render another organization data', function () {
     [, $otherOrganization, $otherProduct] = filamentCreatorDashboardFixture(OrganizationRole::Editor->value);
     session(['creator.organization_id' => $organization->id]);
 
-    $this->actingAs($user)
-        ->get('/admin/creator-dashboard')
-        ->assertSuccessful()
+    $this->actingAs($user);
+
+    Livewire::test(CreatorDashboardPage::class)
         ->assertSee($product->title)
         ->assertDontSee($otherProduct->title)
         ->assertDontSee($otherOrganization->name);
@@ -153,9 +155,9 @@ it('shows a start action when there are no evaluation requests', function () {
     EvaluationRequest::query()->delete();
     session(['creator.organization_id' => $organization->id]);
 
-    $this->actingAs($user)
-        ->get('/admin/creator-dashboard')
-        ->assertSuccessful()
+    $this->actingAs($user);
+
+    Livewire::test(CreatorDashboardPage::class)
         ->assertSee('No evaluation requests are available for this organization.')
         ->assertSee('Start an evaluation request');
 });
@@ -194,8 +196,8 @@ it('renders the refund action only when the backend contract says it is eligible
     ]);
     session(['creator.organization_id' => $organization->id]);
 
-    $this->actingAs($user)
-        ->get('/admin/creator-dashboard')
-        ->assertSuccessful()
+    $this->actingAs($user);
+
+    Livewire::test(CreatorDashboardPage::class)
         ->assertSee('Request refund');
 });

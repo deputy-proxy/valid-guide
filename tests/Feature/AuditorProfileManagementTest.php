@@ -8,12 +8,21 @@ use App\Models\User;
 use App\Services\AuditorProfileManagement;
 use App\Services\DomainStateTransitionException;
 
-it('allows an auditor to update only their own profile information', function () {
-    $auditor = User::factory()->create();
-    $profile = AuditorProfile::factory()->create([
+function auditorProfileManagementProfile(User $auditor): AuditorProfile
+{
+    return AuditorProfile::create([
         'auditor_id' => $auditor->id,
         'status' => AuditorProfileStatus::Pending,
+        'methodology_literate' => false,
+        'format_experience' => ['course'],
+        'bio' => 'Original professional bio.',
+        'credentials' => 'Original credentials.',
     ]);
+}
+
+it('allows an auditor to update only their own profile information', function () {
+    $auditor = User::factory()->create();
+    $profile = auditorProfileManagementProfile($auditor);
 
     $updated = app(AuditorProfileManagement::class)->update(
         $auditor,
@@ -45,7 +54,7 @@ it('rejects profile updates when the auditor has no profile', function () {
 
 it('does not allow blank required profile information', function () {
     $auditor = User::factory()->create();
-    AuditorProfile::factory()->create(['auditor_id' => $auditor->id]);
+    auditorProfileManagementProfile($auditor);
 
     expect(fn () => app(AuditorProfileManagement::class)->update(
         $auditor,

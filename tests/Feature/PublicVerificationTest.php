@@ -15,7 +15,7 @@ use Illuminate\Support\Facades\Route;
 
 it('renders a public verification record from the persisted snapshot', function (): void {
     $validation = publicVerificationFixture();
-    $record = app(PublicVerificationPublication::class)->publish($validation);
+    app(PublicVerificationPublication::class)->publish($validation);
 
     $response = $this->get(route('public.verify.show', [
         'verificationIdentifier' => $validation->verification_identifier,
@@ -30,7 +30,7 @@ it('renders a public verification record from the persisted snapshot', function 
         ->assertSee('Clear strength')
         ->assertSee('Minor weakness')
         ->assertSee('meta name="robots" content="index,follow"', false)
-        ->assertSee(route('public.verify.show', ['verificationIdentifier' => $record->public_slug]), false);
+        ->assertSee(route('public.verify.show', ['verificationIdentifier' => $validation->verification_identifier]), false);
 });
 
 it('keeps the verification record stable when internal product data changes', function (): void {

@@ -155,7 +155,7 @@ final class CreatorReportAccess
         foreach ($items as $item) {
             $status = $item['status'] ?? null;
             if (is_string($status) && array_key_exists($status, $statuses)) {
-                ++$statuses[$status];
+                $statuses[$status] += 1;
             }
         }
 

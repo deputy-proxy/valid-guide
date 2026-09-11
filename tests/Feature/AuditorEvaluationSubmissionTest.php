@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Models\Criterion;
 use App\Models\User;
 use App\Services\AuditorEvaluationSubmission;
 use App\Services\ConflictDeclarationDecision;
@@ -27,6 +28,46 @@ test('rejects submission without required decision gate conclusions', function (
         'evidence_sufficiency' => null,
         'audience_promise_coherence' => null,
     ]);
+
+    expect(fn () => app(AuditorEvaluationSubmission::class)->submit($auditorEvaluation))
+        ->toThrow(DomainStateTransitionException::class);
+});
+
+test('rejects submission when a frozen standard criterion has no result', function () {
+    [$auditorEvaluation] = auditorEvaluationFixture();
+    $standardVersion = $auditorEvaluation->evaluation->standardVersion;
+
+    Criterion::create([
+        'standard_version_id' => $standardVersion->id,
+        'code' => 'TEST-02',
+        'name' => 'Missing result criterion',
+        'sequence' => 2,
+        'weight' => 10,
+        'is_mandatory' => false,
+        'voting_mode' => 'individual',
+    ]);
+
+    expect(fn () => app(AuditorEvaluationSubmission::class)->submit($auditorEvaluation))
+        ->toThrow(DomainStateTransitionException::class);
+});
+
+test('rejects submission when a criterion result belongs to another standard version', function () {
+    [$auditorEvaluation, $result] = auditorEvaluationFixture();
+    $otherVersion = $auditorEvaluation->evaluation->standardVersion->replicate();
+    $otherVersion->version = '9.9';
+    $otherVersion->status = 'draft';
+    $otherVersion->save();
+
+    $otherCriterion = $otherVersion->criteria()->create([
+        'code' => 'OTHER-01',
+        'name' => 'Other criterion',
+        'sequence' => 1,
+        'weight' => 10,
+        'is_mandatory' => false,
+        'voting_mode' => 'individual',
+    ]);
+
+    $result->update(['criterion_id' => $otherCriterion->id]);
 
     expect(fn () => app(AuditorEvaluationSubmission::class)->submit($auditorEvaluation))
         ->toThrow(DomainStateTransitionException::class);

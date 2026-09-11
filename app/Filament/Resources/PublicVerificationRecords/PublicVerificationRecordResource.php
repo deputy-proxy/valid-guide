@@ -9,6 +9,7 @@ use App\Models\PublicVerificationRecord;
 use App\Models\User;
 use App\Services\DomainStateTransitionException;
 use App\Services\PublicVerificationPublication;
+use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
@@ -19,7 +20,6 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
 use Throwable;
 use UnitEnum;
-use BackedEnum;
 
 final class PublicVerificationRecordResource extends Resource
 {

@@ -7,6 +7,7 @@ namespace App\Livewire\Creator\Reports;
 use App\Enums\ClarificationRequestType;
 use App\Enums\DisputeGround;
 use App\Models\Evaluation;
+use App\Models\Organization;
 use App\Models\User;
 use App\Services\ClarificationWorkflow;
 use App\Services\CreatorReportAccess;
@@ -67,7 +68,7 @@ final class ShowReport extends Component
             $evaluation = $this->evaluation();
             app(ClarificationWorkflow::class)->submit(
                 $evaluation,
-                $evaluation->request->organization,
+                $this->creatorOrganization($evaluation),
                 $this->authenticatedUser(),
                 $type,
                 $this->clarificationMessage,
@@ -107,7 +108,7 @@ final class ShowReport extends Component
             $evaluation = $this->evaluation();
             app(DisputeWorkflow::class)->submit(
                 $evaluation,
-                $evaluation->request->organization,
+                $this->creatorOrganization($evaluation),
                 $this->authenticatedUser(),
                 $grounds,
                 $this->disputeStatement,
@@ -160,9 +161,25 @@ final class ShowReport extends Component
 
     private function evaluation(): Evaluation
     {
-        return Evaluation::query()
+        $evaluation = Evaluation::query()
             ->with('request.organization')
             ->findOrFail($this->evaluationId);
+
+        $this->creatorOrganization($evaluation);
+
+        return $evaluation;
+    }
+
+    private function creatorOrganization(Evaluation $evaluation): Organization
+    {
+        $request = $evaluation->request;
+        $organization = $request?->organization;
+
+        if ($organization === null) {
+            throw new AuthorizationException('The evaluation does not have an accessible creator organization.');
+        }
+
+        return $organization;
     }
 
     private function authenticatedUser(): User

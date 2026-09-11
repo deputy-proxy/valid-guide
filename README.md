@@ -1,4 +1,4 @@
-# Valid.guide
+# valid.guide
 
 Valid.guide is an independent validation platform for courses, guides, and other online learning products.
 

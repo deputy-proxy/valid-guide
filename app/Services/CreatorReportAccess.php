@@ -41,7 +41,7 @@ final class CreatorReportAccess
             throw new AuthorizationException('You are not authorized to access this creator report.');
         }
 
-        if (! $this->canAccess($user, $organization->id)) {
+        if ($this->canAccess($user, $organization->id) === false) {
             throw new AuthorizationException('You are not authorized to access this creator report.');
         }
 

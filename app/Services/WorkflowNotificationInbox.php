@@ -59,7 +59,7 @@ final class WorkflowNotificationInbox
 
     private function isStale(?NotificationEventType $eventType, mixed $context): bool
     {
-        if (! is_array($context)) {
+        if (is_array($context) === false) {
             return true;
         }
 
@@ -82,43 +82,55 @@ final class WorkflowNotificationInbox
     private function assignmentIsStale(array $context): bool
     {
         $id = $context['assignment_id'] ?? null;
-        return ! is_int($id) && ! ctype_digit((string) $id)
-            ? true
-            : ($assignment = AuditorAssignment::query()->find((int) $id)) === null || $assignment->status !== 'offered';
+        if (is_int($id) === false && ctype_digit((string) $id) === false) {
+            return true;
+        }
+
+        $assignment = AuditorAssignment::query()->find((int) $id);
+        return $assignment === null || $assignment->status !== 'offered';
     }
 
     /** @param array<string, mixed> $context */
     private function auditorEvaluationIsStale(array $context): bool
     {
         $id = $context['auditor_evaluation_id'] ?? null;
-        return ! is_int($id) && ! ctype_digit((string) $id)
-            ? true
-            : ($evaluation = AuditorEvaluation::query()->find((int) $id)) === null || $evaluation->status !== 'submitted';
+        if (is_int($id) === false && ctype_digit((string) $id) === false) {
+            return true;
+        }
+
+        $evaluation = AuditorEvaluation::query()->find((int) $id);
+        return $evaluation === null || $evaluation->status !== 'submitted';
     }
 
     /** @param array<string, mixed> $context */
     private function reportIsStale(array $context): bool
     {
         $id = $context['report_id'] ?? null;
-        return ! is_int($id) && ! ctype_digit((string) $id)
-            ? true
-            : ($report = Report::query()->find((int) $id)) === null || $report->delivered_at === null;
+        if (is_int($id) === false && ctype_digit((string) $id) === false) {
+            return true;
+        }
+
+        $report = Report::query()->find((int) $id);
+        return $report === null || $report->delivered_at === null;
     }
 
     /** @param array<string, mixed> $context */
     private function clarificationIsStale(array $context, string $expectedStatus): bool
     {
         $id = $context['clarification_id'] ?? null;
-        return ! is_int($id) && ! ctype_digit((string) $id)
-            ? true
-            : ($request = ClarificationRequest::query()->find((int) $id)) === null || $request->status->value !== $expectedStatus;
+        if (is_int($id) === false && ctype_digit((string) $id) === false) {
+            return true;
+        }
+
+        $request = ClarificationRequest::query()->find((int) $id);
+        return $request === null || $request->status->value !== $expectedStatus;
     }
 
     /** @param array<string, mixed> $context */
     private function disputeIsStale(array $context, bool $resolved = false): bool
     {
         $id = $context['dispute_id'] ?? null;
-        if (! is_int($id) && ! ctype_digit((string) $id)) {
+        if (is_int($id) === false && ctype_digit((string) $id) === false) {
             return true;
         }
 
@@ -127,17 +139,22 @@ final class WorkflowNotificationInbox
             return true;
         }
 
-        return $resolved
-            ? $dispute->status->value !== 'resolved'
-            : ! in_array($dispute->status->value, ['submitted', 'under_review'], true);
+        if ($resolved) {
+            return $dispute->status->value !== 'resolved';
+        }
+
+        return in_array($dispute->status->value, ['submitted', 'under_review'], true) === false;
     }
 
     /** @param array<string, mixed> $context */
     private function reviewerIsStale(array $context): bool
     {
         $id = $context['dispute_reviewer_id'] ?? null;
-        return ! is_int($id) && ! ctype_digit((string) $id)
-            ? true
-            : ($reviewer = DisputeReviewer::query()->find((int) $id)) === null || $reviewer->status !== 'assigned';
+        if (is_int($id) === false && ctype_digit((string) $id) === false) {
+            return true;
+        }
+
+        $reviewer = DisputeReviewer::query()->find((int) $id);
+        return $reviewer === null || $reviewer->status !== 'assigned';
     }
 }

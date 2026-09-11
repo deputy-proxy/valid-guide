@@ -27,7 +27,7 @@ final class AuditorEvaluationWorkspace
     {
         $assignment = $this->assignmentAccess->findFor($user, $assignmentId);
 
-        if (! $this->assignmentAccess->hasSubstantiveWorkAccess($assignment)) {
+        if ($this->assignmentAccess->hasSubstantiveWorkAccess($assignment) === false) {
             throw new AuthorizationException('You are not authorized to perform substantive work on this assignment.');
         }
 
@@ -79,7 +79,7 @@ final class AuditorEvaluationWorkspace
             $assignment = $lockedEvaluation->assignment()->lockForUpdate()->firstOrFail();
 
             if ((int) $assignment->auditor_id !== (int) $user->getKey()
-                || ! $this->assignmentAccess->hasSubstantiveWorkAccess($assignment)) {
+                || $this->assignmentAccess->hasSubstantiveWorkAccess($assignment) === false) {
                 throw new AuthorizationException('You are not authorized to modify this evaluation.');
             }
 
@@ -118,7 +118,7 @@ final class AuditorEvaluationWorkspace
                 ]);
             }
 
-            if (! $assessmentEnum->isScored() && $score !== null) {
+            if ($assessmentEnum->isScored() === false && $score !== null) {
                 throw ValidationException::withMessages([
                     'score' => 'This assessment does not accept a numerical score.',
                 ]);

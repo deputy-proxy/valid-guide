@@ -69,7 +69,7 @@ class AuditorEvaluationSubmission
             $criterionIds = $criteria->pluck('id');
             $resultCount = $auditorEvaluation->criterionResults()->count();
 
-            if ($resultCount !== $criterionIds->count()) {
+            if ($criterionIds->isEmpty() || $resultCount !== $criterionIds->count()) {
                 throw new DomainStateTransitionException(
                     'An auditor evaluation must contain exactly one criterion result for every applicable criterion before submission.',
                 );

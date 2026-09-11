@@ -12,7 +12,32 @@ The authoritative sources are, in order of priority:
 
 This document must not be used to override the actual CI configuration. When the repository configuration changes, this document must be updated accordingly.
 
+## CI workflow contract
+
+The repository currently has one GitHub Actions workflow: `.github/workflows/test.yml`.
+
+It runs for:
+
+- pushes to `main`;
+- every pull request.
+
+The CI job runs on `ubuntu-latest` and performs the following steps, in this order:
+
+1. Checkout the repository.
+2. Set up PHP `8.4` with Composer v2 and no coverage collection.
+3. Set up Node.js `22`.
+4. Run `composer setup`.
+5. Run `composer lint:check`.
+6. Run `composer types:check`.
+7. Run `php artisan test`.
+
+Therefore, a pull request is not CI-safe merely because the PHP code is logically correct. The implementation must be compatible with the complete setup, formatting, static-analysis and test sequence above.
+
+The CI workflow is authoritative. If it differs from this document, follow the workflow and update this document.
+
 ## Runtime and framework contract
+
+The application currently declares:
 
 - PHP: `^8.4`.
 - Laravel Framework: `^13.17`.
@@ -22,21 +47,25 @@ This document must not be used to override the actual CI configuration. When the
 - Laravel Pint: `^1.27`.
 - Larastan: `^3.9`.
 
+CI additionally provisions Node.js `22` and runs the application's `composer setup` script, which installs dependencies, creates `.env` when needed, generates the application key, migrates the database, installs npm dependencies and builds frontend assets.
+
 Use only APIs and language features available in the versions actually declared by the project.
 
 Do not assume APIs from older or newer framework versions merely because they are familiar.
 
 ## Required quality checks
 
-The repository's Composer scripts define the quality gates used during development:
+The exact CI quality gates are:
 
-- `composer lint` runs Laravel Pint in parallel.
-- `composer lint:check` runs Pint in test mode and must pass without modifying files.
-- `composer types:check` runs PHPStan.
-- `composer test` clears configuration, runs `composer lint:check`, runs `composer types:check`, and runs the Laravel test suite.
-- `composer ci:check` runs the Composer test script with process timeout disabled.
+- `composer lint:check` runs `pint --parallel --test` and must pass without modifying files.
+- `composer types:check` runs `phpstan analyse` using the repository's `phpstan.neon` configuration.
+- `php artisan test` runs the Laravel/Pest test suite configured by the project.
 
-When implementing an issue, assume that CI will enforce the equivalent quality gates configured by the repository's GitHub Actions workflows.
+The Composer script `test` is also available and runs configuration clearing, lint checking, static analysis and `php artisan test`, but CI currently invokes the individual commands directly rather than `composer test`.
+
+`composer lint` is the formatter command and is not itself the CI command.
+
+`composer ci:check` is available as a Composer helper but is not currently invoked by the GitHub Actions workflow.
 
 Never claim that a quality check passed unless it was actually executed and its result is available. Static review can predict failures, but it does not establish a passing result.
 
@@ -50,6 +79,8 @@ Formatting is governed by Laravel Pint using the repository's `pint.json` config
 }
 ```
 
+The CI command is `composer lint:check`, which runs Pint in test mode.
+
 Before committing:
 
 - Match the Laravel Pint style used by the repository.
@@ -58,10 +89,13 @@ Before committing:
 - Avoid unreachable code and redundant branches.
 - Match the surrounding code's naming, spacing, visibility and declaration conventions.
 - Review every changed PHP file, not only the lines that implement the issue.
+- Do not rely on Pint to silently repair the implementation after it has been committed.
 
 Do not modify formatting configuration merely to make an implementation pass lint.
 
 ## PHPStan / Larastan contract
+
+The CI command `composer types:check` runs `phpstan analyse`.
 
 PHPStan is configured at **level 7** and analyzes:
 
@@ -97,6 +131,8 @@ Use repository-consistent typing and annotations. Add an annotation only when it
 
 ## Test contract
 
+The CI command is `php artisan test`.
+
 Tests are configured in `phpunit.xml` with two suites:
 
 - `tests/Unit`
@@ -121,6 +157,8 @@ Tests should:
 Do not change or weaken an existing test merely to accommodate an incorrect implementation.
 
 When a schema, model, relationship or factory changes, inspect all directly affected tests and fixtures for compatibility.
+
+Because CI runs `composer setup` before the test command, database migrations and frontend build/setup behavior are also part of the practical CI contract.
 
 ## Laravel implementation contract
 
@@ -157,24 +195,35 @@ Prefer the smallest change that satisfies the issue while preserving existing be
 
 When local execution of lint, PHPStan or tests is unavailable, the implementation process must compensate with a static CI review.
 
-Before committing, review the implementation in this order:
+Before committing, review the implementation in this exact order:
 
-1. Compare the changed files against the CI workflow and repository tool configuration.
-2. Review every changed file for Pint violations.
-3. Review every changed file against PHPStan level 7 expectations.
-4. Review every changed or added test for Pest/Laravel and `phpunit.xml` compatibility.
-5. Review all changed framework API calls against the project's declared versions.
+1. Compare the changed files against `.github/workflows/test.yml` and repository tool configuration.
+2. Confirm the implementation does not depend on a runtime, PHP, Node, Laravel or package version different from CI.
+3. Review every changed file for Pint violations.
+4. Review every changed file against PHPStan level 7 expectations.
+5. Review every changed or added test for Pest/Laravel and `phpunit.xml` compatibility.
 6. Review migrations, factories, models and database assumptions together.
 7. Review routes, controllers, requests, policies and authorization boundaries together.
 8. Review imports, namespaces, method signatures and return types.
 9. Review test isolation, fixtures and database state.
-10. Inspect the complete final diff for accidental or unrelated changes.
+10. Review frontend/build-related changes against the Node.js `22` setup where applicable.
+11. Inspect the complete final diff for accidental or unrelated changes.
 
 Then perform an adversarial second pass:
 
 > What is the most likely reason GitHub CI could reject this change even though the implementation appears functionally correct?
 
-Fix every issue identified by that review before committing.
+Consider separately:
+
+- a formatting failure;
+- a PHPStan level 7 failure;
+- a test discovery or syntax failure;
+- a failing assertion;
+- a migration/schema/factory failure;
+- a framework-version/API failure;
+- a setup, asset-build or environment failure.
+
+Fix every issue that can be identified statically before committing.
 
 This review is a prediction exercise, not a substitute for CI.
 

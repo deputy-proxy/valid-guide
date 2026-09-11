@@ -1,0 +1,43 @@
+name: format-issue-97
+
+on:
+  push:
+    branches:
+      - issue-97-platform-governance
+
+permissions:
+  contents: write
+
+jobs:
+  format:
+    if: github.actor == 'deputy-proxy'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: true
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2
+        with:
+          php-version: '8.4'
+          tools: composer:v2
+          coverage: none
+
+      - name: Install dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Format PHP
+        run: composer lint
+
+      - name: Commit formatting changes
+        run: |
+          if git diff --quiet; then
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add app tests
+          git commit -m 'Apply Pint formatting for Issue 97'
+          git push

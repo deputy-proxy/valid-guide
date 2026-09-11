@@ -14,6 +14,7 @@ class PublicVerificationPublication
 {
     public function __construct(
         private readonly PublicVerificationSnapshotBuilder $snapshotBuilder,
+        private readonly PublicDirectoryProjection $directoryProjection,
     ) {}
 
     public function publish(Validation $validation): PublicVerificationRecord
@@ -36,6 +37,8 @@ class PublicVerificationPublication
         );
         $record->published_at ??= now();
         $record->save();
+
+        $this->directoryProjection->sync($record);
 
         AuditLogger::record(
             event: 'public_verification.published',
@@ -67,6 +70,8 @@ class PublicVerificationPublication
         );
         $record->save();
 
+        $this->directoryProjection->sync($record);
+
         return $record->refresh();
     }
 
@@ -89,6 +94,8 @@ class PublicVerificationPublication
             $fullReportVisible,
         );
         $record->save();
+
+        $this->directoryProjection->sync($record);
 
         AuditLogger::record(
             event: 'public_verification.visibility_changed',

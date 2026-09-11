@@ -93,6 +93,12 @@ class PublicVerificationSnapshotBuilder
                 'release_identifier' => $release->release_identifier,
                 'version' => $release->version,
             ],
+            'suitability' => [
+                'audiences' => $this->jsonList($product->getRawOriginal('matching_audiences')),
+                'goals' => $this->jsonList($product->getRawOriginal('matching_goals')),
+                'subject_area' => $product->subject_area,
+                'language' => $product->language,
+            ],
             'standard' => [
                 'name' => $standardVersion->standard->name,
                 'version' => $standardVersion->version,
@@ -172,6 +178,18 @@ class PublicVerificationSnapshotBuilder
                 'full_report' => $fullReportVisible,
             ],
         ];
+    }
+
+    /** @return list<mixed>|null */
+    private function jsonList(mixed $value): ?array
+    {
+        if (! is_string($value)) {
+            return null;
+        }
+
+        $decoded = json_decode($value, true);
+
+        return is_array($decoded) ? array_values($decoded) : null;
     }
 
     private function formatDate(CarbonInterface|string|null $value): ?string

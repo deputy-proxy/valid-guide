@@ -7,18 +7,18 @@ namespace App\Models;
 use App\Enums\CreatorActionPriority;
 use App\Enums\CreatorActionStatus;
 use App\Services\DomainStateTransitionException;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Support\Carbon;
 
 /**
  * @property CreatorActionPriority $priority
  * @property CreatorActionStatus $status
  * @property int|null $assigned_to
- * @property Carbon|null $due_at
- * @property Carbon|null $completed_at
+ * @property CarbonImmutable|null $due_at
+ * @property CarbonImmutable|null $completed_at
  */
 class CreatorAction extends Model
 {

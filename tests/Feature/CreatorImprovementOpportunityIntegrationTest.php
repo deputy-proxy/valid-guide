@@ -3,11 +3,11 @@
 declare(strict_types=1);
 
 use App\Enums\ImprovementOpportunityStatus;
+use App\Models\Finding;
 use App\Services\CreatorActionPlanner;
 use App\Services\CreatorDashboard;
 use App\Services\ImprovementOpportunityWorkflow;
 use App\Services\RoleActionQueue;
-use App\Models\Finding;
 
 it('surfaces active opportunities in the creator dashboard and action queue', function () {
     [$evaluation, $organization, $creator] = creatorActionEvaluationFixture();
@@ -28,7 +28,7 @@ it('surfaces active opportunities in the creator dashboard and action queue', fu
 
     expect($dashboard['improvement_opportunities'])->toHaveCount(1)
         ->and($dashboard['improvement_opportunities'][0]['id'])->toBe($opportunity->id)
-        ->and($queue->contains(fn ($item): bool => $item->type === 'improvement_opportunity' && $item->id === $opportunity->id))->toBeTrue();
+        ->and($queue->contains(fn ($item): bool => $item->targetType === 'improvement_opportunity' && $item->targetId === $opportunity->id))->toBeTrue();
 });
 
 it('removes completed opportunities from the active creator queue', function () {
@@ -48,5 +48,5 @@ it('removes completed opportunities from the active creator queue', function () 
     $queue = app(RoleActionQueue::class)->forCreator($creator);
 
     expect($opportunity->fresh()->status)->toBe(ImprovementOpportunityStatus::Completed)
-        ->and($queue->contains(fn ($item): bool => $item->type === 'improvement_opportunity' && $item->id === $opportunity->id))->toBeFalse();
+        ->and($queue->contains(fn ($item): bool => $item->targetType === 'improvement_opportunity' && $item->targetId === $opportunity->id))->toBeFalse();
 });

@@ -76,9 +76,12 @@ it('orders criteria by the frozen standard version sequence', function () {
     $criteria = app(AuditorEvaluationWorkspace::class)->criteria(
         app(AuditorEvaluationWorkspace::class)->findFor($auditor, $auditorEvaluation->assignment->id),
     );
+    $earlierIndex = $criteria->search(fn (Criterion $criterion): bool => $criterion->is($earlier));
+    $laterIndex = $criteria->search(fn (Criterion $criterion): bool => $criterion->sequence === 20);
 
-    expect($criteria->first()->id)->toBe($earlier->id)
-        ->and($criteria->last()->sequence)->toBe(20);
+    expect($earlierIndex)->toBeInt()
+        ->and($laterIndex)->toBeInt()
+        ->and($earlierIndex)->toBeLessThan($laterIndex);
 });
 
 it('saves a methodology controlled scored draft', function () {

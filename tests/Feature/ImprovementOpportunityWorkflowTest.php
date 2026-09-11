@@ -10,7 +10,6 @@ use App\Models\Organization;
 use App\Models\User;
 use App\Services\DomainStateTransitionException;
 use App\Services\ImprovementOpportunityWorkflow;
-use Illuminate\Support\Facades\DB;
 
 it('creates and tracks an improvement opportunity from an authoritative finding', function () {
     [$evaluation, $organization, $creator] = creatorActionEvaluationFixture();

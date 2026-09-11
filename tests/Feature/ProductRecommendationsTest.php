@@ -79,15 +79,12 @@ it('uses deterministic title and verification ordering for equal recommendation 
 it('handles incomplete metadata without failing or inventing a suitability match', function () {
     recommendationFixture('incomplete');
 
-    $recommendation = app(ProductRecommendations::class)->recommend(
+    $recommendations = app(ProductRecommendations::class)->recommend(
         audience: ProductAudience::Professionals,
         goal: ProductGoal::ProfessionalDevelopment,
-    )->first();
+    );
 
-    expect($recommendation)->not->toBeNull()
-        ->and($recommendation?->score)->toBe(0)
-        ->and($recommendation?->reasons)->not->toContain('Matches audience: Professionals.')
-        ->and($recommendation?->reasons)->not->toContain('Matches use case: Professional Development.');
+    expect($recommendations)->toHaveCount(0);
 });
 
 it('excludes hidden and non-current validation records from recommendations', function () {

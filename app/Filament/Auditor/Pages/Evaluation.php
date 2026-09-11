@@ -12,6 +12,7 @@ use App\Models\CriterionResult;
 use App\Models\Evidence;
 use App\Models\Finding;
 use App\Models\User;
+use App\Services\AuditorEvaluationFinalization;
 use App\Services\AuditorEvaluationSubmission;
 use App\Services\AuditorEvaluationWorkspace;
 use App\Services\AuditorEvidenceManagement;
@@ -293,19 +294,23 @@ final class Evaluation extends Page
         }
 
         try {
-            app(AuditorEvaluationSubmission::class)->submit($this->auditorEvaluation);
+            app(AuditorEvaluationSubmission::class)->submit($this->auditorEvaluation, $user);
+            $this->auditorEvaluation->refresh();
+
+            app(AuditorEvaluationFinalization::class)->finalize($this->auditorEvaluation, $user);
             $this->auditorEvaluation->refresh();
             $this->hydrateDrafts();
 
             Notification::make()
                 ->title('Evaluation submitted')
+                ->body('Your Auditor work is locked and the Evaluation has been handed to the decision workflow.')
                 ->success()
                 ->send();
-        } catch (DomainStateTransitionException $exception) {
+        } catch (AuthorizationException|DomainStateTransitionException $exception) {
             $this->saveState = 'failed';
 
             Notification::make()
-                ->title('Evaluation could not be submitted')
+                ->title('Evaluation could not be finalized')
                 ->body($exception->getMessage())
                 ->danger()
                 ->send();
@@ -321,6 +326,18 @@ final class Evaluation extends Page
     public function statusLabel(): string
     {
         return $this->isLocked() ? 'Submitted and locked' : 'Draft';
+    }
+
+    public function evaluationStatusLabel(): string
+    {
+        return match ($this->auditorEvaluation->evaluation->status->value) {
+            'in_progress' => 'Awaiting remaining Auditor submissions',
+            'internal_review' => 'Internal review',
+            'ready_for_decision' => 'Ready for Evaluation Decision',
+            'completed' => 'Evaluation Decision recorded',
+            'withdrawn' => 'Evaluation withdrawn',
+            default => 'Evaluation status unavailable',
+        };
     }
 
     /** @return array<string,string> */

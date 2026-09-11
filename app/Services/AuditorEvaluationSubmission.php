@@ -5,13 +5,16 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Models\AuditorEvaluation;
+use App\Models\Criterion;
+use App\Models\User;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
 
 class AuditorEvaluationSubmission
 {
-    public function submit(AuditorEvaluation $auditorEvaluation): AuditorEvaluation
+    public function submit(AuditorEvaluation $auditorEvaluation, User $actor): AuditorEvaluation
     {
-        return DB::transaction(function () use ($auditorEvaluation): AuditorEvaluation {
+        return DB::transaction(function () use ($auditorEvaluation, $actor): AuditorEvaluation {
             $auditorEvaluation = AuditorEvaluation::query()
                 ->whereKey($auditorEvaluation->getKey())
                 ->lockForUpdate()
@@ -26,6 +29,10 @@ class AuditorEvaluationSubmission
             }
 
             $assignment = $auditorEvaluation->assignment()->lockForUpdate()->firstOrFail();
+
+            if ((int) $assignment->auditor_id !== (int) $actor->getKey()) {
+                throw new AuthorizationException('Only the assigned Auditor can submit this evaluation.');
+            }
 
             if ($assignment->status !== 'accepted') {
                 throw new DomainStateTransitionException('An auditor assignment must be accepted before submission.');
@@ -54,7 +61,11 @@ class AuditorEvaluationSubmission
                 throw new DomainStateTransitionException('An auditor evaluation cannot be submitted without an evaluated product.');
             }
 
-            $criteria = $evaluation->standardVersion->criteria;
+            $product = $productRelease->product;
+            $applicability = app(CriterionApplicability::class);
+            $criteria = $evaluation->standardVersion->criteria->filter(
+                fn (Criterion $criterion): bool => $applicability->resolve($criterion, $product)['applicable'],
+            );
             $criterionIds = $criteria->pluck('id');
             $resultCount = $auditorEvaluation->criterionResults()->count();
 
@@ -66,11 +77,9 @@ class AuditorEvaluationSubmission
 
             if ($auditorEvaluation->criterionResults()->whereNotIn('criterion_id', $criterionIds)->exists()) {
                 throw new DomainStateTransitionException(
-                    'An auditor evaluation contains a criterion result that does not belong to its frozen standard version.',
+                    'An auditor evaluation contains a criterion result that does not belong to its frozen standard version or is not applicable to the evaluated product.',
                 );
             }
-
-            $product = $productRelease->product;
 
             if ($auditorEvaluation->evidence_sufficiency === null) {
                 throw new DomainStateTransitionException('An auditor evaluation must record an evidence sufficiency conclusion before submission.');
@@ -104,6 +113,7 @@ class AuditorEvaluationSubmission
                     'status' => 'submitted',
                     'submitted_at' => $submittedAt->toIso8601String(),
                     'locked_at' => $submittedAt->toIso8601String(),
+                    'submitted_by' => $actor->getKey(),
                     'evidence_sufficiency' => $auditorEvaluation->evidence_sufficiency->value,
                     'audience_promise_coherence' => $auditorEvaluation->audience_promise_coherence->value,
                 ],

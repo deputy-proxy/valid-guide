@@ -29,6 +29,11 @@ class ProductRecommendations
         $query = $query !== null ? trim($query) : null;
         $subjectArea = $subjectArea !== null ? trim($subjectArea) : null;
         $language = $language !== null ? trim($language) : null;
+        $hasMatchingCriteria = $audience !== null
+            || $goal !== null
+            || $productType !== null
+            || $subjectArea !== null && $subjectArea !== ''
+            || $language !== null && $language !== '';
 
         $entries = PublicDirectoryEntry::query()
             ->where('directory_visible', true)
@@ -43,14 +48,17 @@ class ProductRecommendations
             ->get();
 
         return $entries
-            ->map(fn (PublicDirectoryEntry $entry): ProductRecommendation => $this->buildRecommendation(
+            ->map(fn (PublicDirectoryEntry $entry): ?ProductRecommendation => $this->buildRecommendation(
                 $entry,
                 $audience,
                 $goal,
                 $productType,
                 $subjectArea,
                 $language,
+                $query,
+                $hasMatchingCriteria,
             ))
+            ->filter(fn (?ProductRecommendation $recommendation): bool => $recommendation !== null)
             ->sort(function (ProductRecommendation $left, ProductRecommendation $right): int {
                 $score = $right->score <=> $left->score;
 
@@ -75,10 +83,17 @@ class ProductRecommendations
         ?ProductType $productType,
         ?string $subjectArea,
         ?string $language,
-    ): ProductRecommendation {
+        ?string $query,
+        bool $hasMatchingCriteria,
+    ): ?ProductRecommendation {
         $score = 0;
         /** @var list<string> $reasons */
         $reasons = [];
+
+        if ($query !== null && $query !== '') {
+            $score++;
+            $reasons[] = 'Matches your search.';
+        }
 
         if ($audience !== null && $this->contains($entry->matching_audiences, $audience->value)) {
             $score++;
@@ -103,6 +118,10 @@ class ProductRecommendations
         if ($language !== null && $language !== '' && $this->sameText($entry->language, $language)) {
             $score++;
             $reasons[] = sprintf('Matches language: %s.', $entry->language);
+        }
+
+        if ($hasMatchingCriteria && $score === 0) {
+            return null;
         }
 
         $reasons[] = sprintf('Currently validated for release %s.', $entry->release_identifier);

@@ -12,6 +12,5 @@ final readonly class WorkflowEventRecorded implements ShouldDispatchAfterCommit
     public function __construct(
         public string $event,
         public Model $auditable,
-    ) {
-    }
+    ) {}
 }

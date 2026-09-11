@@ -1,7 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models;
 
+use App\Services\DomainStateTransitionException;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -23,6 +26,27 @@ class Finding extends Model
         'description',
         'status',
     ];
+
+    protected static function booted(): void
+    {
+        static::saving(function (self $finding): void {
+            if ($finding->auditor_evaluation_id === null) {
+                return;
+            }
+
+            $auditorEvaluation = AuditorEvaluation::query()->find($finding->auditor_evaluation_id);
+            if ($auditorEvaluation?->locked_at !== null) {
+                throw new DomainStateTransitionException('Findings belonging to a submitted Auditor evaluation are immutable.');
+            }
+        });
+
+        static::deleting(function (self $finding): void {
+            $auditorEvaluation = $finding->auditorEvaluation()->first();
+            if ($auditorEvaluation?->locked_at !== null) {
+                throw new DomainStateTransitionException('Findings belonging to a submitted Auditor evaluation are immutable.');
+            }
+        });
+    }
 
     /** @return BelongsTo<Evaluation, $this> */
     public function evaluation(): BelongsTo

@@ -5,8 +5,8 @@ declare(strict_types=1);
 use App\Enums\AuditorProfileStatus;
 use App\Models\AuditorAnnualConflictDeclaration;
 use App\Models\AuditorProfile;
-use App\Services\AuditorEligibility;
 use App\Models\User;
+use App\Services\AuditorEligibility;
 
 function auditorEligibilityUser(AuditorProfileStatus $status = AuditorProfileStatus::Approved): User
 {

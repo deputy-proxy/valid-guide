@@ -17,8 +17,7 @@ final readonly class ActionQueueItem
         public int $targetId,
         public bool $stale,
         public CarbonImmutable $createdAt,
-    ) {
-    }
+    ) {}
 
     /** @return array<string, bool|int|string> */
     public function toArray(): array

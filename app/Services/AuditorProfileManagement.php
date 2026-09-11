@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\DB;
 final class AuditorProfileManagement
 {
     /**
-     * @param list<string> $formatExperience
+     * @param  list<string>  $formatExperience
      */
     public function update(
         User $auditor,

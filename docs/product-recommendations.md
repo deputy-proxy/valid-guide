@@ -29,7 +29,7 @@ For structured criteria, a candidate receives a point only when its public metad
 
 A product with more matching signals ranks above one with fewer matching signals. Ties are resolved by title and then verification identifier, both case-insensitively, so the same input produces stable ordering.
 
-The numeric score is an internal relevance mechanism. It is not presented as a product-quality or Validation score.
+The public directory displays at most three recommendations. The numeric score is an internal relevance mechanism and is not presented as a product-quality or Validation score.
 
 ## Explanations
 

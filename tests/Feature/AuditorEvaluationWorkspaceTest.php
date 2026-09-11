@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Enums\CriterionAssessment;
 use App\Models\Criterion;
 use App\Models\CriterionResult;
+use App\Models\StandardVersion;
 use App\Models\User;
 use App\Services\AuditorEvaluationWorkspace;
 use App\Services\DomainStateTransitionException;
@@ -111,10 +112,11 @@ it('rejects invalid assessment values and criteria from another standard version
     expect(fn () => $workspace->saveDraft($auditor, $auditorEvaluation, $criterionId, 'invalid', 80, 'Reason', 80))
         ->toThrow(ValidationException::class);
 
-    $otherVersion = $auditorEvaluation->evaluation->standardVersion->replicate();
-    $otherVersion->version = '2.0';
-    $otherVersion->status = 'draft';
-    $otherVersion->save();
+    $otherVersion = StandardVersion::create([
+        'evaluation_standard_id' => $auditorEvaluation->evaluation->standardVersion->evaluation_standard_id,
+        'version' => '2.0',
+        'status' => 'draft',
+    ]);
     $otherCriterion = Criterion::create([
         'standard_version_id' => $otherVersion->id,
         'code' => 'OTHER-01',

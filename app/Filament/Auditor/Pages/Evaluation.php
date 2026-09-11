@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Filament\Auditor\Pages;
 
+use App\Enums\AudiencePromiseCoherence;
 use App\Enums\CriterionAssessment;
+use App\Enums\EvidenceSufficiency;
 use App\Models\AuditorEvaluation;
 use App\Models\CriterionResult;
 use App\Models\Evidence;
@@ -54,6 +56,10 @@ final class Evaluation extends Page
         'description' => '',
     ];
 
+    public string $evidenceSufficiency = '';
+
+    public string $audiencePromiseCoherence = '';
+
     public string $saveState = 'saved';
 
     public function mount(string $assignment): void
@@ -65,6 +71,8 @@ final class Evaluation extends Page
         }
 
         $this->auditorEvaluation = app(AuditorEvaluationWorkspace::class)->findFor($user, $assignment);
+        $this->evidenceSufficiency = $this->auditorEvaluation->evidence_sufficiency?->value ?? '';
+        $this->audiencePromiseCoherence = $this->auditorEvaluation->audience_promise_coherence?->value ?? '';
         $this->hydrateDrafts();
     }
 
@@ -105,6 +113,39 @@ final class Evaluation extends Page
 
             Notification::make()
                 ->title('Unable to save criterion')
+                ->body($exception->getMessage())
+                ->danger()
+                ->send();
+        }
+    }
+
+    public function saveDecisionGates(): void
+    {
+        $user = auth()->user();
+
+        if (! $user instanceof User) {
+            throw new AuthorizationException('You are not authorized to modify this evaluation.');
+        }
+
+        try {
+            app(AuditorEvaluationWorkspace::class)->saveDecisionGates(
+                $user,
+                $this->auditorEvaluation,
+                $this->evidenceSufficiency,
+                $this->audiencePromiseCoherence,
+            );
+            $this->auditorEvaluation->refresh();
+            $this->saveState = 'saved';
+
+            Notification::make()
+                ->title('Decision gates saved')
+                ->success()
+                ->send();
+        } catch (AuthorizationException|ValidationException|DomainStateTransitionException $exception) {
+            $this->saveState = 'failed';
+
+            Notification::make()
+                ->title('Unable to save decision gates')
                 ->body($exception->getMessage())
                 ->danger()
                 ->send();
@@ -246,6 +287,11 @@ final class Evaluation extends Page
             }
         }
 
+        $this->saveDecisionGates();
+        if ($this->saveState === 'failed') {
+            return;
+        }
+
         try {
             app(AuditorEvaluationSubmission::class)->submit($this->auditorEvaluation);
             $this->auditorEvaluation->refresh();
@@ -283,6 +329,26 @@ final class Evaluation extends Page
         return collect(CriterionAssessment::cases())
             ->mapWithKeys(fn (CriterionAssessment $assessment): array => [
                 $assessment->value => str($assessment->value)->replace('_', ' ')->headline()->toString(),
+            ])
+            ->all();
+    }
+
+    /** @return array<string,string> */
+    public function evidenceSufficiencyOptions(): array
+    {
+        return collect(EvidenceSufficiency::cases())
+            ->mapWithKeys(fn (EvidenceSufficiency $value): array => [
+                $value->value => str($value->value)->replace('_', ' ')->headline()->toString(),
+            ])
+            ->all();
+    }
+
+    /** @return array<string,string> */
+    public function audiencePromiseCoherenceOptions(): array
+    {
+        return collect(AudiencePromiseCoherence::cases())
+            ->mapWithKeys(fn (AudiencePromiseCoherence $value): array => [
+                $value->value => str($value->value)->replace('_', ' ')->headline()->toString(),
             ])
             ->all();
     }

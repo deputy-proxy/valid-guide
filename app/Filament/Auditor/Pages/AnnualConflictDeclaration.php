@@ -67,6 +67,7 @@ final class AnnualConflictDeclaration extends Page
 
     public function canEdit(): bool
     {
+
         return $this->currentDeclaration()?->determined_at === null;
     }
 

@@ -15,6 +15,7 @@ final class WorkflowNotification extends Notification implements ShouldQueue
 {
     use Queueable;
 
+    /** @param array<string, int|string|null> $context */
     public function __construct(
         public readonly NotificationCategory $category,
         public readonly NotificationEventType $eventType,

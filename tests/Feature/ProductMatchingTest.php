@@ -28,7 +28,7 @@ function issue11Product(string $slug, array $audiences = [], array $goals = []):
         'target_audience' => 'Professionals',
         'language' => 'en',
     ]);
-    DB::table('products')->whereKey($product->getKey())->update([
+    DB::table('products')->where('id', $product->getKey())->update([
         'matching_audiences' => json_encode($audiences),
         'matching_goals' => json_encode($goals),
     ]);
@@ -158,7 +158,7 @@ it('keeps matching independent from commercial product data', function () {
     issue11Validation($product);
     $matching = app(ProductMatching::class);
     $before = $matching->match(audience: ProductAudience::Professionals)->first();
-    DB::table('products')->whereKey($product->getKey())->update(['reference_price' => 999.99]);
+    DB::table('products')->where('id', $product->getKey())->update(['reference_price' => 999.99]);
     $after = $matching->match(audience: ProductAudience::Professionals)->first();
 
     expect($before?->productId)->toBe($after?->productId)

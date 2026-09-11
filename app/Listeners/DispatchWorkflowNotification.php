@@ -56,7 +56,7 @@ final class DispatchWorkflowNotification
         $reviewer = $auditable->reviewer;
 
         if ($dispute !== null && $reviewer !== null) {
-            $service->disputeReviewerAssigned($dispute, $reviewer);
+            $service->disputeReviewerAssigned($dispute, $reviewer, (int) $auditable->getKey());
         }
     }
 }

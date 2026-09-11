@@ -9,9 +9,7 @@ use App\Enums\ValidationStatus;
 
 final readonly class ProductRecommendation
 {
-    /**
-     * @param list<string> $reasons
-     */
+    /** @phpstan-param list<string> $reasons */
     public function __construct(
         public string $title,
         public string $slug,
@@ -23,7 +21,5 @@ final readonly class ProductRecommendation
         public ValidationStatus $validationStatus,
         public int $score,
         public array $reasons,
-    )
-    {
-    }
+    ) {}
 }

@@ -7,9 +7,9 @@ namespace App\Services;
 use App\Enums\ProductType;
 use App\Enums\ValidationStatus;
 
-/** @property list<string> $suitabilityReasons */
 final readonly class ProductMatch
 {
+    /** @phpstan-param list<string> $suitabilityReasons */
     public function __construct(
         public int $productId,
         public string $title,

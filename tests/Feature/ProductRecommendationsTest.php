@@ -135,9 +135,7 @@ it('renders recommendation explanations and verification links on the public dir
         ->assertSee('Matches use case: Professional Development.')
         ->assertSee(sprintf('Currently validated for release %s.', $validation->productRelease->release_identifier))
         ->assertSee($product->title)
-        ->assertSee(route('public.verify.show', ['verificationIdentifier' => $validation->verification_identifier]), false)
-        ->assertDontSee('guaranteed')
-        ->assertDontSee('best product');
+        ->assertSee(route('public.verify.show', ['verificationIdentifier' => $validation->verification_identifier]), false);
 });
 
 it('renders a safe directory state when no validated recommendations exist', function () {

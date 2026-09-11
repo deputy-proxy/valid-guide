@@ -2,16 +2,16 @@
 
 declare(strict_types=1);
 
+use App\Livewire\Creator\Reports\ShowReport;
 use App\Models\ReportVersion;
+use App\Models\User;
 use App\Models\Validation;
 use App\Models\ValidationBadge;
-use App\Models\User;
 use App\Services\CreatorReportAccess;
 use App\Services\DomainStateTransitionException;
 use App\Services\ReportVersioning;
-use Livewire\Livewire;
-use App\Livewire\Creator\Reports\ShowReport;
 use Illuminate\Auth\Access\AuthorizationException;
+use Livewire\Livewire;
 
 it('returns only creator-permitted report and validation data', function () {
     [$evaluation, $admin] = decisionFixture();
@@ -66,7 +66,8 @@ it('exposes report versions as read-only historical snapshots', function () {
 
     expect($data['report']['current_version_id'])->toBe($second->id)
         ->and($data['report']['versions'])->toHaveCount(2)
-        ->and(collect($data['report']['versions'])->firstWhere('id', $first->id)['abstract'])->not->toBe('Corrected report.');
+        ->and(collect($data['report']['versions'])->firstWhere('id', $first->id)['abstract'])
+        ->not->toBe('Corrected report.');
 
     $version = ReportVersion::query()->findOrFail($first->id);
     $version->abstract = 'tampered';

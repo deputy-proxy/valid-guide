@@ -5,11 +5,13 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Enums\OrganizationRole;
+use App\Models\ClarificationRequest;
+use App\Models\Dispute;
 use App\Models\Evaluation;
 use App\Models\Organization;
+use App\Models\ReportVersion;
 use App\Models\User;
 use Illuminate\Auth\Access\AuthorizationException;
-use Illuminate\Database\Eloquent\Collection;
 
 final class CreatorReportAccess
 {
@@ -21,12 +23,11 @@ final class CreatorReportAccess
                 'request.organization',
                 'product',
                 'productRelease',
-                'standardVersion',
+                'standardVersion.standard',
                 'report.currentVersion',
                 'report.versions',
                 'validation.badge',
                 'validation.publicVerificationRecord',
-                'findings.criterion',
                 'clarificationRequests',
                 'disputes',
             ])
@@ -62,14 +63,16 @@ final class CreatorReportAccess
             'release' => [
                 'id' => $evaluation->productRelease->getKey(),
                 'identifier' => (string) $evaluation->productRelease->release_identifier,
-                'version' => $evaluation->productRelease->version !== null ? (string) $evaluation->productRelease->version : null,
+                'version' => $evaluation->productRelease->version !== null
+                    ? (string) $evaluation->productRelease->version
+                    : null,
                 'edition' => $evaluation->productRelease->edition,
                 'published_at' => $evaluation->productRelease->published_at?->toISOString(),
             ],
             'standard_version' => [
                 'id' => $evaluation->standardVersion->getKey(),
                 'version' => (string) $evaluation->standardVersion->version,
-                'name' => (string) $evaluation->standardVersion->evaluationStandard->name,
+                'name' => (string) $evaluation->standardVersion->standard->name,
             ],
             'report' => [
                 'id' => $report->getKey(),
@@ -78,43 +81,44 @@ final class CreatorReportAccess
                 'versions' => $report->versions
                     ->sortByDesc('version_number')
                     ->values()
-                    ->map(fn ($version): array => $this->version($version))
+                    ->map(fn (ReportVersion $version): array => $this->version($version))
                     ->all(),
             ],
-            'findings' => $evaluation->findings
-                ->filter(fn ($finding): bool => $finding->status !== 'private')
-                ->map(fn ($finding): array => [
-                    'id' => $finding->getKey(),
-                    'criterion' => $finding->criterion?->name,
-                    'type' => (string) $finding->type,
-                    'severity' => $finding->severity,
-                    'title' => (string) $finding->title,
-                    'description' => (string) $finding->description,
+            'findings' => $this->creatorFindings($currentVersion),
+            'validation' => $this->validation($evaluation),
+            'clarifications' => $evaluation->clarificationRequests
+                ->map(fn (ClarificationRequest $request): array => [
+                    'id' => $request->getKey(),
+                    'type' => $request->type->value,
+                    'status' => $request->status->value,
+                    'message' => (string) $request->message,
+                    'response' => $request->response,
+                    'submitted_at' => $request->submitted_at?->toISOString(),
+                    'resolved_at' => $request->resolved_at?->toISOString(),
                 ])
                 ->values()
                 ->all(),
-            'validation' => $this->validation($evaluation),
-            'clarifications' => $evaluation->clarificationRequests->map(fn ($request): array => [
-                'id' => $request->getKey(),
-                'type' => $request->type->value,
-                'status' => $request->status->value,
-                'message' => (string) $request->message,
-                'response' => $request->response,
-                'submitted_at' => $request->submitted_at?->toISOString(),
-                'resolved_at' => $request->resolved_at?->toISOString(),
-            ])->values()->all(),
-            'disputes' => $evaluation->disputes->map(fn ($dispute): array => [
-                'id' => $dispute->getKey(),
-                'status' => $dispute->status->value,
-                'grounds' => $dispute->grounds,
-                'statement' => $dispute->decision_rationale,
-                'submitted_at' => $dispute->submitted_at?->toISOString(),
-                'resolved_at' => $dispute->resolved_at?->toISOString(),
-            ])->values()->all(),
+            'disputes' => $evaluation->disputes
+                ->map(fn (Dispute $dispute): array => [
+                    'id' => $dispute->getKey(),
+                    'status' => $dispute->status->value,
+                    'grounds' => $dispute->grounds,
+                    'statement' => $dispute->decision_rationale,
+                    'submitted_at' => $dispute->submitted_at?->toISOString(),
+                    'resolved_at' => $dispute->resolved_at?->toISOString(),
+                ])
+                ->values()
+                ->all(),
             'actions' => [
                 'clarification' => $evaluation->status->value === 'completed',
                 'dispute' => $evaluation->status->value === 'completed'
-                    && ! $evaluation->disputes->contains(fn ($dispute): bool => in_array($dispute->status->value, ['submitted', 'under_review'], true)),
+                    && ! $evaluation->disputes->contains(
+                        fn (Dispute $dispute): bool => in_array(
+                            $dispute->status->value,
+                            ['submitted', 'under_review'],
+                            true,
+                        ),
+                    ),
             ],
         ];
     }
@@ -140,7 +144,7 @@ final class CreatorReportAccess
     }
 
     /** @return array<string, mixed> */
-    private function version(mixed $version): array
+    private function version(ReportVersion $version): array
     {
         return [
             'id' => $version->getKey(),
@@ -152,6 +156,34 @@ final class CreatorReportAccess
             'published_at' => $version->published_at?->toISOString(),
             'change_reason' => $version->change_reason,
         ];
+    }
+
+    /** @return array<int, array<string, mixed>> */
+    private function creatorFindings(?ReportVersion $version): array
+    {
+        if ($version === null || ! is_array($version->content_structure)) {
+            return [];
+        }
+
+        $findings = $version->content_structure['findings'] ?? [];
+        if (! is_array($findings)) {
+            return [];
+        }
+
+        return collect($findings)
+            ->filter(fn (mixed $finding): bool => is_array($finding))
+            ->map(function (array $finding): array {
+                return [
+                    'type' => is_string($finding['type'] ?? null) ? $finding['type'] : 'finding',
+                    'severity' => is_string($finding['severity'] ?? null) ? $finding['severity'] : null,
+                    'criterion' => is_string($finding['criterion'] ?? null) ? $finding['criterion'] : null,
+                    'title' => is_string($finding['title'] ?? null) ? $finding['title'] : '',
+                    'description' => is_string($finding['description'] ?? null) ? $finding['description'] : '',
+                ];
+            })
+            ->filter(fn (array $finding): bool => $finding['title'] !== '' || $finding['description'] !== '')
+            ->values()
+            ->all();
     }
 
     /** @return array<string, mixed>|null */
@@ -175,7 +207,9 @@ final class CreatorReportAccess
             ],
             'verification_url' => $validation->publicVerificationRecord === null
                 ? null
-                : route('public.verify.show', ['verificationIdentifier' => $validation->verification_identifier]),
+                : route('public.verify.show', [
+                    'verificationIdentifier' => $validation->verification_identifier,
+                ]),
         ];
     }
 }

@@ -13,16 +13,24 @@ use Illuminate\Auth\Access\AuthorizationException;
 
 function clearAuditor(User $user): void
 {
+    $reviewer = User::factory()->create();
+
     AuditorProfile::query()->updateOrCreate(
         ['auditor_id' => $user->id],
-        ['status' => AuditorProfileStatus::Approved],
+        [
+            'status' => AuditorProfileStatus::Approved,
+            'approved_by' => $reviewer->id,
+            'approved_at' => now(),
+        ],
     );
 
     AuditorAnnualConflictDeclaration::query()->create([
         'auditor_id' => $user->id,
         'year' => now()->year,
+        'disclosure' => 'No known conflicts.',
         'outcome' => 'cleared',
         'submitted_at' => now(),
+        'determined_by' => $reviewer->id,
         'determined_at' => now(),
     ]);
 }

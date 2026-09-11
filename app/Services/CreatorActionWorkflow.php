@@ -10,6 +10,7 @@ use App\Enums\EvaluationStatus;
 use App\Models\CreatorAction;
 use App\Models\Evaluation;
 use App\Models\Finding;
+use App\Models\ImprovementGuidance;
 use App\Models\Organization;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
@@ -24,6 +25,7 @@ final class CreatorActionWorkflow
         string $description,
         CreatorActionPriority $priority = CreatorActionPriority::Medium,
         ?Finding $finding = null,
+        ?ImprovementGuidance $improvementGuidance = null,
     ): CreatorAction {
         $this->authorize($evaluation, $organization, $createdBy);
 
@@ -35,11 +37,19 @@ final class CreatorActionWorkflow
             throw new DomainStateTransitionException('The action finding does not belong to the evaluation.');
         }
 
-        return DB::transaction(function () use ($evaluation, $organization, $createdBy, $title, $description, $priority, $finding): CreatorAction {
+        if ($improvementGuidance !== null && (
+            $improvementGuidance->evaluation_id !== $evaluation->id
+            || $improvementGuidance->organization_id !== $organization->id
+        )) {
+            throw new DomainStateTransitionException('The action guidance does not belong to the evaluation organization.');
+        }
+
+        return DB::transaction(function () use ($evaluation, $organization, $createdBy, $title, $description, $priority, $finding, $improvementGuidance): CreatorAction {
             $action = CreatorAction::query()->create([
                 'organization_id' => $organization->id,
                 'evaluation_id' => $evaluation->id,
                 'finding_id' => $finding?->id,
+                'improvement_guidance_id' => $improvementGuidance?->id,
                 'created_by' => $createdBy->id,
                 'title' => trim($title),
                 'description' => trim($description),
@@ -53,6 +63,7 @@ final class CreatorActionWorkflow
                 after: [
                     'evaluation_id' => $evaluation->id,
                     'finding_id' => $finding?->id,
+                    'improvement_guidance_id' => $improvementGuidance?->id,
                     'priority' => $priority->value,
                 ],
                 actor: $createdBy,

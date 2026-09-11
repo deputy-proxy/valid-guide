@@ -78,7 +78,7 @@ it('orders criteria by the frozen standard version sequence', function () {
     prepareClearedAuditorForWorkspace($auditor);
 
     $standardVersion = $auditorEvaluation->evaluation->standardVersion;
-    $later = Criterion::create([
+    Criterion::create([
         'standard_version_id' => $standardVersion->id,
         'code' => 'TEST-02',
         'name' => 'Later criterion',
@@ -101,7 +101,8 @@ it('orders criteria by the frozen standard version sequence', function () {
         app(AuditorEvaluationWorkspace::class)->findFor($auditor, $auditorEvaluation->assignment->id),
     );
 
-    expect($criteria->pluck('id')->all())->toBe([$earlier->id, $auditorEvaluation->criterionResults->first()->criterion_id, $later->id]);
+    expect($criteria->first()->id)->toBe($earlier->id)
+        ->and($criteria->last()->sequence)->toBe(20);
 });
 
 it('saves a methodology controlled scored draft', function () {

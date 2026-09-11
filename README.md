@@ -1030,18 +1030,25 @@ The repository follows standard Laravel boundaries. Domain/application behavior 
 
 # Development Workflow
 
+## Issue Naming Convention
+
+Every GitHub Issue, whether open or closed, must follow this naming convention:
+
+```text
+Phase [PhaseNumber].[IssueNumber] - [Issue Title]
+
 ## Branching
 
 Implementation branches use the established convention:
 
 ```text
-[currentPhase]-[currentIssue]
+[currentPhase]-[currentIssue] Development Branch
 ```
 
 For example:
 
 ```text
-phase-3-99
+phase-3-99 Development Branch
 ```
 
 ## Issue Workflow

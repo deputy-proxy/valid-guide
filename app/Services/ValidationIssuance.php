@@ -21,7 +21,7 @@ class ValidationIssuance
             throw new DomainStateTransitionException('Only a platform administrator can issue a validation.');
         }
 
-        return DB::transaction(function () use ($evaluation, $issuedBy): Validation {
+        $validation = DB::transaction(function () use ($evaluation, $issuedBy): Validation {
             $evaluation = Evaluation::query()->whereKey($evaluation->getKey())->lockForUpdate()->firstOrFail();
 
             if ($evaluation->status !== EvaluationStatus::Completed) {
@@ -76,6 +76,10 @@ class ValidationIssuance
 
             return $validation->refresh();
         });
+
+        app(WorkflowNotificationService::class)->validationIssued($validation);
+
+        return $validation;
     }
 
     private function uniqueVerificationIdentifier(): string

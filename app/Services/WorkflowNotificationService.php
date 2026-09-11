@@ -11,6 +11,7 @@ use App\Models\AuditorEvaluation;
 use App\Models\ClarificationRequest;
 use App\Models\Dispute;
 use App\Models\EvaluationDecision;
+use App\Models\Organization;
 use App\Models\Report;
 use App\Models\User;
 use App\Models\Validation;
@@ -53,7 +54,7 @@ final class WorkflowNotificationService
         }
 
         $this->sendToOrganization(
-            (int) $organization->getKey(),
+            $organization,
             NotificationCategory::Decision,
             NotificationEventType::EvaluationDecisionRecorded,
             'Evaluation decision recorded',
@@ -71,7 +72,7 @@ final class WorkflowNotificationService
         }
 
         $this->sendToOrganization(
-            (int) $organization->getKey(),
+            $organization,
             NotificationCategory::Decision,
             NotificationEventType::ValidationIssued,
             'Validation issued',
@@ -94,7 +95,7 @@ final class WorkflowNotificationService
 
         $productTitle = $report->evaluation->product->title;
         $this->sendToOrganization(
-            (int) $organization->getKey(),
+            $organization,
             NotificationCategory::Report,
             NotificationEventType::ReportDelivered,
             'Evaluation report available',
@@ -117,7 +118,7 @@ final class WorkflowNotificationService
     public function clarificationAnswered(ClarificationRequest $request): void
     {
         $this->sendToOrganization(
-            (int) $request->organization_id,
+            Organization::query()->findOrFail($request->organization_id),
             NotificationCategory::Clarification,
             NotificationEventType::ClarificationAnswered,
             'Clarification answered',
@@ -156,7 +157,7 @@ final class WorkflowNotificationService
     public function disputeResolved(Dispute $dispute): void
     {
         $this->sendToOrganization(
-            (int) $dispute->organization_id,
+            Organization::query()->findOrFail($dispute->organization_id),
             NotificationCategory::Dispute,
             NotificationEventType::DisputeResolved,
             'Formal dispute resolved',
@@ -192,20 +193,14 @@ final class WorkflowNotificationService
 
     /** @param array<string, int|string|null> $context */
     private function sendToOrganization(
-        int $organizationId,
+        Organization $organization,
         NotificationCategory $category,
         NotificationEventType $eventType,
         string $title,
         string $body,
         array $context,
     ): void {
-        $users = User::query()
-            ->whereHas('organizations', function ($query) use ($organizationId): void {
-                $query->whereKey($organizationId)->wherePivotIn('role', ['owner', 'admin', 'editor']);
-            })
-            ->cursor();
-
-        foreach ($users as $user) {
+        foreach ($organization->users()->wherePivotIn('role', ['owner', 'admin', 'editor'])->cursor() as $user) {
             $this->send($user, $category, $eventType, $title, $body, $context);
         }
     }

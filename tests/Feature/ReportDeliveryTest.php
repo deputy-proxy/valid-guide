@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Enums\EvaluationRequestStatus;
+use App\Enums\NotificationEventType;
 use App\Enums\ProductType;
 use App\Models\Criterion;
 use App\Models\Evaluation;
@@ -16,10 +17,12 @@ use App\Models\ReportVersion;
 use App\Models\ServicePackage;
 use App\Models\StandardVersion;
 use App\Models\User;
+use App\Notifications\WorkflowNotification;
 use App\Services\DomainStateTransitionException;
 use App\Services\EvaluationRequestStateTransition;
 use App\Services\ReportDelivery;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Notifications\DatabaseNotification;
 use Illuminate\Support\Facades\DB;
 
 uses(RefreshDatabase::class);
@@ -147,4 +150,25 @@ test('non platform administrators cannot record report delivery', function () {
 
     expect(fn () => app(ReportDelivery::class)->deliver($report, $user))
         ->toThrow(DomainStateTransitionException::class);
+});
+
+test('report delivery notifies authorized creator members', function () {
+    [$request, $report] = reportDeliveryFixture();
+    $admin = User::factory()->create(['platform_role' => 'admin']);
+
+    app(ReportDelivery::class)->deliver($report, $admin);
+
+    $notification = DatabaseNotification::query()
+        ->where('notifiable_type', User::class)
+        ->where('notifiable_id', $request->organization->users()->wherePivot('role', 'owner')->firstOrFail()->id)
+        ->where('type', WorkflowNotification::class)
+        ->latest()
+        ->first();
+
+    expect($notification)->not->toBeNull()
+        ->and($notification?->data['event_type'])->toBe(NotificationEventType::ReportDelivered->value)
+        ->and($notification?->data['context'])->toMatchArray([
+            'report_id' => $report->id,
+            'evaluation_id' => $report->evaluation_id,
+        ]);
 });

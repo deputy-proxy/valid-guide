@@ -7,17 +7,17 @@ use App\Models\Organization;
 use App\Models\User;
 use App\Services\CreatorEvaluationRequestIntake;
 use Illuminate\Support\Facades\Route;
-use Livewire\Exceptions\CannotUpdateLockedPropertyException;
 use Livewire\Livewire;
+use Throwable;
 
 it('keeps public verification and layout landmarks accessible', function (): void {
     $response = $this->get(route('public.verify'));
 
     $response->assertOk()
         ->assertSee('<header', false)
-        ->assertSee('<nav aria="Primary navigation">', false)
+        ->assertSee('<nav aria-label="Primary navigation">', false)
         ->assertSee('<main id="main-content"', false)
-        ->assertSee('<nav aria="Footer navigation">', false)
+        ->assertSee('<nav aria-label="Footer navigation">', false)
         ->assertSee('href="#main-content"', false)
         ->assertSee('focus:ring-2', false);
 
@@ -49,7 +49,7 @@ it('does not allow Livewire clients to replace the creator tenant context', func
     ]);
 
     expect(fn () => $component->set('organizationId', $otherOrganization->id))
-        ->toThrow(CannotUpdateLockedPropertyException::class);
+        ->toThrow(fn (Throwable $exception): bool => $exception::class === 'Livewire\\Exceptions\\CannotUpdateLockedPropertyException');
 });
 
 it('does not allow Livewire clients to replace the resumed request identifier', function (): void {
@@ -80,7 +80,7 @@ it('does not allow Livewire clients to replace the resumed request identifier', 
     ]);
 
     expect(fn () => $component->set('evaluationRequestId', $otherRequest->id))
-        ->toThrow(CannotUpdateLockedPropertyException::class);
+        ->toThrow(fn (Throwable $exception): bool => $exception::class === 'Livewire\\Exceptions\\CannotUpdateLockedPropertyException');
 });
 
 it('keeps the public verification route outside authentication middleware', function (): void {

@@ -145,16 +145,25 @@ final class CreatorReportAccess
             ->values()
             ->all();
 
-        $statuses = array_count_values(array_column($items, 'status'));
+        $statuses = [
+            'pending' => 0,
+            'in_progress' => 0,
+            'completed' => 0,
+            'cancelled' => 0,
+        ];
+
+        foreach ($items as $item) {
+            $status = $item['status'] ?? null;
+            if (is_string($status) && array_key_exists($status, $statuses)) {
+                ++$statuses[$status];
+            }
+        }
 
         return [
             'items' => $items,
             'summary' => [
                 'total' => count($items),
-                'pending' => $statuses['pending'] ?? 0,
-                'in_progress' => $statuses['in_progress'] ?? 0,
-                'completed' => $statuses['completed'] ?? 0,
-                'cancelled' => $statuses['cancelled'] ?? 0,
+                ...$statuses,
             ],
             'permissions' => [
                 'can_create' => true,

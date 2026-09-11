@@ -131,8 +131,8 @@ final class AuditorFindingManagement
     {
         return [
             'criterion_id' => ['nullable'],
-            'type' => ['required', 'string', 'in,strength,weakness,risk,recommendation,factual_clarification'],
-            'severity' => ['required', 'string', 'in,low,medium,high,critical'],
+            'type' => ['required', 'string', 'in:strength,weakness,risk,recommendation,factual_clarification'],
+            'severity' => ['required', 'string', 'in:low,medium,high,critical'],
             'title' => ['required', 'string', 'max:255'],
             'description' => ['required', 'string', 'max:10000'],
         ];

@@ -17,7 +17,7 @@ use Illuminate\Support\Collection;
 
 final class WorkflowNotificationInbox
 {
-    /** @return Collection<int, array<string, mixed>> */
+    /** @return Collection<int, array{id: string, category: string, event_type: string|null, title: string, body: string, read: bool, created_at: string|null, stale: bool}> */
     public function for(User $user, int $limit = 50): Collection
     {
         return $user->notifications()
@@ -29,7 +29,7 @@ final class WorkflowNotificationInbox
                 $eventType = NotificationEventType::tryFrom((string) ($data['event_type'] ?? ''));
 
                 return [
-                    'id' => $notification->getKey(),
+                    'id' => (string) $notification->getKey(),
                     'category' => (string) ($data['category'] ?? 'system'),
                     'event_type' => $eventType?->value,
                     'title' => (string) ($data['title'] ?? 'Notification'),

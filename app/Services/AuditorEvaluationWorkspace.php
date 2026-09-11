@@ -36,8 +36,10 @@ final class AuditorEvaluationWorkspace
                 'evaluation.request',
                 'evaluation.standardVersion',
                 'evaluation.standardVersion.criteria.guidance',
-                'criterionResults',
+                'criterionResults.evidence',
+                'criterionResults.criterion',
                 'evidence',
+                'findings',
             ])
             ->latest('version')
             ->first();

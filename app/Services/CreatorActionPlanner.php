@@ -83,7 +83,8 @@ final class CreatorActionPlanner
 
     private function description(Finding $finding): string
     {
-        return 'Action derived from the evaluation finding: '.trim((string) $finding->description);
+        return 'Target outcome: '.trim((string) $finding->description)
+            ."\n\nEvidence required: Provide evidence showing how this finding has been addressed in the product.";
     }
 
     private function priority(Finding $finding): CreatorActionPriority

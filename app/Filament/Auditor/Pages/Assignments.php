@@ -7,6 +7,7 @@ namespace App\Filament\Auditor\Pages;
 use App\Models\AuditorAssignment;
 use App\Models\User;
 use App\Services\AuditorAssignmentAccess;
+use BackedEnum;
 use Filament\Pages\Page;
 use Illuminate\Support\Collection;
 
@@ -18,7 +19,7 @@ final class Assignments extends Page
 
     protected static ?string $navigationLabel = 'My Assignments';
 
-    protected static ?string $navigationIcon = 'heroicon-o-clipboard-document-list';
+    protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-clipboard-document-list';
 
     protected static ?string $title = 'My Assignments';
 

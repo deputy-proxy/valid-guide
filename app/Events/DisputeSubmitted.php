@@ -9,7 +9,5 @@ use Illuminate\Contracts\Events\ShouldDispatchAfterCommit;
 
 final readonly class DisputeSubmitted implements ShouldDispatchAfterCommit
 {
-    public function __construct(public Dispute $dispute)
-    {
-    }
+    public function __construct(public Dispute $dispute) {}
 }

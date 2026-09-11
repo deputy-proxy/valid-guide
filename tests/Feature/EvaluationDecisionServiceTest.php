@@ -24,8 +24,8 @@ use App\Models\User;
 use App\Notifications\WorkflowNotification;
 use App\Services\DomainStateTransitionException;
 use App\Services\EvaluationDecisionService;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Notifications\DatabaseNotification;
+use Illuminate\Support\Facades\DB;
 
 function decisionFixture(float $score = 80, bool $withSubmission = true): array
 {

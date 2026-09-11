@@ -15,7 +15,7 @@ it('allows an auditor to submit a declaration for their own assignment', functio
     $auditor = $assignment->auditor;
 
     DB::table('conflict_declarations')->where('id', $declaration->id)->update([
-        'outcome' => null,
+        'outcome' => 'potential_conflict',
         'determined_by' => null,
         'determined_at' => null,
     ]);
@@ -60,7 +60,7 @@ it('does not replace a determined assignment declaration', function () {
     $admin = User::factory()->create(['platform_role' => 'admin']);
 
     DB::table('conflict_declarations')->where('id', $declaration->id)->update([
-        'outcome' => null,
+        'outcome' => 'potential_conflict',
         'determined_by' => null,
         'determined_at' => null,
     ]);

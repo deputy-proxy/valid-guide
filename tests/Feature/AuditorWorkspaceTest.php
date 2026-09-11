@@ -22,15 +22,19 @@ function clearAuditor(User $user): void
         ],
     );
 
-    AuditorAnnualConflictDeclaration::query()->create([
-        'auditor_id' => $user->id,
-        'year' => now()->year,
-        'disclosure' => 'No known conflicts.',
-        'outcome' => 'cleared',
-        'submitted_at' => now(),
-        'determined_by' => $reviewer->id,
-        'determined_at' => now(),
-    ]);
+    AuditorAnnualConflictDeclaration::query()->updateOrCreate(
+        [
+            'auditor_id' => $user->id,
+            'year' => now()->year,
+        ],
+        [
+            'disclosure' => 'No known conflicts.',
+            'outcome' => 'cleared',
+            'submitted_at' => now(),
+            'determined_by' => $reviewer->id,
+            'determined_at' => now(),
+        ],
+    );
 }
 
 it('returns only cleared assignments belonging to the authenticated auditor', function () {
@@ -73,30 +77,17 @@ it('renders only the authenticated auditors cleared assignments', function () {
     $auditor = $assignment->auditor;
     clearAuditor($auditor);
 
-    $otherUser = User::factory()->create();
-    $otherAssignment = $auditorEvaluation->evaluation->assignments()->create([
-        'auditor_id' => $otherUser->id,
-        'sequence' => 2,
-        'status' => 'accepted',
-        'assigned_at' => now(),
-        'accepted_at' => now(),
-    ]);
-    $otherAssignment->conflictDeclarations()->create([
-        'evaluation_id' => $auditorEvaluation->evaluation_id,
-        'declaration_type' => 'assignment',
-        'disclosure' => 'No known conflict.',
-        'outcome' => 'cleared',
-        'determined_by' => $auditor->id,
-        'determined_at' => now(),
-    ]);
+    [$otherAuditorEvaluation] = auditorEvaluationFixture();
+    clearAuditor($otherAuditorEvaluation->assignment->auditor);
 
     $this->actingAs($auditor)
         ->get('/auditor/assignments')
         ->assertSuccessful()
         ->assertSee($assignment->evaluation->product->title)
+        ->assertDontSee($otherAuditorEvaluation->evaluation->product->title)
         ->assertSee('View assignment');
 
     $this->actingAs($auditor)
-        ->get('/auditor/assignments/'.$otherAssignment->id)
+        ->get('/auditor/assignments/'.$otherAuditorEvaluation->assignment->id)
         ->assertForbidden();
 });

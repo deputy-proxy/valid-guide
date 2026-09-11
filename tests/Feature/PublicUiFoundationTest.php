@@ -9,7 +9,7 @@ it('renders the public home page without authentication', function () {
 
     $response->assertOk();
     $response->assertSee('Valid.guide');
-    $response->assertSee('Independent validation for online learning products.');
+    $response->assertSee('Independent validation for courses, guides, and other online learning products.');
     $response->assertSee('<main id="main-content"', false);
     $response->assertSee('<nav aria-label="Primary navigation">', false);
     $response->assertSee('<nav aria-label="Footer navigation">', false);

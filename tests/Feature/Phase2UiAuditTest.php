@@ -10,6 +10,8 @@ use Illuminate\Support\Facades\Route;
 use Livewire\Livewire;
 use Throwable;
 
+// UI restrictions are regression-tested at the transport boundary, not treated as authorization.
+
 it('keeps public verification and layout landmarks accessible', function (): void {
     $response = $this->get(route('public.verify'));
 

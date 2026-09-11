@@ -11,6 +11,7 @@ use App\Models\CreatorAction;
 use App\Models\Evaluation;
 use App\Models\Finding;
 use App\Models\ImprovementGuidance;
+use App\Models\ImprovementOpportunity;
 use App\Models\Organization;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
@@ -26,6 +27,7 @@ final class CreatorActionWorkflow
         CreatorActionPriority $priority = CreatorActionPriority::Medium,
         ?Finding $finding = null,
         ?ImprovementGuidance $improvementGuidance = null,
+        ?ImprovementOpportunity $improvementOpportunity = null,
     ): CreatorAction {
         $this->authorize($evaluation, $organization, $createdBy);
 
@@ -44,12 +46,20 @@ final class CreatorActionWorkflow
             throw new DomainStateTransitionException('The action guidance does not belong to the evaluation organization.');
         }
 
-        return DB::transaction(function () use ($evaluation, $organization, $createdBy, $title, $description, $priority, $finding, $improvementGuidance): CreatorAction {
+        if ($improvementOpportunity !== null && (
+            $improvementOpportunity->evaluation_id !== $evaluation->id
+            || $improvementOpportunity->organization_id !== $organization->id
+        )) {
+            throw new DomainStateTransitionException('The action opportunity does not belong to the evaluation organization.');
+        }
+
+        return DB::transaction(function () use ($evaluation, $organization, $createdBy, $title, $description, $priority, $finding, $improvementGuidance, $improvementOpportunity): CreatorAction {
             $action = CreatorAction::query()->create([
                 'organization_id' => $organization->id,
                 'evaluation_id' => $evaluation->id,
                 'finding_id' => $finding?->id,
                 'improvement_guidance_id' => $improvementGuidance?->id,
+                'improvement_opportunity_id' => $improvementOpportunity?->id,
                 'created_by' => $createdBy->id,
                 'title' => trim($title),
                 'description' => trim($description),
@@ -64,6 +74,7 @@ final class CreatorActionWorkflow
                     'evaluation_id' => $evaluation->id,
                     'finding_id' => $finding?->id,
                     'improvement_guidance_id' => $improvementGuidance?->id,
+                    'improvement_opportunity_id' => $improvementOpportunity?->id,
                     'priority' => $priority->value,
                 ],
                 actor: $createdBy,

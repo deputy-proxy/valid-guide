@@ -41,13 +41,6 @@ final class CreatorDashboardPage extends Page
         $this->loadDashboard();
     }
 
-    public static function canAccess(): bool
-    {
-        $user = Auth::user();
-
-        return $user instanceof User && $user->organizations()->exists();
-    }
-
     public function requestRefund(int $evaluationRequestId): void
     {
         $actor = self::authenticatedUser();

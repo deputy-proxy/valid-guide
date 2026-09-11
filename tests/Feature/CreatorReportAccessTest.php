@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Enums\PlatformRole;
 use App\Livewire\Creator\Reports\ShowReport;
 use App\Models\ReportVersion;
 use App\Models\User;
@@ -11,10 +12,32 @@ use App\Services\CreatorReportAccess;
 use App\Services\DomainStateTransitionException;
 use App\Services\ReportVersioning;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Support\Facades\DB;
 use Livewire\Livewire;
 
+function creatorReportFixture(): array
+{
+    [$auditorEvaluation] = auditorEvaluationFixture();
+    $evaluation = $auditorEvaluation->evaluation;
+
+    DB::table('evaluations')
+        ->where('id', $evaluation->id)
+        ->update([
+            'status' => 'completed',
+            'decision' => 'validated',
+            'overall_score' => 80,
+            'completed_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+    $evaluation->refresh();
+    $admin = User::factory()->create(['platform_role' => PlatformRole::Admin]);
+
+    return [$evaluation, $admin];
+}
+
 it('returns only creator-permitted report and validation data', function () {
-    [$evaluation, $admin] = decisionFixture();
+    [$evaluation, $admin] = creatorReportFixture();
     app(ReportVersioning::class)->createInitial($evaluation, $admin);
 
     $organization = $evaluation->request->organization;
@@ -48,7 +71,7 @@ it('returns only creator-permitted report and validation data', function () {
 });
 
 it('exposes report versions as read-only historical snapshots', function () {
-    [$evaluation, $admin] = decisionFixture();
+    [$evaluation, $admin] = creatorReportFixture();
     $first = app(ReportVersioning::class)->createInitial($evaluation, $admin);
     $second = app(ReportVersioning::class)->createRevision(
         $first->report,
@@ -76,7 +99,7 @@ it('exposes report versions as read-only historical snapshots', function () {
 });
 
 it('rejects users outside the evaluation organization', function () {
-    [$evaluation, $admin] = decisionFixture();
+    [$evaluation, $admin] = creatorReportFixture();
     app(ReportVersioning::class)->createInitial($evaluation, $admin);
 
     expect(fn () => app(CreatorReportAccess::class)->show(User::factory()->create(), $evaluation->id))
@@ -84,7 +107,7 @@ it('rejects users outside the evaluation organization', function () {
 });
 
 it('renders the creator report through Livewire', function () {
-    [$evaluation, $admin] = decisionFixture();
+    [$evaluation, $admin] = creatorReportFixture();
     app(ReportVersioning::class)->createInitial($evaluation, $admin);
 
     $creator = User::factory()->create();
@@ -99,7 +122,7 @@ it('renders the creator report through Livewire', function () {
 });
 
 it('blocks Livewire report access for another tenant', function () {
-    [$evaluation, $admin] = decisionFixture();
+    [$evaluation, $admin] = creatorReportFixture();
     app(ReportVersioning::class)->createInitial($evaluation, $admin);
 
     expect(fn () => Livewire::actingAs(User::factory()->create())

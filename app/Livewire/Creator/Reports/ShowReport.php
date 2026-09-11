@@ -8,7 +8,9 @@ use App\Enums\ClarificationRequestType;
 use App\Enums\DisputeGround;
 use App\Models\Evaluation;
 use App\Models\User;
+use App\Services\ClarificationWorkflow;
 use App\Services\CreatorReportAccess;
+use App\Services\DisputeWorkflow;
 use App\Services\DomainStateTransitionException;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Contracts\View\View;
@@ -63,7 +65,7 @@ final class ShowReport extends Component
             }
 
             $evaluation = $this->evaluation();
-            app(\App\Services\ClarificationWorkflow::class)->submit(
+            app(ClarificationWorkflow::class)->submit(
                 $evaluation,
                 $evaluation->request->organization,
                 $this->authenticatedUser(),
@@ -103,7 +105,7 @@ final class ShowReport extends Component
             }
 
             $evaluation = $this->evaluation();
-            app(\App\Services\DisputeWorkflow::class)->submit(
+            app(DisputeWorkflow::class)->submit(
                 $evaluation,
                 $evaluation->request->organization,
                 $this->authenticatedUser(),
@@ -127,7 +129,9 @@ final class ShowReport extends Component
     public function clarificationTypeOptions(): array
     {
         return collect(ClarificationRequestType::cases())
-            ->mapWithKeys(fn (ClarificationRequestType $type): array => [$type->value => str($type->value)->replace('_', ' ')->headline()->toString()])
+            ->mapWithKeys(fn (ClarificationRequestType $type): array => [
+                $type->value => str($type->value)->replace('_', ' ')->headline()->toString(),
+            ])
             ->all();
     }
 
@@ -135,13 +139,18 @@ final class ShowReport extends Component
     public function disputeGroundOptions(): array
     {
         return collect(DisputeGround::cases())
-            ->mapWithKeys(fn (DisputeGround $ground): array => [$ground->value => str($ground->value)->replace('_', ' ')->headline()->toString()])
+            ->mapWithKeys(fn (DisputeGround $ground): array => [
+                $ground->value => str($ground->value)->replace('_', ' ')->headline()->toString(),
+            ])
             ->all();
     }
 
     private function loadReport(): void
     {
-        $this->reportData = app(CreatorReportAccess::class)->show($this->authenticatedUser(), $this->evaluationId);
+        $this->reportData = app(CreatorReportAccess::class)->show(
+            $this->authenticatedUser(),
+            $this->evaluationId,
+        );
 
         if ($this->selectedVersionId === null) {
             $currentId = $this->reportData['report']['current_version_id'] ?? null;

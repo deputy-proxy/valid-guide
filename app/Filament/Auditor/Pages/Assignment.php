@@ -22,13 +22,6 @@ final class Assignment extends Page
 
     public AuditorAssignment $assignment;
 
-    public static function canAccess(): bool
-    {
-        $user = auth()->user();
-
-        return $user instanceof User && app(AuditorAssignmentAccess::class)->isClearedAuditor($user);
-    }
-
     public function mount(string $assignment): void
     {
         $user = auth()->user();

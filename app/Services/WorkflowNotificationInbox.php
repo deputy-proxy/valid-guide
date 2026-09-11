@@ -17,10 +17,11 @@ use Illuminate\Support\Collection;
 
 final class WorkflowNotificationInbox
 {
-    /** @return Collection<int, array{id: string, category: string, event_type: string|null, title: string, body: string, read: bool, created_at: string|null, stale: bool}> */
+    /** @return Collection<int, array<string, mixed>> */
     public function for(User $user, int $limit = 50): Collection
     {
-        return $user->notifications()
+        /** @var Collection<int, array<string, mixed>> $notifications */
+        $notifications = $user->notifications()
             ->latest()
             ->limit($limit)
             ->get()
@@ -40,6 +41,8 @@ final class WorkflowNotificationInbox
                     'stale' => $this->isStale($eventType, $data['context'] ?? []),
                 ];
             });
+
+        return $notifications;
     }
 
     public function unreadCount(User $user): int

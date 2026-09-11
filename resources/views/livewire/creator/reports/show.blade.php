@@ -166,6 +166,51 @@
             @endforeach
 
             <section class="rounded-xl border border-zinc-200 p-6 dark:border-zinc-700">
+                <div class="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+                    <div>
+                        <h2 class="text-xl font-semibold text-zinc-900 dark:text-white">Creator Action Plan</h2>
+                        <p class="mt-1 text-sm text-zinc-600 dark:text-zinc-300">Actionable next steps derived from creator-visible findings.</p>
+                    </div>
+                    <p class="text-sm text-zinc-500 dark:text-zinc-400">
+                        {{ $reportData['actions']['summary']['total'] ?? 0 }} total · {{ $reportData['actions']['summary']['completed'] ?? 0 }} completed
+                    </p>
+                </div>
+                @error('action') <p class="mt-3 text-sm text-red-700" role="alert">{{ $message }}</p> @enderror
+                <div class="mt-6 space-y-4">
+                    @forelse ($reportData['actions']['items'] ?? [] as $action)
+                        <article class="rounded-lg border border-zinc-200 p-4 dark:border-zinc-700">
+                            <div class="flex flex-wrap items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400">
+                                <span class="font-medium uppercase tracking-wide">{{ str((string) $action['priority'])->headline() }}</span>
+                                <span aria-hidden="true">·</span>
+                                <span>{{ str((string) $action['status'])->replace('_', ' ')->headline() }}</span>
+                            </div>
+                            <h3 class="mt-2 font-medium text-zinc-900 dark:text-white">{{ $action['title'] }}</h3>
+                            <p class="mt-1 whitespace-pre-line text-sm leading-6 text-zinc-700 dark:text-zinc-300">{{ $action['description'] }}</p>
+                            @if (($action['finding_title'] ?? null) !== null)
+                                <p class="mt-3 text-xs text-zinc-500 dark:text-zinc-400">Based on: {{ $action['finding_title'] }}</p>
+                            @endif
+                            @if (($action['assignee_name'] ?? null) !== null)
+                                <p class="mt-1 text-xs text-zinc-500 dark:text-zinc-400">Assigned to: {{ $action['assignee_name'] }}</p>
+                            @endif
+                            @if (($action['due_at'] ?? null) !== null)
+                                <p class="mt-1 text-xs text-zinc-500 dark:text-zinc-400">Due: {{ $action['due_at'] }}</p>
+                            @endif
+                            <div class="mt-4 flex flex-wrap gap-2">
+                                @if ($action['status'] === 'pending')
+                                    <button type="button" wire:click="transitionAction({{ $action['id'] }}, 'in_progress')" class="rounded-lg border border-zinc-300 px-3 py-2 text-sm font-medium dark:border-zinc-600">Start action</button>
+                                @elseif ($action['status'] === 'in_progress')
+                                    <button type="button" wire:click="transitionAction({{ $action['id'] }}, 'completed')" class="rounded-lg bg-zinc-900 px-3 py-2 text-sm font-medium text-white">Mark complete</button>
+                                    <button type="button" wire:click="transitionAction({{ $action['id'] }}, 'pending')" class="rounded-lg border border-zinc-300 px-3 py-2 text-sm font-medium dark:border-zinc-600">Move back to pending</button>
+                                @endif
+                            </div>
+                        </article>
+                    @empty
+                        <p class="text-sm text-zinc-600 dark:text-zinc-300">No actionable creator steps were identified from this evaluation.</p>
+                    @endforelse
+                </div>
+            </section>
+
+            <section class="rounded-xl border border-zinc-200 p-6 dark:border-zinc-700">
                 <h2 class="text-xl font-semibold text-zinc-900 dark:text-white">Findings and recommendations</h2>
                 <div class="mt-6 space-y-4">
                     @forelse ($reportData['findings'] ?? [] as $finding)
@@ -251,7 +296,7 @@
                             <textarea wire:model="disputeStatement" rows="5" class="mt-1 block w-full rounded-lg border-zinc-300" required></textarea>
                         </label>
                         @error('dispute') <p class="text-sm text-red-700">{{ $message }}</p> @enderror
-a                        @error('disputeGrounds') <p class="text-sm text-red-700">{{ $message }}</p> @enderror
+                        @error('disputeGrounds') <p class="text-sm text-red-700">{{ $message }}</p> @enderror
                         @error('disputeStatement') <p class="text-sm text-red-700">{{ $message }}</p> @enderror
                         <button type="submit" class="rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white">Submit formal dispute</button>
                     </form>

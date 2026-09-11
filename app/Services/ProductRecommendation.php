@@ -23,5 +23,7 @@ final readonly class ProductRecommendation
         public ValidationStatus $validationStatus,
         public int $score,
         public array $reasons,
-    ) {}
+    )
+    {
+    }
 }

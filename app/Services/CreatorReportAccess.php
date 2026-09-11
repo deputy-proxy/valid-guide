@@ -33,14 +33,26 @@ final class CreatorReportAccess
             ])
             ->findOrFail($evaluationId);
 
-        $organization = $evaluation->request->organization;
+        $request = $evaluation->request;
+        if ($request === null || $request->organization === null) {
+            throw new AuthorizationException('The evaluation does not have an accessible creator organization.');
+        }
+
+        $organization = $request->organization;
         $this->authorize($actor, $organization);
 
-        if ($evaluation->report === null || $evaluation->report->creator_visible_at === null) {
-            throw new AuthorizationException('The evaluation report is not available to this organization.');
+        $product = $evaluation->product;
+        $productRelease = $evaluation->productRelease;
+        $standardVersion = $evaluation->standardVersion;
+        if ($product === null || $productRelease === null || $standardVersion === null || $standardVersion->standard === null) {
+            throw new AuthorizationException('The evaluation is missing required historical context.');
         }
 
         $report = $evaluation->report;
+        if ($report === null || $report->creator_visible_at === null) {
+            throw new AuthorizationException('The evaluation report is not available to this organization.');
+        }
+
         $currentVersion = $report->currentVersion;
 
         return [
@@ -56,23 +68,23 @@ final class CreatorReportAccess
                 'name' => (string) $organization->name,
             ],
             'product' => [
-                'id' => $evaluation->product->getKey(),
-                'title' => (string) $evaluation->product->title,
-                'slug' => (string) $evaluation->product->slug,
+                'id' => $product->getKey(),
+                'title' => (string) $product->title,
+                'slug' => (string) $product->slug,
             ],
             'release' => [
-                'id' => $evaluation->productRelease->getKey(),
-                'identifier' => (string) $evaluation->productRelease->release_identifier,
-                'version' => $evaluation->productRelease->version !== null
-                    ? (string) $evaluation->productRelease->version
+                'id' => $productRelease->getKey(),
+                'identifier' => (string) $productRelease->release_identifier,
+                'version' => $productRelease->version !== null
+                    ? (string) $productRelease->version
                     : null,
-                'edition' => $evaluation->productRelease->edition,
-                'published_at' => $evaluation->productRelease->published_at?->toISOString(),
+                'edition' => $productRelease->edition,
+                'published_at' => $productRelease->published_at?->toISOString(),
             ],
             'standard_version' => [
-                'id' => $evaluation->standardVersion->getKey(),
-                'version' => (string) $evaluation->standardVersion->version,
-                'name' => (string) $evaluation->standardVersion->standard->name,
+                'id' => $standardVersion->getKey(),
+                'version' => (string) $standardVersion->version,
+                'name' => (string) $standardVersion->standard->name,
             ],
             'report' => [
                 'id' => $report->getKey(),
@@ -87,14 +99,14 @@ final class CreatorReportAccess
             'findings' => $this->creatorFindings($currentVersion),
             'validation' => $this->validation($evaluation),
             'clarifications' => $evaluation->clarificationRequests
-                ->map(fn (ClarificationRequest $request): array => [
-                    'id' => $request->getKey(),
-                    'type' => $request->type->value,
-                    'status' => $request->status->value,
-                    'message' => (string) $request->message,
-                    'response' => $request->response,
-                    'submitted_at' => $request->submitted_at?->toISOString(),
-                    'resolved_at' => $request->resolved_at?->toISOString(),
+                ->map(fn (ClarificationRequest $clarification): array => [
+                    'id' => $clarification->getKey(),
+                    'type' => $clarification->type->value,
+                    'status' => $clarification->status->value,
+                    'message' => (string) $clarification->message,
+                    'response' => $clarification->response,
+                    'submitted_at' => $clarification->submitted_at?->toISOString(),
+                    'resolved_at' => $clarification->resolved_at?->toISOString(),
                 ])
                 ->values()
                 ->all(),
@@ -170,20 +182,28 @@ final class CreatorReportAccess
             return [];
         }
 
-        return collect($findings)
-            ->filter(fn (mixed $finding): bool => is_array($finding))
-            ->map(function (array $finding): array {
-                return [
-                    'type' => is_string($finding['type'] ?? null) ? $finding['type'] : 'finding',
-                    'severity' => is_string($finding['severity'] ?? null) ? $finding['severity'] : null,
-                    'criterion' => is_string($finding['criterion'] ?? null) ? $finding['criterion'] : null,
-                    'title' => is_string($finding['title'] ?? null) ? $finding['title'] : '',
-                    'description' => is_string($finding['description'] ?? null) ? $finding['description'] : '',
-                ];
-            })
-            ->filter(fn (array $finding): bool => $finding['title'] !== '' || $finding['description'] !== '')
-            ->values()
-            ->all();
+        $result = [];
+        foreach ($findings as $finding) {
+            if (! is_array($finding)) {
+                continue;
+            }
+
+            $title = is_string($finding['title'] ?? null) ? $finding['title'] : '';
+            $description = is_string($finding['description'] ?? null) ? $finding['description'] : '';
+            if ($title === '' && $description === '') {
+                continue;
+            }
+
+            $result[] = [
+                'type' => is_string($finding['type'] ?? null) ? $finding['type'] : 'finding',
+                'severity' => is_string($finding['severity'] ?? null) ? $finding['severity'] : null,
+                'criterion' => is_string($finding['criterion'] ?? null) ? $finding['criterion'] : null,
+                'title' => $title,
+                'description' => $description,
+            ];
+        }
+
+        return $result;
     }
 
     /** @return array<string, mixed>|null */

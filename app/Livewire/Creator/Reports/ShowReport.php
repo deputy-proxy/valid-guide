@@ -94,14 +94,14 @@ final class ShowReport extends Component
                 'disputeStatement' => ['required', 'string', 'max:10000'],
             ]);
 
-            $grounds = collect($this->disputeGrounds)
-                ->map(fn (string $ground): ?DisputeGround => DisputeGround::tryFrom($ground))
-                ->filter()
-                ->values()
-                ->all();
+            $grounds = [];
+            foreach ($this->disputeGrounds as $ground) {
+                $disputeGround = DisputeGround::tryFrom($ground);
+                if ($disputeGround === null) {
+                    throw new DomainStateTransitionException('One or more dispute grounds are invalid.');
+                }
 
-            if (count($grounds) !== count($this->disputeGrounds)) {
-                throw new DomainStateTransitionException('One or more dispute grounds are invalid.');
+                $grounds[] = $disputeGround;
             }
 
             $evaluation = $this->evaluation();

@@ -7,6 +7,7 @@ namespace App\Filament\Auditor\Pages;
 use App\Models\AuditorAnnualConflictDeclaration;
 use App\Models\User;
 use App\Services\AuditorAnnualConflictDeclarationService;
+use BackedEnum;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -19,7 +20,7 @@ final class AnnualConflictDeclaration extends Page
 
     protected static ?string $navigationLabel = 'Annual COI Declaration';
 
-    protected static ?string $navigationIcon = 'heroicon-o-document-check';
+    protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-document-check';
 
     protected static ?string $title = 'Annual Conflict-of-Interest Declaration';
 

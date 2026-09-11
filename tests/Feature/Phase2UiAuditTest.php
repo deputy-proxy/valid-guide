@@ -33,8 +33,8 @@ it('keeps public verification and layout landmarks accessible', function (): voi
 
 it('does not allow Livewire clients to replace the creator tenant context', function (): void {
     $user = User::factory()->create();
-    $organization = Organization::factory()->create();
-    $otherOrganization = Organization::factory()->create();
+    $organization = Organization::create(['name' => 'Primary organization', 'slug' => 'primary-organization']);
+    $otherOrganization = Organization::create(['name' => 'Other organization', 'slug' => 'other-organization']);
 
     $organization->users()->attach($user, ['role' => 'owner']);
     $this->actingAs($user);
@@ -49,8 +49,8 @@ it('does not allow Livewire clients to replace the creator tenant context', func
 
 it('does not allow Livewire clients to replace the resumed request identifier', function (): void {
     $user = User::factory()->create();
-    $organization = Organization::factory()->create();
-    $otherOrganization = Organization::factory()->create();
+    $organization = Organization::create(['name' => 'Primary organization', 'slug' => 'primary-organization']);
+    $otherOrganization = Organization::create(['name' => 'Other organization', 'slug' => 'other-organization']);
 
     $organization->users()->attach($user, ['role' => 'owner']);
     $otherOrganization->users()->attach($user, ['role' => 'owner']);

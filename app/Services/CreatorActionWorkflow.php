@@ -7,10 +7,12 @@ namespace App\Services;
 use App\Enums\CreatorActionPriority;
 use App\Enums\CreatorActionStatus;
 use App\Enums\EvaluationStatus;
+use App\Enums\ImprovementOpportunityStatus;
 use App\Models\CreatorAction;
 use App\Models\Evaluation;
 use App\Models\Finding;
 use App\Models\ImprovementGuidance;
+use App\Models\ImprovementOpportunity;
 use App\Models\Organization;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
@@ -26,6 +28,7 @@ final class CreatorActionWorkflow
         CreatorActionPriority $priority = CreatorActionPriority::Medium,
         ?Finding $finding = null,
         ?ImprovementGuidance $improvementGuidance = null,
+        ?ImprovementOpportunity $improvementOpportunity = null,
     ): CreatorAction {
         $this->authorize($evaluation, $organization, $createdBy);
 
@@ -44,12 +47,20 @@ final class CreatorActionWorkflow
             throw new DomainStateTransitionException('The action guidance does not belong to the evaluation organization.');
         }
 
-        return DB::transaction(function () use ($evaluation, $organization, $createdBy, $title, $description, $priority, $finding, $improvementGuidance): CreatorAction {
+        if ($improvementOpportunity !== null && (
+            $improvementOpportunity->evaluation_id !== $evaluation->id
+            || $improvementOpportunity->organization_id !== $organization->id
+        )) {
+            throw new DomainStateTransitionException('The action opportunity does not belong to the evaluation organization.');
+        }
+
+        return DB::transaction(function () use ($evaluation, $organization, $createdBy, $title, $description, $priority, $finding, $improvementGuidance, $improvementOpportunity): CreatorAction {
             $action = CreatorAction::query()->create([
                 'organization_id' => $organization->id,
                 'evaluation_id' => $evaluation->id,
                 'finding_id' => $finding?->id,
                 'improvement_guidance_id' => $improvementGuidance?->id,
+                'improvement_opportunity_id' => $improvementOpportunity?->id,
                 'created_by' => $createdBy->id,
                 'title' => trim($title),
                 'description' => trim($description),
@@ -64,6 +75,7 @@ final class CreatorActionWorkflow
                     'evaluation_id' => $evaluation->id,
                     'finding_id' => $finding?->id,
                     'improvement_guidance_id' => $improvementGuidance?->id,
+                    'improvement_opportunity_id' => $improvementOpportunity?->id,
                     'priority' => $priority->value,
                 ],
                 actor: $createdBy,
@@ -80,6 +92,7 @@ final class CreatorActionWorkflow
         return DB::transaction(function () use ($action, $actor, $status): CreatorAction {
             $action = CreatorAction::query()->whereKey($action->id)->lockForUpdate()->firstOrFail();
             $from = $action->status;
+            $opportunity = $action->improvementOpportunity;
 
             if (! $this->canTransition($from, $status)) {
                 throw new DomainStateTransitionException(sprintf(
@@ -89,9 +102,35 @@ final class CreatorActionWorkflow
                 ));
             }
 
+            if ($opportunity !== null && in_array($opportunity->status, [
+                ImprovementOpportunityStatus::Completed,
+                ImprovementOpportunityStatus::Dismissed,
+                ImprovementOpportunityStatus::Superseded,
+            ], true)) {
+                throw new DomainStateTransitionException('The creator action is locked because its improvement opportunity is closed.');
+            }
+
             $action->status = $status;
             $action->completed_at = $status === CreatorActionStatus::Completed ? now() : null;
             $action->save();
+
+            if ($opportunity !== null) {
+                $opportunityWorkflow = app(ImprovementOpportunityWorkflow::class);
+
+                if ($status === CreatorActionStatus::InProgress && $opportunity->status === ImprovementOpportunityStatus::Open) {
+                    $opportunityWorkflow->transition($opportunity, $actor, ImprovementOpportunityStatus::InProgress);
+                } elseif ($status === CreatorActionStatus::Pending && $opportunity->status === ImprovementOpportunityStatus::InProgress) {
+                    $opportunityWorkflow->transition($opportunity, $actor, ImprovementOpportunityStatus::Open);
+                } elseif ($status === CreatorActionStatus::Cancelled) {
+                    $opportunityWorkflow->transition($opportunity, $actor, ImprovementOpportunityStatus::Dismissed);
+                } elseif ($status === CreatorActionStatus::Completed) {
+                    $opportunityWorkflow->complete(
+                        $opportunity,
+                        $actor,
+                        sprintf('Creator action completed: %s', $action->title),
+                    );
+                }
+            }
 
             AuditLogger::record(
                 event: 'creator_action.status_changed',
@@ -118,6 +157,10 @@ final class CreatorActionWorkflow
             $before = $action->assigned_to;
             $action->assigned_to = $assignee?->id;
             $action->save();
+
+            if ($action->improvementOpportunity !== null) {
+                app(ImprovementOpportunityWorkflow::class)->assign($action->improvementOpportunity, $actor, $assignee);
+            }
 
             AuditLogger::record(
                 event: 'creator_action.assigned',

@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Enums\ImprovementOpportunityStatus;
 use App\Enums\NotificationEventType;
 use App\Models\AuditorAssignment;
 use App\Models\AuditorEvaluation;
 use App\Models\ClarificationRequest;
 use App\Models\Dispute;
 use App\Models\DisputeReviewer;
+use App\Models\ImprovementOpportunity;
 use App\Models\Report;
 use App\Models\User;
 use Illuminate\Notifications\DatabaseNotification;
@@ -79,6 +81,9 @@ final class WorkflowNotificationInbox
             NotificationEventType::ClarificationAnswered => $this->clarificationIsStale($context, 'answered'),
             NotificationEventType::DisputeSubmitted => $this->disputeIsStale($context),
             NotificationEventType::DisputeReviewerAssigned => $this->reviewerIsStale($context),
+            NotificationEventType::ImprovementOpportunityCreated,
+            NotificationEventType::ImprovementOpportunityAssigned => $this->improvementOpportunityIsStale($context, false),
+            NotificationEventType::ImprovementOpportunityCompleted => $this->improvementOpportunityIsStale($context, true),
             null => true,
         };
     }
@@ -166,5 +171,28 @@ final class WorkflowNotificationInbox
         $reviewer = DisputeReviewer::query()->find((int) $id);
 
         return $reviewer === null || $reviewer->status !== 'assigned';
+    }
+
+    /** @param array<string, mixed> $context */
+    private function improvementOpportunityIsStale(array $context, bool $completed): bool
+    {
+        $id = $context['improvement_opportunity_id'] ?? null;
+        if (is_int($id) === false && ctype_digit((string) $id) === false) {
+            return true;
+        }
+
+        $opportunity = ImprovementOpportunity::query()->find((int) $id);
+        if ($opportunity === null) {
+            return true;
+        }
+
+        if ($completed) {
+            return $opportunity->status !== ImprovementOpportunityStatus::Completed;
+        }
+
+        return ! in_array($opportunity->status, [
+            ImprovementOpportunityStatus::Open,
+            ImprovementOpportunityStatus::InProgress,
+        ], true);
     }
 }

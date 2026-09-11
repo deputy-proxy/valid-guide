@@ -3,6 +3,7 @@
 use App\Enums\AudiencePromiseCoherence;
 use App\Enums\CriterionVotingMode;
 use App\Enums\EvidenceSufficiency;
+use App\Enums\PlatformRole;
 use App\Models\AuditorAssignment;
 use App\Models\AuditorEvaluation;
 use App\Models\ConflictDeclaration;
@@ -15,6 +16,7 @@ use App\Models\Product;
 use App\Models\ProductRelease;
 use App\Models\StandardVersion;
 use App\Models\User;
+use App\Services\ReportVersioning;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
@@ -46,4 +48,30 @@ function auditorEvaluationFixture(CriterionVotingMode $votingMode = CriterionVot
     $result = CriterionResult::create(['auditor_evaluation_id' => $auditorEvaluation->id, 'criterion_id' => $criterion->id, 'assessment' => 'meets', 'score' => 80, 'rationale' => 'Sufficient evidence.', 'confidence' => 90]);
 
     return [$auditorEvaluation, $result, $declaration];
+}
+
+function creatorActionEvaluationFixture(): array
+{
+    [$auditorEvaluation] = auditorEvaluationFixture();
+    $evaluation = $auditorEvaluation->evaluation;
+
+    DB::table('evaluations')
+        ->where('id', $evaluation->id)
+        ->update([
+            'status' => 'completed',
+            'decision' => 'validated',
+            'overall_score' => 80,
+            'completed_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+    $evaluation->refresh();
+    $admin = User::factory()->create(['platform_role' => PlatformRole::Admin]);
+    app(ReportVersioning::class)->createInitial($evaluation, $admin);
+
+    $organization = $evaluation->request->organization;
+    $creator = User::factory()->create();
+    $organization->users()->attach($creator, ['role' => 'editor']);
+
+    return [$evaluation, $organization, $creator];
 }

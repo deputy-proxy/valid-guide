@@ -16,4 +16,7 @@ enum NotificationEventType: string
     case DisputeSubmitted = 'dispute_submitted';
     case DisputeReviewerAssigned = 'dispute_reviewer_assigned';
     case DisputeResolved = 'dispute_resolved';
+    case ImprovementOpportunityCreated = 'improvement_opportunity_created';
+    case ImprovementOpportunityAssigned = 'improvement_opportunity_assigned';
+    case ImprovementOpportunityCompleted = 'improvement_opportunity_completed';
 }

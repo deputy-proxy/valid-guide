@@ -3,6 +3,7 @@
         $organization = $dashboard['organization'];
         $products = $dashboard['products'];
         $requests = $dashboard['evaluation_requests'];
+        $opportunities = $dashboard['improvement_opportunities'] ?? [];
     @endphp
 
     <div class="space-y-6">
@@ -18,6 +19,46 @@
                     Product Releases
                 </x-filament::button>
             </div>
+        </x-filament::section>
+
+        <x-filament::section heading="Improvement Opportunities">
+            @if ($opportunities === [])
+                <div class="text-sm text-gray-500 dark:text-gray-400">
+                    No active improvement opportunities require attention.
+                </div>
+            @else
+                <div class="space-y-4">
+                    @foreach ($opportunities as $opportunity)
+                        <div class="rounded-xl border border-gray-200 p-4 dark:border-white/10">
+                            <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                                <div class="space-y-2">
+                                    <div class="flex flex-wrap items-center gap-2">
+                                        <h3 class="font-semibold">{{ $opportunity['title'] }}</h3>
+                                        <x-filament::badge>{{ str($opportunity['status'])->replace('_', ' ')->title() }}</x-filament::badge>
+                                        <x-filament::badge color="gray">{{ str($opportunity['priority'])->title() }}</x-filament::badge>
+                                    </div>
+                                    <p class="text-sm text-gray-600 dark:text-gray-300">{{ $opportunity['target_outcome'] }}</p>
+                                    @if ($opportunity['product_title'] !== null)
+                                        <p class="text-xs text-gray-500 dark:text-gray-400">{{ $opportunity['product_title'] }}</p>
+                                    @endif
+                                    @if ($opportunity['assignee_name'] !== null)
+                                        <p class="text-xs text-gray-500 dark:text-gray-400">Responsible: {{ $opportunity['assignee_name'] }}</p>
+                                    @endif
+                                </div>
+
+                                <x-filament::button
+                                    tag="a"
+                                    size="sm"
+                                    icon="heroicon-o-arrow-right"
+                                    :href="route('creator.reports.show', ['evaluationId' => $opportunity['evaluation_id']])"
+                                >
+                                    Open evaluation
+                                </x-filament::button>
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+            @endif
         </x-filament::section>
 
         <x-filament::section heading="Products">

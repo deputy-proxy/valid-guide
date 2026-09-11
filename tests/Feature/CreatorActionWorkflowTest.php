@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 use App\Enums\CreatorActionPriority;
 use App\Enums\CreatorActionStatus;
-use App\Enums\PlatformRole;
 use App\Livewire\Creator\Reports\ShowReport;
 use App\Models\CreatorAction;
 use App\Models\Finding;
@@ -14,35 +13,7 @@ use App\Services\CreatorActionPlanner;
 use App\Services\CreatorActionWorkflow;
 use App\Services\CreatorReportAccess;
 use App\Services\DomainStateTransitionException;
-use App\Services\ReportVersioning;
-use Illuminate\Support\Facades\DB;
 use Livewire\Livewire;
-
-function creatorActionEvaluationFixture(): array
-{
-    [$auditorEvaluation] = auditorEvaluationFixture();
-    $evaluation = $auditorEvaluation->evaluation;
-
-    DB::table('evaluations')
-        ->where('id', $evaluation->id)
-        ->update([
-            'status' => 'completed',
-            'decision' => 'validated',
-            'overall_score' => 80,
-            'completed_at' => now(),
-            'updated_at' => now(),
-        ]);
-
-    $evaluation->refresh();
-    $admin = User::factory()->create(['platform_role' => PlatformRole::Admin]);
-    app(ReportVersioning::class)->createInitial($evaluation, $admin);
-
-    $organization = $evaluation->request->organization;
-    $creator = User::factory()->create();
-    $organization->users()->attach($creator, ['role' => 'editor']);
-
-    return [$evaluation, $organization, $creator];
-}
 
 it('creates creator actions with tenant and source integrity', function () {
     [$evaluation, $organization, $creator] = creatorActionEvaluationFixture();

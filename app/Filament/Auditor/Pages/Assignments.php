@@ -59,4 +59,19 @@ final class Assignments extends Page
             default => 'Status requires attention',
         };
     }
+
+    public function evaluationScope(AuditorAssignment $assignment): string
+    {
+        $notes = $assignment->evaluation->request->intake_notes;
+
+        if (! is_string($notes) || $notes === '') {
+            return 'Not specified';
+        }
+
+        $decoded = json_decode($notes, true);
+
+        return is_array($decoded) && is_string($decoded['scope'] ?? null)
+            ? $decoded['scope']
+            : 'Not specified';
+    }
 }

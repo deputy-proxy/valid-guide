@@ -18,6 +18,10 @@
                     <dd class="mt-1 text-sm text-gray-950 dark:text-white">{{ $assignment->evaluation->productRelease->release_identifier }}</dd>
                 </div>
                 <div>
+                    <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">Evaluation Scope</dt>
+                    <dd class="mt-1 text-sm text-gray-950 dark:text-white">{{ $this->evaluationScope() }}</dd>
+                </div>
+                <div>
                     <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">Standard Version</dt>
                     <dd class="mt-1 text-sm text-gray-950 dark:text-white">{{ $assignment->evaluation->standardVersion->version }}</dd>
                 </div>

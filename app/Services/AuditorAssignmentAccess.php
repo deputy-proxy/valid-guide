@@ -28,10 +28,15 @@ final class AuditorAssignmentAccess
                 $query->where('outcome', 'cleared')
                     ->whereNotNull('determined_at');
             })
+            ->whereDoesntHave('conflictDeclarations', function (Builder $query): void {
+                $query->whereNotNull('determined_at')
+                    ->where('outcome', '!=', 'cleared');
+            })
             ->with([
                 'evaluation.product',
                 'evaluation.productRelease',
                 'evaluation.standardVersion',
+                'evaluation.request',
             ])
             ->orderByRaw('CASE WHEN due_at IS NULL THEN 1 ELSE 0 END')
             ->orderBy('due_at')
@@ -63,5 +68,10 @@ final class AuditorAssignmentAccess
             ->where('outcome', 'cleared')
             ->whereNotNull('determined_at')
             ->exists();
+    }
+
+    public function hasSubstantiveWorkAccess(AuditorAssignment $assignment): bool
+    {
+        return in_array($assignment->status, ['accepted', 'cleared'], true);
     }
 }

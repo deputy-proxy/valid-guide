@@ -40,6 +40,12 @@
                                     </dd>
                                 </div>
                                 <div>
+                                    <dt class="font-medium text-gray-500 dark:text-gray-400">Evaluation Scope</dt>
+                                    <dd class="text-gray-950 dark:text-white">
+                                        {{ $this->evaluationScope($assignment) }}
+                                    </dd>
+                                </div>
+                                <div>
                                     <dt class="font-medium text-gray-500 dark:text-gray-400">Standard Version</dt>
                                     <dd class="text-gray-950 dark:text-white">
                                         {{ $assignment->evaluation->standardVersion->version }}
@@ -49,12 +55,6 @@
                                     <dt class="font-medium text-gray-500 dark:text-gray-400">Due</dt>
                                     <dd class="text-gray-950 dark:text-white">
                                         {{ $assignment->due_at?->format('d M Y H:i') ?? 'No deadline recorded' }}
-                                    </dd>
-                                </div>
-                                <div>
-                                    <dt class="font-medium text-gray-500 dark:text-gray-400">Assigned</dt>
-                                    <dd class="text-gray-950 dark:text-white">
-                                        {{ $assignment->assigned_at?->format('d M Y') ?? 'Not recorded' }}
                                     </dd>
                                 </div>
                             </dl>

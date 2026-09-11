@@ -29,6 +29,8 @@ final class CreatorDashboardPage extends Page
 
     protected static ?string $navigationLabel = 'Dashboard';
 
+    protected static ?string $slug = 'creator-dashboard';
+
     protected static ?string $title = 'Creator Dashboard';
 
     /** @var array<string, mixed> */

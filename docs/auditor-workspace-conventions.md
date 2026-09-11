@@ -1,5 +1,7 @@
 # Auditor Workspace Conventions
 
+Status: Phase 3 issue #92 implementation baseline.
+
 The Auditor application uses a dedicated Filament panel and keeps workflow state authoritative in the existing domain/application layer.
 
 ## Access boundary

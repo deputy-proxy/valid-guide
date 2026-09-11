@@ -219,448 +219,68 @@ A public verification record contains, where applicable:
 
 Validated products may appear in the public directory by default. Creators may opt out of directory listing while retaining a verifiable badge.
 
-Public verification information is produced from an explicit public record, not reconstructed from mutable internal operational data.
-
-## Independence & Anti-Pay-to-Play Architecture
-
-The system must make the following properties enforceable:
-
-- payment creates an Evaluation Request, never a result;
-- commercial terms are fixed before payment;
-- creators cannot choose their Auditor;
-- annual and assignment-level conflict checks are mandatory;
-- prior participation in the product is a conflict;
-- direct competitors require disclosure and administrative determination;
-- the Standard Version is locked when evaluation starts;
-- Auditor work becomes immutable at its defined submission boundary;
-- Evaluation Decision is a separate authorized step;
-- administrative overrides are auditable and do not rewrite Auditor records;
-- Badge and public verification follow Validation state;
-- published Validation is not creator-editable;
-- corrections use clarification/dispute workflows;
-- compensation is independent of evaluation outcome.
-
-## Public Website
-
-The public website will provide:
-
-- Home
-- How Validation Works
-- Evaluation Standard
-- For Creators
-- For Buyers / Learners
-- Auditors / Auditor Board
-- Validated Products
-- Individual Validation page
-- Verify a Badge
-- About / Independence
-- Pricing
-- FAQ
-- Contact
-- Legal
-
-## Creator Application
-
-Creators will have a dedicated application experience, even if it is implemented within the same Laravel application.
-
-The dashboard will provide access to:
-
-- organizations;
-- products;
-- product releases;
-- Evaluation Requests;
-- active and completed evaluations;
-- Validation status;
-- invoices and payments;
-- reports and permitted findings;
-- badge assets;
-- permitted actions.
-
-The Evaluation Request intake is structured as:
-
-1. Product
-2. Scope / Product Release
-3. Access / Materials
-4. Claims / Audience
-5. Review
-6. Payment handoff
-
-Creators see high-level progress and permitted results, not private Auditor deliberation by default.
-
-## Internal Filament Application
-
-The internal application will provide workflow-oriented interfaces for:
-
-### Operations
-
-- Evaluation Requests
-- Evaluations
-- Auditor Assignments
-- Auditor Evaluations
-- Findings
-- Reports
-
-### Methodology
-
-- Standards
-- Standard Versions
-- Criteria
-- Guidance
-- Applicability / Scoring
-
-### Directory
-
-- Users
-- Organizations
-- Products
-- Releases
-- Auditors / Auditor Board
-
-### Trust
-
-- Validations
-- Badges
-- Public Verification Records
-- Conflicts of Interest
-- Evaluation Decisions
-- Audit Log
-
-### Commerce
-
-- Service Packages
-- Orders / Payments
-- Refunds
-- Invoices
-- Compensation / Payouts
-
-### System
-
-- Notifications
-- Settings
-- Roles / Permissions
-
-Not every model requires generic CRUD. Workflow-specific pages and domain services are preferred where uncontrolled editing could violate business invariants.
-
-## Authorization & Security
-
-Authorization is server-side, tenant-aware and policy-driven.
-
-Organization roles:
-
-- **Owner** — full organization administration
-- **Admin** — operational administration within the organization
-- **Editor** — product and intake operations
-- **Billing** — commercial and billing operations
-
-Platform administration is separate from organization membership.
-
-Auditors can access only evaluations to which they are assigned and cleared. Internal evidence and deliberation remain private.
-
-High-trust operations such as Evaluation Decisions, conflict determinations and Validation state changes require authorized platform administration at the domain-service boundary.
-
-UI restrictions are not considered security boundaries.
-
-## Reports, Clarifications & Disputes
-
-Reports are historical and versioned. A substantive correction creates a new immutable Report Version.
-
-Creators receive the full report. Public disclosure is controlled through the public verification model.
-
-Clarifications are for factual clarification and correction. Formal disputes are limited to matters such as:
-
-- procedural error;
-- material factual error;
-- conflict-of-interest issues;
-- demonstrably flawed application of the methodology.
-
-Disputes are not a negotiation mechanism for changing professional judgement simply because a creator dislikes the result.
-
-Independent review is required where appropriate. If a process is materially flawed, a new Evaluation may be created while preserving the original historical record.
-
-## Commerce
-
-The commercial model is deliberately separated from validation authority.
-
-Creators buy an evaluation, not a result.
-
-The application uses:
-
-- Service Packages;
-- complexity-based pricing;
-- deterministic quotes;
-- frozen commercial snapshots;
-- Order and Payment records;
-- explicit Refund records;
-- outcome-independent Auditor compensation;
-- immutable compensation and payout history.
-
-The refund boundary is based on report delivery. A paid evaluation may receive the promised refund before the defined report-delivery boundary; after report delivery, the refund entitlement ends according to the approved policy.
-
-External payment providers such as Stripe are integrations, not sources of truth for Valid.guide's domain lifecycle.
-
-## Application Development Roadmap
-
-The phases below describe the **technical construction of the application**. They deliberately do not mirror the business lifecycle. A feature may participate in several business workflows while being implemented in a different development phase.
-
-### Phase 0 — Product Definition & Architecture
-
-**Status: Complete**
-
-Define what Valid.guide is and establish the architecture before implementation.
-
-This phase establishes the product positioning, business model, actors, bounded contexts, persistence architecture, methodology, trust model, commerce model, authorization model and critical business invariants.
-
-**Exit criterion:** the product and architecture are defined sufficiently that implementation does not need to invent core business rules in code.
-
-### Phase 1 — Application Foundation & Domain Integrity
-
-**Status: Complete**
-
-Build the technical foundation and make the domain trustworthy before substantial user workflows are layered on top.
-
-Focus areas:
-
-- Laravel structure and conventions;
-- enums and value representations;
-- migrations, foreign keys, indexes and database constraints;
-- Eloquent models and relationships;
-- tenancy and authentication;
-- platform-admin separation;
-- domain/state-transition services;
-- audit logging;
-- immutable and historical boundaries;
-- methodology persistence and governance;
-- Product, Product Release, Evaluation Request and Evaluation foundations;
-- Auditor profiles, eligibility and conflicts;
-- Evaluation Decisions and Validation;
-- Badge and Public Verification foundations;
-- Report versioning;
-- Clarification and Formal Dispute foundations;
-- commerce ledger foundations;
-- concurrency controls;
-- negative-path and authorization tests;
-- lint, PHPStan and CI quality gates.
-
-**Exit criterion:** the architecture is faithfully represented in code and persistence, critical invariants are controlled, regression coverage exists, documentation is synchronized and CI is green.
-
-### Phase 2 — Core Application Workflows
-
-**Status: Complete**
-
-Turn the stable domain foundation into complete end-to-end application workflows.
-
-Focus areas:
-
-- organization context;
-- Product management;
-- Product Releases;
-- Evaluation Request lifecycle;
-- package, complexity and quote handling;
-- intake;
-- payment handoff;
-- material submission;
-- evaluation creation;
-- Standard Version freezing;
-- Auditor assignment and conflict clearance;
-- Auditor workspace foundations;
-- evidence and findings foundations;
-- criterion assessment and voting;
-- Evaluation Decision;
-- report generation and versioning;
-- Validation issuance and lifecycle;
-- creator dashboard application contract;
-- Phase 2 invariant regression audit.
-
-**Exit criterion:** a complete Phase 2 workflow can move through the application without manual database intervention, trust-sensitive boundaries are covered by regression tests, and the Phase 2 audit is green.
-
-### Phase 3 — Role-Based Application Experiences
-
-**Status: Planned**
-
-Build polished role-specific interfaces on top of the stable workflows.
-
-Focus areas:
-
-- creator dashboard and intake experience;
-- product and release management;
-- payment and request experience;
-- reports and Validation results;
-- Auditor onboarding and profile;
-- Auditor assignment and evaluation workspace;
-- administrator operations and governance interfaces;
-- notifications and action queues.
-
-UI must consume domain services and authorization policies rather than duplicate business rules.
-
-**Exit criterion:** each primary actor can perform permitted actions through a coherent application experience without internal data leakage.
-
-### Phase 4 — Public Trust & Discovery
-
-**Status: Planned**
-
-Expose the Validation system as a trustworthy public layer.
-
-Focus areas:
-
-- public website;
-- methodology pages;
-- creator-facing marketing pages;
-- Auditor Board;
-- public Validation pages;
-- canonical Verification Page;
-- badge embedding;
-- verification identifier lookup;
-- status history;
-- report abstract and controlled full-report publication;
-- public directory;
-- discovery filters;
-- structured metadata and SEO;
-- public privacy controls.
-
-**Exit criterion:** a third party can independently verify what was evaluated, against which Standard Version, for which Product Release and what the current Validation status is.
-
-### Phase 5 — Integrations, Automation & Operations
-
-**Status: Planned**
-
-Connect external systems and automate repetitive work without moving domain authority into integrations.
-
-Focus areas:
-
-- Stripe;
-- refunds and payouts;
-- email and notifications;
-- scheduled reminders;
-- background jobs and queues;
-- storage and signed access;
-- monitoring and alerts;
-- analytics;
-- webhook idempotency;
-- retry and failure handling.
-
-External providers may trigger or report events but must not bypass domain services or become the source of trust authority.
-
-**Exit criterion:** integrations are reliable, idempotent, observable and recoverable without corrupting domain or trust data.
-
-### Phase 6 — Production Readiness & Launch
-
-**Status: Planned**
-
-Prepare the complete application for safe production operation.
-
-Focus areas:
-
-- production infrastructure;
-- deployment pipeline;
-- secrets management;
-- database and storage backup/recovery;
-- monitoring and error reporting;
-- performance;
-- security testing;
-- privacy and retention;
-- accessibility;
-- browser and device compatibility;
-- queue and webhook failure recovery;
-- migration/recovery procedures;
-- rate limiting and abuse protection;
-- operational runbooks;
-- incident response;
-- smoke tests;
-- end-to-end regression;
-- launch checklist.
-
-**Exit criterion:** the application can be deployed, operated, monitored, recovered and supported without undocumented manual intervention.
-
-## Development Rules
-
-### Domain authority
-
-Business-critical state changes belong in controlled domain/application services and workflows.
-
-### Historical integrity
-
-Historical meaning is preserved through immutable records, snapshots and versioning.
-
-### Authorization
-
-Authorization is enforced server-side and is always tenant-aware where applicable.
-
-### Database integrity
-
-Foreign keys, uniqueness, indexes, nullability and other database constraints should enforce invariants wherever practical.
-
-### Concurrency
-
-Concurrent state changes must use transactions and appropriate locking or equivalent concurrency controls.
-
-### Testing
-
-Tests should cover normal behavior, invalid behavior, authorization failures, bypass attempts and important concurrency scenarios.
-
-### Static quality
-
-Every implementation must satisfy the repository's lint/formatting rules, PHPStan configuration and relevant automated tests before being considered complete.
-
-### Documentation
-
-When implementation changes an architectural or business decision, the authoritative documentation must be updated at the same time.
-
-### No uncontrolled CRUD
-
-Trust-sensitive aggregates must not become generic editable records merely because Filament can generate a form for them.
-
-## Definition of Done
-
-A development item is complete only when:
-
-1. the intended behavior is implemented;
-2. approved architecture and business decisions are respected;
-3. authorization is enforced server-side;
-4. historical and trust boundaries are preserved;
-5. invalid and bypass paths have appropriate tests;
-6. database constraints and relationships are correct;
-7. relevant documentation is updated;
-8. lint/formatting passes;
-9. PHPStan passes;
-10. relevant tests pass;
-11. CI is green.
-
-## Current Development State
-
-```text
-Phase 0 — Product Definition & Architecture                 COMPLETE
-                │
-                ▼
-Phase 1 — Application Foundation & Domain Integrity          COMPLETE
-                │
-                ▼
-Phase 2 — Core Application Workflows                         COMPLETE
-                │
-                ▼
-Phase 3 — Role-Based Application Experiences                 PLANNED
-                │
-                ▼
-Phase 4 — Public Trust & Discovery                           PLANNED
-                │
-                ▼
-Phase 5 — Integrations, Automation & Operations              PLANNED
-                │
-                ▼
-Phase 6 — Production Readiness & Launch                      PLANNED
-```
-
-Phase 2 is complete only because its implementation work and final invariant audit have both passed their defined exit criteria. The next development work is Phase 3 role-based application experiences, beginning with the presentation issues that build on the completed Phase 2 contracts.
-
-## Documentation
-
-The authoritative project documentation is organized as follows:
-
-- `docs/domain-and-database-specification.md` — domain model and persistence specification
-- `docs/validation-methodology-v1.md` — Validation Methodology v1
-- `docs/phase-1-decisions.md` — approved Phase 1 decisions and invariants
-- `docs/phase-1-invariant-audit.md` — Phase 1 specification-to-code regression matrix
-- `docs/phase-2-invariant-audit.md` — Phase 2 specification-to-code regression matrix and completion audit
-- `docs/phase-2-ui-regression-audit.md` — Phase 2 UI integration, accessibility and security regression audit
-- `docs/implementation-decisions.md` — implementation-level architectural decisions and intentional deviations
-
-The README provides the high-level product and development roadmap. Detailed rules belong in the appropriate specification or decision document.
+## Development Status
+
+The repository is currently in **Phase 3: Auditor, governance and post-evaluation workflows**.
+
+Phase 3 contains nine implementation issues, #92 through #100. As of the latest status check, **8 of 9 issues are complete and closed**. Issue #100 is the remaining Phase 3 completion gate.
+
+### Phase 3 completed work
+
+The following Phase 3 issues are closed:
+
+- **#92 — Auditor application foundation and assignment workspace**: Auditor navigation, assignment visibility, readiness presentation, authorization-driven actions and shared Auditor UI conventions.
+- **#93 — Auditor onboarding, eligibility and conflict-of-interest workflow**: Auditor profile/eligibility workflow plus annual and assignment-level conflict declarations and gates.
+- **#94 — Auditor evaluation workspace**: Frozen evaluation context, Standard Version enforcement, criterion workflow, Auditor notes/evidence boundaries and evaluation-state handling.
+- **#95 — Criterion assessment, evidence and findings interface**: Controlled criterion assessment, evidence references, findings, voting inputs and historical submission protection.
+- **#96 — Auditor submission and evaluation finalization**: Completeness validation, controlled submission, immutable submission boundary, concurrency/idempotency protections and explicit handoff to review/decision.
+- **#97 — Platform administration and governance interfaces**: Evaluation operations, assignments, conflicts, submitted-material verification, decisions, Validation, reports, disputes, verification records and audit visibility.
+- **#98 — Creator reports, Validation results and permitted post-evaluation actions**: Creator-facing reports, Validation state, permitted disclosure, clarification/dispute entry points and badge/trust-state presentation.
+- **#99 — Notifications and role-based action queues**: Role-specific notifications and action queues derived from authoritative backend state with tenant and privacy protections.
+
+These closures establish the main Phase 3 application surfaces across the **Auditor**, **Platform Administrator** and **Creator** workflows. The implementation has consistently treated authorization, tenancy, privacy, methodology versioning and historical integrity as server-side concerns rather than presentation-only behavior.
+
+### Phase 3 completion gate
+
+**Issue #100 — Phase 3 integration, accessibility and regression audit — is open.** It is the final Phase 3 gate and must be completed before Phase 4 is considered unblocked.
+
+The remaining work is an integration and quality audit, not another major feature surface. It must:
+
+1. Map every Phase 3 requirement to executable regression coverage or document why a requirement cannot be tested at that layer.
+2. Audit Creator, Auditor and Platform Administrator authorization and tenancy boundaries.
+3. Audit Auditor eligibility and conflict-of-interest gates.
+4. Audit evaluation assignment, assessment, evidence, findings and submission boundaries.
+5. Audit Evaluation Decision, reports, Validation and post-evaluation creator visibility.
+6. Audit notifications and action queues for stale-state and privacy failures.
+7. Exercise server-side bypass attempts using manipulated identifiers, stale UI state, direct requests and Livewire payloads.
+8. Confirm that UI code has not become a competing implementation of lifecycle, pricing, authorization or trust rules.
+9. Verify representative responsive and accessibility-critical workflows.
+10. Add missing negative-path, concurrency and historical-integrity tests.
+11. Run Pint/lint, PHPStan and the complete test suite.
+12. Update implementation/audit documentation.
+
+### Phase 3 exit criteria
+
+Phase 3 is **not complete yet**. It becomes complete only when #100 confirms all of the following:
+
+- all Phase 3 acceptance requirements have executable coverage or documented test-layer rationale;
+- no known role, tenancy, privacy, lifecycle, methodology, historical-integrity or trust-boundary finding remains open;
+- Creator, Auditor and Platform Administrator experiences remain consistent with backend state;
+- private Auditor work and platform-only information cannot leak through UI or direct requests;
+- accessibility-critical and responsive issues are resolved or explicitly documented as blockers;
+- Pint/lint passes;
+- PHPStan passes;
+- the complete test suite passes;
+- CI is green on the final Phase 3 implementation; and
+- this README records Phase 3 completion before Phase 4 is treated as unblocked.
+
+### Current phase summary
+
+| Phase | Status | Progress |
+| --- | --- | --- |
+| Phase 1 | Complete | Foundation and domain decisions established |
+| Phase 2 | Complete | Core domain/application implementation completed |
+| **Phase 3** | **In progress** | **8/9 issues closed; #100 completion audit remains** |
+| Phase 4 | Blocked | Starts only after Phase 3 exit criteria are satisfied |
+
+The development roadmap should therefore remain **Phase 3 / completion audit** until #100 is closed with the required quality gates green.

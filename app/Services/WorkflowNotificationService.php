@@ -11,10 +11,10 @@ use App\Models\AuditorEvaluation;
 use App\Models\ClarificationRequest;
 use App\Models\Dispute;
 use App\Models\EvaluationDecision;
+use App\Models\ImprovementOpportunity;
 use App\Models\Organization;
 use App\Models\Report;
 use App\Models\User;
-use App\Models\Validation;
 use App\Notifications\WorkflowNotification;
 
 final class WorkflowNotificationService
@@ -63,7 +63,7 @@ final class WorkflowNotificationService
         );
     }
 
-    public function validationIssued(Validation $validation): void
+    public function validationIssued(\App\Models\Validation $validation): void
     {
         $validation->loadMissing('evaluation.request.organization');
         $organization = $validation->evaluation?->request?->organization;
@@ -163,6 +163,46 @@ final class WorkflowNotificationService
             'Formal dispute resolved',
             'Your formal dispute has been resolved.',
             ['dispute_id' => $dispute->getKey(), 'evaluation_id' => $dispute->evaluation_id],
+        );
+    }
+
+    public function improvementOpportunityCreated(ImprovementOpportunity $opportunity): void
+    {
+        $opportunity->loadMissing('organization');
+
+        $this->sendToOrganization(
+            $opportunity->organization,
+            NotificationCategory::System,
+            NotificationEventType::ImprovementOpportunityCreated,
+            'Improvement opportunity available',
+            sprintf('A new improvement opportunity is available: %s.', $opportunity->title),
+            ['improvement_opportunity_id' => $opportunity->getKey(), 'evaluation_id' => $opportunity->evaluation_id],
+        );
+    }
+
+    public function improvementOpportunityAssigned(ImprovementOpportunity $opportunity, User $assignee): void
+    {
+        $this->send(
+            $assignee,
+            NotificationCategory::Assignment,
+            NotificationEventType::ImprovementOpportunityAssigned,
+            'Improvement opportunity assigned',
+            sprintf('You have been assigned an improvement opportunity: %s.', $opportunity->title),
+            ['improvement_opportunity_id' => $opportunity->getKey(), 'evaluation_id' => $opportunity->evaluation_id],
+        );
+    }
+
+    public function improvementOpportunityCompleted(ImprovementOpportunity $opportunity): void
+    {
+        $opportunity->loadMissing('organization');
+
+        $this->sendToOrganization(
+            $opportunity->organization,
+            NotificationCategory::System,
+            NotificationEventType::ImprovementOpportunityCompleted,
+            'Improvement opportunity completed',
+            sprintf('The improvement opportunity "%s" has been completed.', $opportunity->title),
+            ['improvement_opportunity_id' => $opportunity->getKey(), 'evaluation_id' => $opportunity->evaluation_id],
         );
     }
 

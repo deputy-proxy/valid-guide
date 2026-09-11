@@ -14,7 +14,7 @@ test('finalizes a complete Auditor submission into the decision workflow', funct
     [$auditorEvaluation] = auditorEvaluationFixture();
     $auditor = $auditorEvaluation->assignment->auditor;
 
-    app(AuditorEvaluationSubmission::class)->submit($auditorEvaluation);
+    app(AuditorEvaluationSubmission::class)->submit($auditorEvaluation, $auditor);
 
     $evaluation = app(AuditorEvaluationFinalization::class)->finalize($auditorEvaluation, $auditor);
 
@@ -29,7 +29,7 @@ test('finalization is idempotent after the evaluation is ready for decision', fu
     [$auditorEvaluation] = auditorEvaluationFixture();
     $auditor = $auditorEvaluation->assignment->auditor;
 
-    app(AuditorEvaluationSubmission::class)->submit($auditorEvaluation);
+    app(AuditorEvaluationSubmission::class)->submit($auditorEvaluation, $auditor);
     $first = app(AuditorEvaluationFinalization::class)->finalize($auditorEvaluation, $auditor);
     $second = app(AuditorEvaluationFinalization::class)->finalize($auditorEvaluation->fresh(), $auditor);
 
@@ -43,7 +43,7 @@ test('finalization rejects a different user even when Auditor work is submitted'
     $auditor = $auditorEvaluation->assignment->auditor;
     $otherUser = User::factory()->create();
 
-    app(AuditorEvaluationSubmission::class)->submit($auditorEvaluation);
+    app(AuditorEvaluationSubmission::class)->submit($auditorEvaluation, $auditor);
 
     expect(fn () => app(AuditorEvaluationFinalization::class)->finalize($auditorEvaluation, $otherUser))
         ->toThrow(AuthorizationException::class);
@@ -55,7 +55,7 @@ test('finalization refuses an incomplete Auditor panel', function () {
     [$auditorEvaluation] = auditorEvaluationFixture();
     $auditor = $auditorEvaluation->assignment->auditor;
 
-    app(AuditorEvaluationSubmission::class)->submit($auditorEvaluation);
+    app(AuditorEvaluationSubmission::class)->submit($auditorEvaluation, $auditor);
     $auditorEvaluation->evaluation->request()->update(['complexity' => 'complex']);
 
     expect(fn () => app(AuditorEvaluationFinalization::class)->finalize($auditorEvaluation, $auditor))
@@ -69,7 +69,7 @@ test('finalization can continue an evaluation already in internal review', funct
     [$auditorEvaluation] = auditorEvaluationFixture();
     $auditor = $auditorEvaluation->assignment->auditor;
 
-    app(AuditorEvaluationSubmission::class)->submit($auditorEvaluation);
+    app(AuditorEvaluationSubmission::class)->submit($auditorEvaluation, $auditor);
     DB::table('evaluations')->where('id', $auditorEvaluation->evaluation_id)->update([
         'status' => EvaluationStatus::InternalReview->value,
     ]);

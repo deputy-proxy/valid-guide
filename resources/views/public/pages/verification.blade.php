@@ -7,6 +7,7 @@
     $result = is_array($snapshot['result'] ?? null) ? $snapshot['result'] : [];
     $auditors = is_array($snapshot['auditors'] ?? null) ? $snapshot['auditors'] : [];
     $report = is_array($snapshot['report'] ?? null) ? $snapshot['report'] : [];
+    $visibility = is_array($snapshot['visibility'] ?? null) ? $snapshot['visibility'] : [];
     $status = is_string($verification['status'] ?? null) ? $verification['status'] : 'unknown';
     $statusLabel = str($status)->replace('_', ' ')->title()->toString();
     $statusTone = match ($status) {

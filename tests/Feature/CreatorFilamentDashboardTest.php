@@ -28,7 +28,7 @@ function filamentCreatorDashboardFixture(string $role): array
 
     $product = Product::create([
         'organization_id' => $organization->id,
-        'title' => 'Dashboard Product',
+        'title' => 'Dashboard Product '.$user->id,
         'slug' => 'dashboard-product-'.$user->id,
         'product_type' => 'course',
         'description' => 'A product for dashboard testing.',

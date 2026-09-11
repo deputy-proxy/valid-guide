@@ -65,11 +65,11 @@ it('searches and filters directory results using deterministic public metadata',
 
     $this->get(route('public.directory', ['audience' => ProductAudience::Beginners->value]))
         ->assertOk()
-        ->assertDontSee($product->title);
+        ->assertDontSee($validation->verification_identifier);
 });
 
 it('does not present suspended validation as currently validated in the directory', function () {
-    [$validation, $product, , $admin] = validatedDirectoryFixture();
+    [$validation, , , $admin] = validatedDirectoryFixture();
 
     app(ValidationStateTransition::class)->transition(
         $validation,
@@ -80,15 +80,15 @@ it('does not present suspended validation as currently validated in the director
 
     expect(PublicDirectoryEntry::query()
         ->where('verification_identifier', $validation->verification_identifier)
-        ->value('validation_status'))->toBe(ValidationStatus::Suspended->value);
+        ->value('validation_status'))->toBe(ValidationStatus::Suspended);
 
     $this->get(route('public.directory'))
         ->assertOk()
-        ->assertDontSee($product->title);
+        ->assertDontSee($validation->verification_identifier);
 });
 
 it('removes a hidden directory record from public discovery without deleting verification history', function () {
-    [$validation, $product, , $admin] = validatedDirectoryFixture();
+    [$validation, , , $admin] = validatedDirectoryFixture();
     $record = $validation->publicVerificationRecord()->firstOrFail();
 
     app(PublicVerificationPublication::class)->setVisibility($record, false, false, $admin);
@@ -100,7 +100,7 @@ it('removes a hidden directory record from public discovery without deleting ver
 
     $this->get(route('public.directory'))
         ->assertOk()
-        ->assertDontSee($product->title);
+        ->assertDontSee($validation->verification_identifier);
 });
 
 it('does not expose internal creator data through the directory projection', function () {

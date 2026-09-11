@@ -58,6 +58,7 @@ final class AuditorAssignmentAccess
 
     public function isClearedAuditor(User $user): bool
     {
+
         return $this->eligibility->canAccessAssignments($user);
     }
 

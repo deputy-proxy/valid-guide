@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 use App\Enums\CriterionAssessment;
 use App\Models\AuditorAnnualConflictDeclaration;
-use App\Models\AuditorEvaluation;
 use App\Models\AuditorProfile;
 use App\Models\Criterion;
 use App\Models\CriterionResult;

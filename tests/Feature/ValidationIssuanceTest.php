@@ -123,6 +123,7 @@ test('issuing validation notifies the creator organization', function () {
         ->where('notifiable_type', User::class)
         ->where('notifiable_id', $creator->id)
         ->where('type', WorkflowNotification::class)
+        ->where('data->event_type', NotificationEventType::ValidationIssued->value)
         ->latest()
         ->first();
 

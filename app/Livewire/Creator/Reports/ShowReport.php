@@ -52,10 +52,16 @@ final class ShowReport extends Component
 
     public function selectVersion(int $versionId): void
     {
-        $availableVersionIds = collect($this->reportData['report']['versions'] ?? [])
-            ->pluck('id')
-            ->filter(fn (mixed $id): bool => is_int($id))
-            ->all();
+        $versions = $this->reportData['report']['versions'] ?? [];
+        $availableVersionIds = [];
+
+        if (is_array($versions)) {
+            foreach ($versions as $version) {
+                if (is_array($version) && isset($version['id']) && is_numeric($version['id'])) {
+                    $availableVersionIds[] = (int) $version['id'];
+                }
+            }
+        }
 
         if (! in_array($versionId, $availableVersionIds, true)) {
             $this->addError('version', 'The selected report version is not available.');
@@ -167,7 +173,7 @@ final class ShowReport extends Component
 
         if ($this->selectedVersionId === null) {
             $currentId = $this->reportData['report']['current_version_id'] ?? null;
-            $this->selectedVersionId = is_int($currentId) ? $currentId : null;
+            $this->selectedVersionId = is_numeric($currentId) ? (int) $currentId : null;
         }
     }
 

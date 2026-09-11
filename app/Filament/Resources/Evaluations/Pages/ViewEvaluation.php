@@ -68,7 +68,7 @@ final class ViewEvaluation extends ViewRecord
                 ->label('Record Evaluation Decision')
                 ->icon('heroicon-o-scale')
                 ->requiresConfirmation()
-                ->visible(fn (): bool => $this->getRecord()->status === EvaluationStatus::ReadyForDecision)
+                ->visible(fn (): bool => $this->evaluationRecord()->status === EvaluationStatus::ReadyForDecision)
                 ->action(function (): void {
                     $this->runAction(function (Evaluation $evaluation, User $user): void {
                         app(EvaluationDecisionService::class)->decide($evaluation, $user);
@@ -79,7 +79,9 @@ final class ViewEvaluation extends ViewRecord
                 ->icon('heroicon-o-shield-check')
                 ->color('success')
                 ->requiresConfirmation()
-                ->visible(fn (): bool => $this->getRecord()->status === EvaluationStatus::Completed && $this->getRecord()->decision === 'validated' && $this->getRecord()->validation === null)
+                ->visible(fn (): bool => $this->evaluationRecord()->status === EvaluationStatus::Completed
+                    && $this->evaluationRecord()->decision === 'validated'
+                    && $this->evaluationRecord()->validation === null)
                 ->action(function (): void {
                     $this->runAction(function (Evaluation $evaluation, User $user): void {
                         app(ValidationIssuance::class)->issue($evaluation, $user);
@@ -95,7 +97,7 @@ final class ViewEvaluation extends ViewRecord
         abort_unless($user instanceof User, 403);
 
         try {
-            $callback($this->getRecord(), $user);
+            $callback($this->evaluationRecord(), $user);
             $this->refreshFormData(['status', 'decision', 'overall_score', 'decision_rationale', 'validation']);
             Notification::make()->success()->title($successTitle)->send();
         } catch (DomainStateTransitionException $exception) {
@@ -104,5 +106,13 @@ final class ViewEvaluation extends ViewRecord
             report($exception);
             Notification::make()->danger()->title($failureTitle)->send();
         }
+    }
+
+    private function evaluationRecord(): Evaluation
+    {
+        $record = $this->getRecord();
+        abort_unless($record instanceof Evaluation, 404);
+
+        return $record;
     }
 }

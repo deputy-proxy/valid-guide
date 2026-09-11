@@ -10,6 +10,7 @@ use App\Models\User;
 use App\Services\DomainStateTransitionException;
 use App\Services\ReportDelivery;
 use App\Services\ReportVersioning;
+use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Textarea;
 use Filament\Notifications\Notification;
@@ -20,7 +21,6 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
 use Throwable;
 use UnitEnum;
-use BackedEnum;
 
 final class ReportResource extends Resource
 {

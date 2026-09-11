@@ -406,7 +406,7 @@ Phase 1 completion was formally audited through issue **#33**.
 
 ## Phase 2 — Evaluator & Action Plan
 
-**Status: Substantially implemented; implementation coverage reconciled**
+**Status: Complete**
 
 ### Objective
 
@@ -445,13 +445,11 @@ Build the actual evaluation engine and the structured work produced from an eval
 - Relevant Filament and public UI workflows are implemented and audited.
 - Pint/lint, PHPStan and the complete test suite are green in CI.
 
-The repository contains substantial implementation across the former technical Phase 2 and Phase 3 issue groups. The original product phase should therefore be considered substantially implemented rather than equated one-to-one with technical issue numbering.
-
 ---
 
 ## Phase 3 — Guides, Opportunities & Matching
 
-**Status: Not yet implemented as a dedicated product capability**
+**Status: In progress**
 
 ### Objective
 
@@ -585,8 +583,8 @@ The current repository should be understood against the original roadmap as foll
 | --- | --- | --- |
 | **Phase 0 — Product & Architecture** | **Complete** | Product, architecture, domain, methodology, trust, commerce and historical-integrity foundations are established. |
 | **Phase 1 — Application Foundation & Domain Implementation** | **Complete** | Domain persistence, tenancy, authorization, lifecycle controls, methodology, trust persistence and invariant regression coverage are implemented and audited. |
-| **Phase 2 — Evaluator & Action Plan** | **Substantially implemented** | Former technical Phase 2 and Phase 3 work covers most of the evaluation engine and operational workflow. The implementation has been reconciled back to the original product phase rather than replacing its numbering. |
-| **Phase 3 — Guides, Opportunities & Matching** | **Not started as a dedicated phase** | Findings, reports and existing recommendations provide groundwork, but the broader guidance, opportunities and matching product is not yet a distinct implemented capability. |
+| **Phase 2 — Evaluator & Action Plan** | **Complete** | Former technical Phase 2 and Phase 3 work covers most of the evaluation engine and operational workflow. The implementation has been reconciled back to the original product phase rather than replacing its numbering. |
+| **Phase 3 — Guides, Opportunities & Matching** | **In progress** | Findings, reports and existing recommendations provide groundwork, but the broader guidance, opportunities and matching product is not yet a distinct implemented capability. |
 | **Phase 4 — Experts, Marketplace & Community** | **Partially implemented** | Auditor infrastructure exists; marketplace, community and broader expert ecosystem capabilities remain. |
 | **Phase 5 — Monitor, Subscription & Public Product** | **Partially implemented** | Public verification, notifications and action queues exist; monitoring, subscriptions and the complete public product remain. |
 | **Phase 6 — Optimization & Scale** | **Not started** | Reserved for post-core-product optimization and operational scale. |

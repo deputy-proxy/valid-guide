@@ -5,7 +5,6 @@ declare(strict_types=1);
 use App\Enums\PlatformRole;
 use App\Enums\ProductAudience;
 use App\Enums\ProductGoal;
-use App\Enums\ProductType;
 use App\Enums\ValidationStatus;
 use App\Models\User;
 use App\Services\ProductRecommendations;
@@ -19,13 +18,14 @@ function recommendationFixture(string $slug, array $audiences = [], array $goals
 {
     [$evaluation, , $creator] = creatorActionEvaluationFixture();
     $product = $evaluation->productRelease->product;
+    $release = $evaluation->productRelease;
     $product->update([
         'title' => 'Product '.$slug,
         'slug' => $slug,
         'subject_area' => 'Leadership',
         'language' => 'en',
     ]);
-    $product->productRelease->update(['title_snapshot' => $product->title]);
+    $release->update(['title_snapshot' => $product->title]);
 
     app(ProductSuitability::class)->update($creator, $product, [
         'matching_audiences' => $audiences,

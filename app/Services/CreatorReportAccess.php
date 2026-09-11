@@ -56,7 +56,7 @@ final class CreatorReportAccess
             ],
             'product' => $evaluation->productRelease?->product === null ? null : [
                 'id' => $evaluation->productRelease->product->getKey(),
-                'name' => $evaluation->productRelease->product->name,
+                'name' => $evaluation->productRelease->product->getAttribute('name'),
             ],
             'release' => $evaluation->productRelease === null ? null : [
                 'id' => $evaluation->productRelease->getKey(),
@@ -188,7 +188,7 @@ final class CreatorReportAccess
 
     private function canAccess(User $user, int $organizationId): bool
     {
-        if ($user->platform_role === 'admin') {
+        if ($user->isPlatformAdmin()) {
             return true;
         }
 
@@ -201,7 +201,7 @@ final class CreatorReportAccess
         }
 
         return in_array(
-            (string) $membership->pivot->role,
+            (string) $membership->getAttribute('pivot_role'),
             [
                 OrganizationRole::Owner->value,
                 OrganizationRole::Admin->value,

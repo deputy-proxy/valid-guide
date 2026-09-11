@@ -1036,6 +1036,7 @@ Every GitHub Issue, whether open or closed, must follow this naming convention:
 
 ```text
 Phase [PhaseNumber].[IssueNumber] - [Issue Title]
+```
 
 ## Branching
 

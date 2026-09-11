@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Enums\CriterionAssessment;
-use App\Models\AuditorAssignment;
 use App\Models\AuditorEvaluation;
 use App\Models\Criterion;
 use App\Models\CriterionResult;
@@ -20,8 +19,7 @@ final class AuditorEvaluationWorkspace
 {
     public function __construct(
         private readonly AuditorAssignmentAccess $assignmentAccess,
-    ) {
-    }
+    ) {}
 
     public function findFor(User $user, string|int $assignmentId): AuditorEvaluation
     {

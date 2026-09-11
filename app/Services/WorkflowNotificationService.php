@@ -13,6 +13,7 @@ use App\Models\Dispute;
 use App\Models\EvaluationDecision;
 use App\Models\Report;
 use App\Models\User;
+use App\Models\Validation;
 use App\Notifications\WorkflowNotification;
 
 final class WorkflowNotificationService
@@ -58,6 +59,28 @@ final class WorkflowNotificationService
             'Evaluation decision recorded',
             'An authorized decision has been recorded for your evaluation.',
             ['evaluation_decision_id' => $decision->getKey(), 'evaluation_id' => $decision->evaluation_id],
+        );
+    }
+
+    public function validationIssued(Validation $validation): void
+    {
+        $validation->loadMissing('evaluation.request.organization');
+        $organization = $validation->evaluation?->request?->organization;
+        if ($organization === null) {
+            return;
+        }
+
+        $this->sendToOrganization(
+            (int) $organization->getKey(),
+            NotificationCategory::Decision,
+            NotificationEventType::ValidationIssued,
+            'Validation issued',
+            'Your product has received a Valid.guide validation.',
+            [
+                'validation_id' => $validation->getKey(),
+                'evaluation_id' => $validation->evaluation_id,
+                'verification_identifier' => $validation->verification_identifier,
+            ],
         );
     }
 

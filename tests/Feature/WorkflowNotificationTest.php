@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Notifications\WorkflowNotification;
 use App\Services\RoleActionQueue;
 use App\Services\WorkflowNotificationInbox;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Notifications\DatabaseNotification;
 
@@ -86,7 +87,7 @@ test('notifications can be marked read only through the owning user relation', f
     ]);
 
     expect(fn () => app(WorkflowNotificationInbox::class)->markRead($otherUser, 'cccccccc-cccc-cccc-cccc-cccccccccccc'))
-        ->toThrow(Illuminate\Database\Eloquent\ModelNotFoundException::class);
+        ->toThrow(ModelNotFoundException::class);
 
     app(WorkflowNotificationInbox::class)->markRead($user, 'cccccccc-cccc-cccc-cccc-cccccccccccc');
 

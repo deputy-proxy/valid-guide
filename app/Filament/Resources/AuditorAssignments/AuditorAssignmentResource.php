@@ -58,8 +58,6 @@ final class AuditorAssignmentResource extends Resource
                     'offered' => 'Offered',
                     'accepted' => 'Accepted',
                     'declined' => 'Declined',
-                    'cleared' => 'Cleared',
-                    'disqualified' => 'Disqualified',
                     'completed' => 'Completed',
                     'cancelled' => 'Cancelled',
                 ]),
@@ -117,10 +115,10 @@ final class AuditorAssignmentResource extends Resource
                     ->label('Cancel')
                     ->color('danger')
                     ->requiresConfirmation()
-                    ->visible(fn (AuditorAssignment $record): bool => in_array($record->status, ['offered', 'accepted', 'cleared'], true))
+                    ->visible(fn (AuditorAssignment $record): bool => in_array($record->status, ['offered', 'accepted'], true))
                     ->action(function (AuditorAssignment $record): void {
                         try {
-                            app(AuditorAssignmentStateTransition::class)->transition($record, 'cancelled', self::authenticatedUser());
+                            app(AuditorAssignmentStateTransition::class)->transition($record, 'cancelled');
                             Notification::make()->success()->title('Auditor assignment cancelled')->send();
                         } catch (DomainStateTransitionException $exception) {
                             Notification::make()->danger()->title('Assignment cancellation blocked')->body($exception->getMessage())->send();

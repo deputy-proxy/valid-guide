@@ -23,6 +23,8 @@ pest()->extend(TestCase::class)
     ->use(RefreshDatabase::class)
     ->in('Feature');
 
+beforeEach(fn () => config(['queue.default' => 'sync']))->in('Feature');
+
 expect()->extend('toBeOne', function () {
     return $this->toBe(1);
 });

@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Enums\PlatformRole;
+use App\Models\AuditLog;
 use App\Models\Organization;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
@@ -25,9 +26,9 @@ it('allows platform administrators to access governance resources', function () 
         '/admin/evaluations',
         '/admin/validations',
         '/admin/reports',
-        '/admin/clarifications',
-        '/admin/formal-disputes',
-        '/admin/public-verification',
+        '/admin/clarification-requests',
+        '/admin/disputes',
+        '/admin/public-verification-records',
         '/admin/audit-logs',
     ] as $uri) {
         $this->get($uri)->assertSuccessful();
@@ -49,9 +50,9 @@ it('rejects organization users from platform governance resources', function () 
         '/admin/evaluations',
         '/admin/validations',
         '/admin/reports',
-        '/admin/clarifications',
-        '/admin/formal-disputes',
-        '/admin/public-verification',
+        '/admin/clarification-requests',
+        '/admin/disputes',
+        '/admin/public-verification-records',
         '/admin/audit-logs',
     ] as $uri) {
         $this->get($uri)->assertForbidden();
@@ -71,7 +72,7 @@ it('keeps the audit log read-only at the model boundary', function () {
         'created_at' => now(),
     ]);
 
-    $log = App\Models\AuditLog::query()->findOrFail($logId);
+    $log = AuditLog::query()->findOrFail($logId);
 
     expect(fn () => $log->update(['event' => 'tampered']))
         ->toThrow(LogicException::class);

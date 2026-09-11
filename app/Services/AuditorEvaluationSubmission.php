@@ -42,17 +42,32 @@ class AuditorEvaluationSubmission
                 );
             }
 
-            if ($auditorEvaluation->criterionResults()->count() === 0) {
-                throw new DomainStateTransitionException('An auditor evaluation must contain at least one criterion result before submission.');
-            }
-
             $evaluation = $auditorEvaluation->evaluation()
-                ->with('productRelease.product')
+                ->with([
+                    'productRelease.product',
+                    'standardVersion.criteria',
+                ])
                 ->firstOrFail();
             $productRelease = $evaluation->productRelease;
 
             if ($productRelease === null || $productRelease->product === null) {
                 throw new DomainStateTransitionException('An auditor evaluation cannot be submitted without an evaluated product.');
+            }
+
+            $criteria = $evaluation->standardVersion->criteria;
+            $criterionIds = $criteria->pluck('id');
+            $resultCount = $auditorEvaluation->criterionResults()->count();
+
+            if ($criterionIds->isEmpty() || $resultCount !== $criterionIds->count()) {
+                throw new DomainStateTransitionException(
+                    'An auditor evaluation must contain exactly one criterion result for every applicable criterion before submission.',
+                );
+            }
+
+            if ($auditorEvaluation->criterionResults()->whereNotIn('criterion_id', $criterionIds)->exists()) {
+                throw new DomainStateTransitionException(
+                    'An auditor evaluation contains a criterion result that does not belong to its frozen standard version.',
+                );
             }
 
             $product = $productRelease->product;

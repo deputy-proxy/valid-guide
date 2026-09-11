@@ -60,7 +60,7 @@ final class ReportResource extends Resource
                             ->label('Content structure JSON')
                             ->required()
                             ->rows(10)
-                            ->default(fn (Report $record): string => json_encode($record->currentVersion?->content_structure ?? [], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) ?: '{}'),
+                            ->default(fn (Report $record): string => json_encode($record->currentVersion->content_structure ?? [], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) ?: '{}'),
                         Textarea::make('abstract')->label('Abstract')->rows(4),
                         Textarea::make('change_reason')->label('Change reason')->required()->rows(3),
                     ])

@@ -1,6 +1,7 @@
 <x-layouts.public
     :title="$title"
     :description="$description"
+    :robots="$robots ?? 'index,follow'"
 >
     <x-public.section>
         <div class="mx-auto max-w-3xl">

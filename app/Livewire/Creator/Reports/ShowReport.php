@@ -45,6 +45,7 @@ final class ShowReport extends Component
     public function mount(int|string $evaluationId): void
     {
         $this->evaluationId = (int) $evaluationId;
+        $this->loadReport();
         $this->generateActionPlan();
         $this->loadReport();
     }

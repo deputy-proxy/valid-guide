@@ -36,7 +36,7 @@ final class Assignment extends Page
         }
 
         $this->assignment = app(AuditorAssignmentAccess::class)->findFor($user, $assignment);
-        $this->conflictDisclosure = $this->conflictDeclaration()?->disclosure ?? '';
+        $this->conflictDisclosure = $this->conflictDeclaration()->disclosure ?? '';
     }
 
     public function statusLabel(): string

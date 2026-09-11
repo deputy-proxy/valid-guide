@@ -27,25 +27,18 @@ final class WorkflowNotificationService
             NotificationEventType::AuditorAssignmentCreated,
             'New evaluation assignment',
             sprintf('You have been assigned to evaluate %s.', $productTitle),
-            [
-                'assignment_id' => $assignment->getKey(),
-                'evaluation_id' => $assignment->evaluation_id,
-            ],
+            ['assignment_id' => $assignment->getKey(), 'evaluation_id' => $assignment->evaluation_id],
         );
     }
 
     public function auditorEvaluationSubmitted(AuditorEvaluation $auditorEvaluation): void
     {
-        $auditorEvaluation->loadMissing('evaluation.product', 'assignment');
         $this->sendToPlatformAdmins(
             NotificationCategory::Submission,
             NotificationEventType::AuditorEvaluationSubmitted,
             'Auditor evaluation submitted',
             'An Auditor has submitted an evaluation requiring platform review.',
-            [
-                'auditor_evaluation_id' => $auditorEvaluation->getKey(),
-                'evaluation_id' => $auditorEvaluation->evaluation_id,
-            ],
+            ['auditor_evaluation_id' => $auditorEvaluation->getKey(), 'evaluation_id' => $auditorEvaluation->evaluation_id],
         );
     }
 
@@ -59,7 +52,7 @@ final class WorkflowNotificationService
 
         $productTitle = $report->evaluation?->product?->title ?? 'your product';
         $this->sendToOrganization(
-            $organization->getKey(),
+            (int) $organization->getKey(),
             NotificationCategory::Report,
             NotificationEventType::ReportDelivered,
             'Evaluation report available',
@@ -81,9 +74,8 @@ final class WorkflowNotificationService
 
     public function clarificationAnswered(ClarificationRequest $request): void
     {
-        $request->loadMissing('organization');
         $this->sendToOrganization(
-            $request->organization_id,
+            (int) $request->organization_id,
             NotificationCategory::Clarification,
             NotificationEventType::ClarificationAnswered,
             'Clarification answered',
@@ -103,7 +95,7 @@ final class WorkflowNotificationService
         );
     }
 
-    public function disputeReviewerAssigned(Dispute $dispute, User $reviewer): void
+    public function disputeReviewerAssigned(Dispute $dispute, User $reviewer, int $reviewerAssignmentId): void
     {
         $this->send(
             $reviewer,
@@ -111,15 +103,18 @@ final class WorkflowNotificationService
             NotificationEventType::DisputeReviewerAssigned,
             'Dispute review assigned',
             'You have been assigned to an independent dispute review.',
-            ['dispute_id' => $dispute->getKey(), 'evaluation_id' => $dispute->evaluation_id],
+            [
+                'dispute_id' => $dispute->getKey(),
+                'evaluation_id' => $dispute->evaluation_id,
+                'dispute_reviewer_id' => $reviewerAssignmentId,
+            ],
         );
     }
 
     public function disputeResolved(Dispute $dispute): void
     {
-        $dispute->loadMissing('organization');
         $this->sendToOrganization(
-            $dispute->organization_id,
+            (int) $dispute->organization_id,
             NotificationCategory::Dispute,
             NotificationEventType::DisputeResolved,
             'Formal dispute resolved',
@@ -148,9 +143,9 @@ final class WorkflowNotificationService
         string $body,
         array $context,
     ): void {
-        User::query()->whereNotNull('platform_role')->each(
-            fn (User $user): bool => tap($this->send($user, $category, $eventType, $title, $body, $context), fn (): true => true),
-        );
+        foreach (User::query()->whereNotNull('platform_role')->cursor() as $user) {
+            $this->send($user, $category, $eventType, $title, $body, $context);
+        }
     }
 
     /** @param array<string, int|string|null> $context */
@@ -162,10 +157,14 @@ final class WorkflowNotificationService
         string $body,
         array $context,
     ): void {
-        User::query()
+        $users = User::query()
             ->whereHas('organizations', function ($query) use ($organizationId): void {
                 $query->whereKey($organizationId)->wherePivotIn('role', ['owner', 'admin', 'editor']);
             })
-            ->each(fn (User $user): bool => tap($this->send($user, $category, $eventType, $title, $body, $context), fn (): true => true));
+            ->cursor();
+
+        foreach ($users as $user) {
+            $this->send($user, $category, $eventType, $title, $body, $context);
+        }
     }
 }

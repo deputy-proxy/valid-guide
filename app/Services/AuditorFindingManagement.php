@@ -16,7 +16,7 @@ use Illuminate\Validation\ValidationException;
 final class AuditorFindingManagement
 {
     /**
-     * @param array<string,mixed> $attributes
+     * @param  array<string, mixed>  $attributes
      */
     public function create(
         User $user,
@@ -126,7 +126,7 @@ final class AuditorFindingManagement
         return $criterion;
     }
 
-    /** @return array<string,array<int,string>> */
+    /** @return array<string, array<int, string>> */
     private function rules(): array
     {
         return [
@@ -138,7 +138,7 @@ final class AuditorFindingManagement
         ];
     }
 
-    /** @return array<string,mixed> */
+    /** @return array<string, mixed> */
     private function auditData(Finding $finding): array
     {
         return [

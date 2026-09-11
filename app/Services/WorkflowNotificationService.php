@@ -15,6 +15,7 @@ use App\Models\ImprovementOpportunity;
 use App\Models\Organization;
 use App\Models\Report;
 use App\Models\User;
+use App\Models\Validation;
 use App\Notifications\WorkflowNotification;
 
 final class WorkflowNotificationService
@@ -63,7 +64,7 @@ final class WorkflowNotificationService
         );
     }
 
-    public function validationIssued(\App\Models\Validation $validation): void
+    public function validationIssued(Validation $validation): void
     {
         $validation->loadMissing('evaluation.request.organization');
         $organization = $validation->evaluation?->request?->organization;

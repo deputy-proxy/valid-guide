@@ -6,6 +6,7 @@ namespace App\Services;
 
 use App\Enums\CreatorActionPriority;
 use App\Enums\ImprovementOpportunityStatus;
+use App\Models\Evaluation;
 use App\Models\Finding;
 use App\Models\ImprovementGuidance;
 use App\Models\ImprovementOpportunity;
@@ -220,7 +221,7 @@ final class ImprovementOpportunityWorkflow
         });
     }
 
-    private function authorize(\App\Models\Evaluation $evaluation, Organization $organization, User $user): void
+    private function authorize(Evaluation $evaluation, Organization $organization, User $user): void
     {
         if ($evaluation->request?->organization_id !== $organization->id) {
             throw new DomainStateTransitionException('The opportunity organization does not own the evaluation.');

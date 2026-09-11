@@ -20,7 +20,7 @@ final class CreatorReportAccess
             ->with([
                 'request.organization',
                 'productRelease.product',
-                'productRelease.standardVersion.standard',
+                'standardVersion.standard',
                 'report.currentVersion',
                 'report.versions',
                 'validation.badge',
@@ -62,10 +62,10 @@ final class CreatorReportAccess
                 'id' => $evaluation->productRelease->getKey(),
                 'version' => $evaluation->productRelease->version,
             ],
-            'standard' => $evaluation->productRelease?->standardVersion === null ? null : [
-                'id' => $evaluation->productRelease->standardVersion->getKey(),
-                'name' => $evaluation->productRelease->standardVersion->standard?->name,
-                'version' => $evaluation->productRelease->standardVersion->version,
+            'standard' => $evaluation->standardVersion === null ? null : [
+                'id' => $evaluation->standardVersion->getKey(),
+                'name' => $evaluation->standardVersion->standard?->name,
+                'version' => $evaluation->standardVersion->version,
             ],
             'report' => [
                 'id' => $report->getKey(),
@@ -148,17 +148,15 @@ final class CreatorReportAccess
         }
 
         $badge = $validation->badge;
-        $status = $validation->getAttribute('status');
-        $badgeStatus = $badge?->getAttribute('status');
 
         return [
             'id' => $validation->getKey(),
-            'status' => is_object($status) && property_exists($status, 'value') ? $status->value : (string) $status,
+            'status' => $this->enumValue($validation->getAttribute('status')),
             'issued_at' => $this->dateString($validation->getAttribute('issued_at')),
             'status_reason' => $validation->status_reason,
             'verification_identifier' => $validation->verification_identifier,
             'badge' => $badge === null ? null : [
-                'status' => is_object($badgeStatus) && property_exists($badgeStatus, 'value') ? $badgeStatus->value : (string) $badgeStatus,
+                'status' => $this->enumValue($badge->getAttribute('status')),
                 'embed_version' => $badge->embed_version,
                 'verification_identifier' => $badge->verification_identifier,
             ],
@@ -168,6 +166,11 @@ final class CreatorReportAccess
                     'verificationIdentifier' => $validation->verification_identifier,
                 ]),
         ];
+    }
+
+    private function enumValue(mixed $value): string
+    {
+        return $value instanceof \BackedEnum ? (string) $value->value : (string) $value;
     }
 
     private function dateString(mixed $value): ?string

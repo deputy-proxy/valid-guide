@@ -5,26 +5,22 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Enums\OrganizationRole;
-use App\Models\ClarificationRequest;
-use App\Models\Dispute;
 use App\Models\Evaluation;
-use App\Models\Organization;
 use App\Models\ReportVersion;
 use App\Models\User;
-use Carbon\CarbonInterface;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Support\Carbon;
 
 final class CreatorReportAccess
 {
     /** @return array<string, mixed> */
-    public function show(User $actor, int|string $evaluationId): array
+    public function show(User $user, int $evaluationId): array
     {
         $evaluation = Evaluation::query()
             ->with([
                 'request.organization',
-                'product',
-                'productRelease',
-                'standardVersion.standard',
+                'productRelease.product',
+                'productRelease.standardVersion.standard',
                 'report.currentVersion',
                 'report.versions',
                 'validation.badge',
@@ -34,24 +30,14 @@ final class CreatorReportAccess
             ])
             ->findOrFail($evaluationId);
 
-        $request = $evaluation->request;
-        if ($request === null || $request->organization === null) {
-            throw new AuthorizationException('The evaluation does not have an accessible creator organization.');
-        }
-
-        $organization = $request->organization;
-        $this->authorize($actor, $organization);
-
-        $product = $evaluation->product;
-        $productRelease = $evaluation->productRelease;
-        $standardVersion = $evaluation->standardVersion;
-        if ($product === null || $productRelease === null || $standardVersion === null || $standardVersion->standard === null) {
-            throw new AuthorizationException('The evaluation is missing required historical context.');
+        $organization = $evaluation->request?->organization;
+        if ($organization === null || ! $this->canAccess($user, $organization->id)) {
+            throw new AuthorizationException('You are not authorized to access this creator report.');
         }
 
         $report = $evaluation->report;
         if ($report === null || $report->creator_visible_at === null) {
-            throw new AuthorizationException('The evaluation report is not available to this organization.');
+            throw new AuthorizationException('This report is not available to creators.');
         }
 
         $currentVersion = $report->currentVersion;
@@ -59,157 +45,98 @@ final class CreatorReportAccess
         return [
             'evaluation' => [
                 'id' => $evaluation->getKey(),
-                'status' => $evaluation->status->value,
-                'decision' => $evaluation->decision,
-                'overall_score' => $evaluation->overall_score,
+                'status' => (string) $evaluation->getAttribute('status'),
+                'decision' => (string) $evaluation->getAttribute('decision'),
+                'overall_score' => $evaluation->getAttribute('overall_score'),
                 'completed_at' => $this->dateString($evaluation->getAttribute('completed_at')),
             ],
             'organization' => [
                 'id' => $organization->getKey(),
-                'name' => (string) $organization->name,
+                'name' => $organization->name,
             ],
-            'product' => [
-                'id' => $product->getKey(),
-                'title' => (string) $product->title,
-                'slug' => (string) $product->slug,
+            'product' => $evaluation->productRelease?->product === null ? null : [
+                'id' => $evaluation->productRelease->product->getKey(),
+                'name' => $evaluation->productRelease->product->name,
             ],
-            'release' => [
-                'id' => $productRelease->getKey(),
-                'identifier' => (string) $productRelease->release_identifier,
-                'version' => $productRelease->version !== null
-                    ? (string) $productRelease->version
-                    : null,
-                'edition' => $productRelease->edition,
-                'published_at' => $this->dateString($productRelease->getAttribute('published_at')),
+            'release' => $evaluation->productRelease === null ? null : [
+                'id' => $evaluation->productRelease->getKey(),
+                'version' => $evaluation->productRelease->version,
             ],
-            'standard_version' => [
-                'id' => $standardVersion->getKey(),
-                'version' => (string) $standardVersion->version,
-                'name' => (string) $standardVersion->standard->name,
+            'standard' => $evaluation->productRelease?->standardVersion === null ? null : [
+                'id' => $evaluation->productRelease->standardVersion->getKey(),
+                'name' => $evaluation->productRelease->standardVersion->standard?->name,
+                'version' => $evaluation->productRelease->standardVersion->version,
             ],
             'report' => [
                 'id' => $report->getKey(),
                 'current_version_id' => $currentVersion?->getKey(),
-                'current' => $currentVersion === null ? null : $this->version($currentVersion),
+                'current' => $currentVersion === null ? null : $this->reportVersion($currentVersion),
                 'versions' => $report->versions
                     ->sortByDesc('version_number')
+                    ->map(fn (ReportVersion $version): array => $this->reportVersion($version))
                     ->values()
-                    ->map(fn (ReportVersion $version): array => $this->version($version))
                     ->all(),
             ],
-            'findings' => $this->creatorFindings($currentVersion),
+            'findings' => $currentVersion === null ? [] : $this->creatorFindings($currentVersion),
             'validation' => $this->validation($evaluation),
             'clarifications' => $evaluation->clarificationRequests
-                ->map(fn (ClarificationRequest $clarification): array => [
+                ->map(fn ($clarification): array => [
                     'id' => $clarification->getKey(),
                     'type' => (string) $clarification->getAttribute('type'),
                     'status' => (string) $clarification->getAttribute('status'),
-                    'message' => (string) $clarification->message,
-                    'response' => $clarification->response,
-                    'submitted_at' => $this->dateString($clarification->getAttribute('submitted_at')),
-                    'resolved_at' => $this->dateString($clarification->getAttribute('resolved_at')),
+                    'message' => $clarification->getAttribute('message'),
+                    'response' => $clarification->getAttribute('response'),
+                    'created_at' => $this->dateString($clarification->getAttribute('created_at')),
+                    'responded_at' => $this->dateString($clarification->getAttribute('responded_at')),
                 ])
                 ->values()
                 ->all(),
             'disputes' => $evaluation->disputes
-                ->map(fn (Dispute $dispute): array => [
+                ->map(fn ($dispute): array => [
                     'id' => $dispute->getKey(),
-                    'status' => $dispute->status->value,
-                    'grounds' => $dispute->grounds,
-                    'statement' => $dispute->decision_rationale,
-                    'submitted_at' => $this->dateString($dispute->getAttribute('submitted_at')),
-                    'resolved_at' => $this->dateString($dispute->getAttribute('resolved_at')),
+                    'status' => (string) $dispute->getAttribute('status'),
+                    'statement' => $dispute->getAttribute('statement'),
+                    'grounds' => $dispute->getAttribute('grounds'),
+                    'created_at' => $this->dateString($dispute->getAttribute('created_at')),
                 ])
                 ->values()
                 ->all(),
             'actions' => [
-                'clarification' => $evaluation->status->value === 'completed',
-                'dispute' => $evaluation->status->value === 'completed'
-                    && ! $evaluation->disputes->contains(
-                        fn (Dispute $dispute): bool => in_array(
-                            $dispute->status->value,
-                            ['submitted', 'under_review'],
-                            true,
-                        ),
-                    ),
+                'can_request_clarification' => true,
+                'can_dispute' => true,
             ],
         ];
     }
 
-    private function authorize(User $actor, Organization $organization): void
-    {
-        if ($actor->isPlatformAdmin()) {
-            return;
-        }
-
-        $allowed = $organization->users()
-            ->whereKey($actor->getKey())
-            ->wherePivotIn('role', [
-                OrganizationRole::Owner->value,
-                OrganizationRole::Admin->value,
-                OrganizationRole::Editor->value,
-            ])
-            ->exists();
-
-        if (! $allowed) {
-            throw new AuthorizationException('The user cannot access creator reports for this organization.');
-        }
-    }
-
     /** @return array<string, mixed> */
-    private function version(ReportVersion $version): array
+    private function reportVersion(ReportVersion $version): array
     {
         return [
             'id' => $version->getKey(),
-            'version_number' => (int) $version->version_number,
+            'version_number' => $version->version_number,
             'abstract' => $version->abstract,
             'content_structure' => $version->content_structure,
-            'decision_snapshot' => $version->decision_snapshot,
-            'standard_version_snapshot' => $version->standard_version_snapshot,
-            'published_at' => $this->dateString($version->getAttribute('published_at')),
-            'change_reason' => $version->change_reason,
+            'created_at' => $this->dateString($version->getAttribute('created_at')),
         ];
     }
 
     /** @return array<int, array<string, mixed>> */
-    private function creatorFindings(?ReportVersion $version): array
+    private function creatorFindings(ReportVersion $version): array
     {
-        if ($version === null) {
+        $content = $version->getAttribute('content_structure');
+        if (! is_array($content)) {
             return [];
         }
 
-        $contentStructure = $version->getAttribute('content_structure');
-        if (! is_array($contentStructure)) {
-            return [];
-        }
-
-        $findings = $contentStructure['findings'] ?? [];
+        $findings = $content['findings'] ?? [];
         if (! is_array($findings)) {
             return [];
         }
 
-        $result = [];
-        foreach ($findings as $finding) {
-            if (! is_array($finding)) {
-                continue;
-            }
-
-            $title = is_string($finding['title'] ?? null) ? $finding['title'] : '';
-            $description = is_string($finding['description'] ?? null) ? $finding['description'] : '';
-            if ($title === '' && $description === '') {
-                continue;
-            }
-
-            $result[] = [
-                'type' => is_string($finding['type'] ?? null) ? $finding['type'] : 'finding',
-                'severity' => is_string($finding['severity'] ?? null) ? $finding['severity'] : null,
-                'criterion' => is_string($finding['criterion'] ?? null) ? $finding['criterion'] : null,
-                'title' => $title,
-                'description' => $description,
-            ];
-        }
-
-        return $result;
+        return array_values(array_filter(
+            $findings,
+            static fn (mixed $finding): bool => is_array($finding),
+        ));
     }
 
     /** @return array<string, mixed>|null */
@@ -221,15 +148,17 @@ final class CreatorReportAccess
         }
 
         $badge = $validation->badge;
+        $status = $validation->getAttribute('status');
+        $badgeStatus = $badge?->getAttribute('status');
 
         return [
             'id' => $validation->getKey(),
-            'status' => (string) $validation->getAttribute('status'),
+            'status' => is_object($status) && property_exists($status, 'value') ? $status->value : (string) $status,
             'issued_at' => $this->dateString($validation->getAttribute('issued_at')),
             'status_reason' => $validation->status_reason,
             'verification_identifier' => $validation->verification_identifier,
             'badge' => $badge === null ? null : [
-                'status' => (string) $badge->getAttribute('status'),
+                'status' => is_object($badgeStatus) && property_exists($badgeStatus, 'value') ? $badgeStatus->value : (string) $badgeStatus,
                 'embed_version' => $badge->embed_version,
                 'verification_identifier' => $badge->verification_identifier,
             ],
@@ -243,10 +172,39 @@ final class CreatorReportAccess
 
     private function dateString(mixed $value): ?string
     {
-        if ($value instanceof CarbonInterface) {
+        if ($value === null) {
+            return null;
+        }
+
+        if ($value instanceof Carbon) {
             return $value->toISOString();
         }
 
-        return is_string($value) ? $value : null;
+        return (string) $value;
+    }
+
+    private function canAccess(User $user, int $organizationId): bool
+    {
+        if ($user->platform_role === 'admin') {
+            return true;
+        }
+
+        $membership = $user->organizations()
+            ->whereKey($organizationId)
+            ->first();
+
+        if ($membership === null) {
+            return false;
+        }
+
+        return in_array(
+            (string) $membership->pivot->role,
+            [
+                OrganizationRole::Owner->value,
+                OrganizationRole::Admin->value,
+                OrganizationRole::Editor->value,
+            ],
+            true,
+        );
     }
 }

@@ -7,11 +7,9 @@ namespace App\Services;
 use App\Enums\ProductType;
 use App\Enums\ValidationStatus;
 
+/** @property list<string> $suitabilityReasons */
 final readonly class ProductMatch
 {
-    /**
-     * @param list<string> $suitabilityReasons
-     */
     public function __construct(
         public int $productId,
         public string $title,
@@ -23,6 +21,5 @@ final readonly class ProductMatch
         public ValidationStatus $validationStatus,
         public string $validationEvidence,
         public array $suitabilityReasons,
-    ) {
-    }
+    ) {}
 }

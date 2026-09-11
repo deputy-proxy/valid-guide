@@ -4,6 +4,7 @@ use App\Http\Controllers\CreatorPaymentStatusController;
 use App\Http\Controllers\PublicVerificationController;
 use App\Http\Controllers\StripeWebhookController;
 use App\Livewire\Creator\EvaluationRequests\CreateEvaluationRequest;
+use App\Livewire\Creator\Reports\ShowGuidance;
 use App\Livewire\Creator\Reports\ShowReport;
 use Illuminate\Support\Facades\Route;
 
@@ -24,7 +25,7 @@ Route::view('for-creators', 'public.pages.placeholder', [
 Route::view('for-buyers', 'public.pages.placeholder', [
     'title' => 'For buyers and learners',
     'description' => 'Use Valid.guide validation information to make better-informed learning decisions.',
-    'message' => 'The buyer and learner information experience is being prepared.',
+    'message' => 'The buyer and learner information experience is being prepared for publication.',
 ])->name('public.buyers');
 
 Route::get('verify', [PublicVerificationController::class, 'index'])->name('public.verify');
@@ -50,21 +51,16 @@ Route::view('about', 'public.pages.placeholder', [
     'message' => 'Information about Valid.guide and its independence principles is being prepared for publication.',
 ])->name('public.about');
 
-Route::post('webhooks/stripe', StripeWebhookController::class)
-    ->withoutMiddleware(['web']);
+Route::post('webhooks/stripe', StripeWebhookController::class)->withoutMiddleware(['web']);
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::view('dashboard', 'dashboard')->name('dashboard');
-
     Route::get('creator/organizations/{organizationId}/evaluation-requests/create/{evaluationRequestId?}', CreateEvaluationRequest::class)
-        ->whereNumber('organizationId')
-        ->whereNumber('evaluationRequestId')
-        ->name('creator.evaluation-requests.create');
-
+        ->whereNumber('organizationId')->whereNumber('evaluationRequestId')->name('creator.evaluation-requests.create');
     Route::get('creator/evaluations/{evaluationId}/report', ShowReport::class)
-        ->whereNumber('evaluationId')
-        ->name('creator.reports.show');
-
+        ->whereNumber('evaluationId')->name('creator.reports.show');
+    Route::get('creator/evaluations/{evaluationId}/guidance', ShowGuidance::class)
+        ->whereNumber('evaluationId')->name('creator.reports.guidance');
     Route::get('creator/payment/success', CreatorPaymentStatusController::class)->name('creator.payment.success');
     Route::get('creator/payment/cancelled', CreatorPaymentStatusController::class)->name('creator.payment.cancelled');
 });

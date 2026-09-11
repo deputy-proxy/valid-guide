@@ -29,6 +29,7 @@ class CreatorAction extends Model
         'organization_id',
         'evaluation_id',
         'finding_id',
+        'improvement_guidance_id',
         'created_by',
         'assigned_to',
         'title',
@@ -53,14 +54,24 @@ class CreatorAction extends Model
     {
         static::creating(function (self $action): void {
             $evaluation = Evaluation::query()->find($action->evaluation_id);
+
             if ($evaluation === null || $evaluation->request?->organization_id !== $action->organization_id) {
                 throw new DomainStateTransitionException('A creator action must belong to the evaluation organization.');
             }
 
             if ($action->finding_id !== null) {
                 $finding = Finding::query()->find($action->finding_id);
+
                 if ($finding === null || $finding->evaluation_id !== $action->evaluation_id) {
                     throw new DomainStateTransitionException('A creator action finding must belong to the action evaluation.');
+                }
+            }
+
+            if ($action->improvement_guidance_id !== null) {
+                $guidance = ImprovementGuidance::query()->find($action->improvement_guidance_id);
+
+                if ($guidance === null || $guidance->evaluation_id !== $action->evaluation_id || $guidance->organization_id !== $action->organization_id) {
+                    throw new DomainStateTransitionException('A creator action guidance must belong to the action evaluation and organization.');
                 }
             }
         });
@@ -82,6 +93,12 @@ class CreatorAction extends Model
     public function finding(): BelongsTo
     {
         return $this->belongsTo(Finding::class);
+    }
+
+    /** @return BelongsTo<ImprovementGuidance, $this> */
+    public function improvementGuidance(): BelongsTo
+    {
+        return $this->belongsTo(ImprovementGuidance::class);
     }
 
     /** @return BelongsTo<User, $this> */

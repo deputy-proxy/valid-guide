@@ -22,9 +22,19 @@ class Evaluation extends Model
     use HasFactory;
 
     protected $fillable = [
-        'evaluation_request_id', 'product_id', 'product_release_id', 'standard_version_id', 'status',
-        'decision', 'overall_score', 'started_at', 'submitted_at', 'internal_reviewed_at', 'completed_at',
-        'published_at', 'decision_rationale',
+        'evaluation_request_id',
+        'product_id',
+        'product_release_id',
+        'standard_version_id',
+        'status',
+        'decision',
+        'overall_score',
+        'started_at',
+        'submitted_at',
+        'internal_reviewed_at',
+        'completed_at',
+        'published_at',
+        'decision_rationale',
     ];
 
     protected function casts(): array
@@ -47,9 +57,7 @@ class Evaluation extends Model
             $productReleaseId = $evaluation->getAttribute('product_release_id');
 
             if ($productId === null && $productReleaseId !== null) {
-                $productId = ProductRelease::query()
-                    ->whereKey($productReleaseId)
-                    ->value('product_id');
+                $productId = ProductRelease::query()->whereKey($productReleaseId)->value('product_id');
                 $evaluation->setAttribute('product_id', $productId);
             }
 
@@ -57,10 +65,7 @@ class Evaluation extends Model
                 throw new DomainStateTransitionException('An evaluation must persist the Product that was evaluated.');
             }
 
-            $releaseProductId = ProductRelease::query()
-                ->whereKey($productReleaseId)
-                ->value('product_id');
-
+            $releaseProductId = ProductRelease::query()->whereKey($productReleaseId)->value('product_id');
             if ($releaseProductId !== (int) $productId) {
                 throw new DomainStateTransitionException('An evaluation Product must match its Product Release.');
             }
@@ -75,11 +80,7 @@ class Evaluation extends Model
                 throw new DomainStateTransitionException('Completed evaluations are immutable.');
             }
 
-            if ($evaluation->getOriginal('decision') !== null && (
-                $evaluation->isDirty('decision')
-                || $evaluation->isDirty('overall_score')
-                || $evaluation->isDirty('decision_rationale')
-            )) {
+            if ($evaluation->getOriginal('decision') !== null && ($evaluation->isDirty('decision') || $evaluation->isDirty('overall_score') || $evaluation->isDirty('decision_rationale'))) {
                 throw new DomainStateTransitionException('Recorded evaluation decisions are immutable.');
             }
         });
@@ -155,6 +156,12 @@ class Evaluation extends Model
     public function creatorActions(): HasMany
     {
         return $this->hasMany(CreatorAction::class);
+    }
+
+    /** @return HasMany<ImprovementGuidance, $this> */
+    public function improvementGuidances(): HasMany
+    {
+        return $this->hasMany(ImprovementGuidance::class);
     }
 
     /** @return HasMany<Dispute, $this> */

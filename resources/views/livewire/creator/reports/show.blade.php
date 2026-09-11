@@ -4,13 +4,10 @@
             <div>
                 <p class="text-sm font-medium text-zinc-500 dark:text-zinc-400">Creator report</p>
                 <h1 class="mt-1 text-3xl font-semibold text-zinc-900 dark:text-white">
-                    {{ $reportData['product']['title'] ?? 'Evaluation report' }}
+                    {{ $reportData['product']['name'] ?? 'Evaluation report' }}
                 </h1>
                 <p class="mt-2 text-zinc-600 dark:text-zinc-300">
-                    Release {{ $reportData['release']['identifier'] ?? '—' }}
-                    @if (($reportData['release']['version'] ?? null) !== null)
-                        · v{{ $reportData['release']['version'] }}
-                    @endif
+                    Release {{ $reportData['release']['version'] ?? '—' }}
                 </p>
             </div>
 
@@ -35,9 +32,9 @@
 
                 <section class="rounded-xl border border-zinc-200 p-6 dark:border-zinc-700">
                     <h2 class="font-semibold text-zinc-900 dark:text-white">Methodology</h2>
-                    <p class="mt-4 text-zinc-900 dark:text-white">{{ $reportData['standard_version']['name'] ?? '—' }}</p>
+                    <p class="mt-4 text-zinc-900 dark:text-white">{{ $reportData['standard']['name'] ?? '—' }}</p>
                     <p class="mt-1 text-sm text-zinc-600 dark:text-zinc-300">
-                        Standard Version {{ $reportData['standard_version']['version'] ?? '—' }}
+                        Standard Version {{ $reportData['standard']['version'] ?? '—' }}
                     </p>
                 </section>
 
@@ -62,6 +59,40 @@
                 </section>
             </div>
 
+            <section class="rounded-xl border border-zinc-200 p-6 dark:border-zinc-700">
+                <h2 class="text-xl font-semibold text-zinc-900 dark:text-white">Criterion results</h2>
+                <p class="mt-1 text-sm text-zinc-600 dark:text-zinc-300">Only creator-permitted evaluation outcomes are shown.</p>
+                <div class="mt-6 overflow-x-auto">
+                    @if (count($reportData['criteria'] ?? []) > 0)
+                        <table class="min-w-full divide-y divide-zinc-200 text-left text-sm dark:divide-zinc-700">
+                            <thead>
+                                <tr>
+                                    <th scope="col" class="px-3 py-3 font-medium text-zinc-500">Criterion</th>
+                                    <th scope="col" class="px-3 py-3 font-medium text-zinc-500">Assessment</th>
+                                    <th scope="col" class="px-3 py-3 font-medium text-zinc-500">Score</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-zinc-200 dark:divide-zinc-700">
+                                @foreach ($reportData['criteria'] as $criterion)
+                                    <tr>
+                                        <td class="px-3 py-3">
+                                            <div class="font-medium text-zinc-900 dark:text-white">{{ $criterion['name'] ?? $criterion['code'] ?? 'Criterion' }}</div>
+                                            @if (($criterion['code'] ?? null) !== null)
+                                                <div class="text-xs text-zinc-500">{{ $criterion['code'] }}</div>
+                                            @endif
+                                        </td>
+                                        <td class="px-3 py-3 capitalize">{{ str((string) ($criterion['assessment'] ?? '—'))->replace('_', ' ')->headline() }}</td>
+                                        <td class="px-3 py-3">{{ $criterion['score'] ?? '—' }}</td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    @else
+                        <p class="text-sm text-zinc-600 dark:text-zinc-300">No creator-visible criterion outcomes are recorded.</p>
+                    @endif
+                </div>
+            </section>
+
             @php
                 $selectedVersion = collect($reportData['report']['versions'] ?? [])->firstWhere('id', $selectedVersionId);
             @endphp
@@ -77,6 +108,7 @@
                             <button
                                 type="button"
                                 wire:click="selectVersion({{ $version['id'] }})"
+                                aria-pressed="{{ $selectedVersionId === $version['id'] ? 'true' : 'false' }}"
                                 class="rounded-lg border px-3 py-2 text-sm {{ $selectedVersionId === $version['id'] ? 'border-zinc-900 bg-zinc-50 dark:border-zinc-100 dark:bg-zinc-800' : 'border-zinc-200 dark:border-zinc-700' }}"
                             >
                                 Version {{ $version['version_number'] }}
@@ -84,6 +116,7 @@
                         @endforeach
                     </div>
                 </div>
+                @error('version') <p class="mt-3 text-sm text-red-700">{{ $message }}</p> @enderror
 
                 @if ($selectedVersion !== null)
                     <div class="mt-6 space-y-6">
@@ -112,6 +145,25 @@
                     <p class="mt-6 text-sm text-zinc-600 dark:text-zinc-300">No report version is available.</p>
                 @endif
             </section>
+
+            @foreach ([
+                'strengths' => 'Strengths',
+                'weaknesses' => 'Weaknesses',
+            ] as $key => $title)
+                <section class="rounded-xl border border-zinc-200 p-6 dark:border-zinc-700">
+                    <h2 class="text-xl font-semibold text-zinc-900 dark:text-white">{{ $title }}</h2>
+                    <div class="mt-6 space-y-4">
+                        @forelse ($reportData[$key] ?? [] as $finding)
+                            <article class="rounded-lg border border-zinc-200 p-4 dark:border-zinc-700">
+                                <h3 class="font-medium text-zinc-900 dark:text-white">{{ $finding['title'] }}</h3>
+                                <p class="mt-1 whitespace-pre-line text-sm leading-6 text-zinc-700 dark:text-zinc-300">{{ $finding['description'] }}</p>
+                            </article>
+                        @empty
+                            <p class="text-sm text-zinc-600 dark:text-zinc-300">No {{ strtolower($title) }} are recorded.</p>
+                        @endforelse
+                    </div>
+                </section>
+            @endforeach
 
             <section class="rounded-xl border border-zinc-200 p-6 dark:border-zinc-700">
                 <h2 class="text-xl font-semibold text-zinc-900 dark:text-white">Findings and recommendations</h2>
@@ -199,7 +251,7 @@
                             <textarea wire:model="disputeStatement" rows="5" class="mt-1 block w-full rounded-lg border-zinc-300" required></textarea>
                         </label>
                         @error('dispute') <p class="text-sm text-red-700">{{ $message }}</p> @enderror
-                        @error('disputeGrounds') <p class="text-sm text-red-700">{{ $message }}</p> @enderror
+a                        @error('disputeGrounds') <p class="text-sm text-red-700">{{ $message }}</p> @enderror
                         @error('disputeStatement') <p class="text-sm text-red-700">{{ $message }}</p> @enderror
                         <button type="submit" class="rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white">Submit formal dispute</button>
                     </form>

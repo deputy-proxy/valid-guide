@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use App\Enums\EvaluationRequestStatus;
 use App\Enums\OrganizationRole;
 use App\Enums\PaymentStatus;
 use App\Models\EvaluationRequest;
@@ -171,7 +170,11 @@ it('hides the dashboard from users without an organization', function () {
 
 it('renders the refund action only when the backend contract says it is eligible', function () {
     [$user, $organization, , , , $request] = filamentCreatorDashboardFixture(OrganizationRole::Editor->value);
-    $request->update(['status' => EvaluationRequestStatus::Paid->value]);
+    DB::table('evaluation_requests')
+        ->where('id', $request->id)
+        ->update(['status' => 'paid']);
+    $request->refresh();
+
     $order = Order::create([
         'organization_id' => $organization->id,
         'evaluation_request_id' => $request->id,

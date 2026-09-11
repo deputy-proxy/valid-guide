@@ -52,7 +52,7 @@ final class Assignment extends Page
 
     public function evaluationScope(): string
     {
-        $notes = $this->assignment->evaluation->request->intake_notes;
+        $notes = $this->assignment->evaluation->evaluationRequest->intake_notes;
 
         if (! is_string($notes) || $notes === '') {
             return 'Not specified';

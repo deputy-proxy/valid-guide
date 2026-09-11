@@ -29,7 +29,7 @@ final class AnnualConflictDeclaration extends Page
     public function mount(): void
     {
         $declaration = $this->currentDeclaration();
-        $this->disclosure = $declaration?->disclosure ?? '';
+        $this->disclosure = $declaration->disclosure ?? '';
     }
 
     public function currentDeclaration(): ?AuditorAnnualConflictDeclaration

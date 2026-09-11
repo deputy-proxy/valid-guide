@@ -30,18 +30,10 @@ it('keeps public verification and layout landmarks accessible', function (): voi
 
 it('does not allow Livewire clients to replace the creator tenant context', function (): void {
     $user = User::factory()->create();
-    $organization = Organization::create([
-        'name' => 'Primary Creator Organization',
-        'slug' => 'primary-creator-organization-'.$user->id,
-        'status' => 'active',
-    ]);
-    $otherOrganization = Organization::create([
-        'name' => 'Other Creator Organization',
-        'slug' => 'other-creator-organization-'.$user->id,
-        'status' => 'active',
-    ]);
-    $organization->users()->attach($user, ['role' => 'owner']);
+    $organization = Organization::factory()->create();
+    $otherOrganization = Organization::factory()->create();
 
+    $organization->users()->attach($user, ['role' => 'owner']);
     $this->actingAs($user);
 
     $component = Livewire::test(CreateEvaluationRequest::class, [
@@ -49,29 +41,20 @@ it('does not allow Livewire clients to replace the creator tenant context', func
     ]);
 
     expect(fn () => $component->set('organizationId', $otherOrganization->id))
-        ->toThrow(fn (Throwable $exception): bool => $exception::class === 'Livewire\\Exceptions\\CannotUpdateLockedPropertyException');
+        ->toThrow(fn (Throwable $exception): bool => $exception instanceof \Livewire\Exceptions\CannotUpdateLockedPropertyException);
 });
 
 it('does not allow Livewire clients to replace the resumed request identifier', function (): void {
     $user = User::factory()->create();
-    $organization = Organization::create([
-        'name' => 'Resumption Creator Organization',
-        'slug' => 'resumption-creator-organization-'.$user->id,
-        'status' => 'active',
-    ]);
-    $organization->users()->attach($user, ['role' => 'owner']);
+    $organization = Organization::factory()->create();
+    $otherOrganization = Organization::factory()->create();
 
+    $organization->users()->attach($user, ['role' => 'owner']);
+    $otherOrganization->users()->attach($user, ['role' => 'owner']);
     $this->actingAs($user);
 
     $intake = app(CreatorEvaluationRequestIntake::class);
     $request = $intake->start($user, $organization->id);
-
-    $otherOrganization = Organization::create([
-        'name' => 'Other Resumption Organization',
-        'slug' => 'other-resumption-organization-'.$user->id,
-        'status' => 'active',
-    ]);
-    $otherOrganization->users()->attach($user, ['role' => 'owner']);
     $otherRequest = $intake->start($user, $otherOrganization->id);
 
     $component = Livewire::test(CreateEvaluationRequest::class, [
@@ -80,7 +63,7 @@ it('does not allow Livewire clients to replace the resumed request identifier', 
     ]);
 
     expect(fn () => $component->set('evaluationRequestId', $otherRequest->id))
-        ->toThrow(fn (Throwable $exception): bool => $exception::class === 'Livewire\\Exceptions\\CannotUpdateLockedPropertyException');
+        ->toThrow(fn (Throwable $exception): bool => $exception instanceof \Livewire\Exceptions\CannotUpdateLockedPropertyException);
 });
 
 it('keeps the public verification route outside authentication middleware', function (): void {

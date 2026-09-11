@@ -136,11 +136,11 @@ final class AuditorEvidenceManagement
     {
         return [
             'criterion_id' => ['nullable'],
-            'type' => ['required', 'string', 'in,observation,document,link,reference'],
+            'type' => ['required', 'string', 'in:observation,document,link,reference'],
             'title' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:5000'],
             'source_url' => ['nullable', 'url', 'max:2048'],
-            'provenance' => ['required', 'string', 'in,observed,creator_supplied,external,professional_judgement'],
+            'provenance' => ['required', 'string', 'in:observed,creator_supplied,external,professional_judgement'],
         ];
     }
 

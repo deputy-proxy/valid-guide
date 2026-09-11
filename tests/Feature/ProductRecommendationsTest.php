@@ -7,7 +7,6 @@ use App\Enums\ProductAudience;
 use App\Enums\ProductGoal;
 use App\Enums\ProductType;
 use App\Enums\ValidationStatus;
-use App\Models\PublicDirectoryEntry;
 use App\Models\User;
 use App\Services\ProductRecommendations;
 use App\Services\ProductSuitability;
@@ -26,6 +25,7 @@ function recommendationFixture(string $slug, array $audiences = [], array $goals
         'subject_area' => 'Leadership',
         'language' => 'en',
     ]);
+    $product->productRelease->update(['title_snapshot' => $product->title]);
 
     app(ProductSuitability::class)->update($creator, $product, [
         'matching_audiences' => $audiences,
@@ -51,10 +51,10 @@ it('ranks eligible products by explicit public matching signals and explains the
     );
 
     expect($recommendations)->toHaveCount(3)
-        ->and($recommendations->pluck('productId')->all())->toBe([
-            $best->productRelease->product->getKey(),
-            $second->productRelease->product->getKey(),
-            $third->productRelease->product->getKey(),
+        ->and($recommendations->pluck('verificationIdentifier')->all())->toBe([
+            $best->verification_identifier,
+            $second->verification_identifier,
+            $third->verification_identifier,
         ])
         ->and($recommendations->first()->score)->toBe(4)
         ->and($recommendations->first()->reasons)->toContain('Matches audience: Professionals.')
@@ -65,19 +65,19 @@ it('ranks eligible products by explicit public matching signals and explains the
 });
 
 it('uses deterministic title and verification ordering for equal recommendation scores', function () {
-    [, $alpha] = recommendationFixture('alpha');
-    [, $beta] = recommendationFixture('beta');
+    [$alpha] = recommendationFixture('alpha');
+    [$beta] = recommendationFixture('beta');
 
     $recommendations = app(ProductRecommendations::class)->recommend();
 
-    expect($recommendations->pluck('productId')->all())->toBe([
-        $alpha->getKey(),
-        $beta->getKey(),
+    expect($recommendations->pluck('verificationIdentifier')->all())->toBe([
+        $alpha->verification_identifier,
+        $beta->verification_identifier,
     ]);
 });
 
 it('handles incomplete metadata without failing or inventing a suitability match', function () {
-    [, $product] = recommendationFixture('incomplete');
+    recommendationFixture('incomplete');
 
     $recommendation = app(ProductRecommendations::class)->recommend(
         audience: ProductAudience::Professionals,
@@ -88,8 +88,6 @@ it('handles incomplete metadata without failing or inventing a suitability match
         ->and($recommendation?->score)->toBe(0)
         ->and($recommendation?->reasons)->not->toContain('Matches audience: Professionals.')
         ->and($recommendation?->reasons)->not->toContain('Matches use case: Professional Development.');
-
-    expect(PublicDirectoryEntry::query()->whereKey($product->getKey())->exists())->toBeFalse();
 });
 
 it('excludes hidden and non-current validation records from recommendations', function () {

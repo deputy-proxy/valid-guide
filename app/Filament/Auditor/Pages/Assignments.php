@@ -56,7 +56,7 @@ final class Assignments extends Page
 
     public function evaluationScope(AuditorAssignment $assignment): string
     {
-        $notes = $assignment->evaluation->request->intake_notes;
+        $notes = $assignment->evaluation->evaluationRequest->intake_notes;
 
         if (! is_string($notes) || $notes === '') {
             return 'Not specified';

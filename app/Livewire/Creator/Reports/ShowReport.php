@@ -7,7 +7,9 @@ namespace App\Livewire\Creator\Reports;
 use App\Enums\ClarificationRequestType;
 use App\Enums\CreatorActionStatus;
 use App\Enums\DisputeGround;
+use App\Enums\ImprovementOpportunityStatus;
 use App\Models\Evaluation;
+use App\Models\ImprovementOpportunity;
 use App\Models\Organization;
 use App\Models\User;
 use App\Services\ClarificationWorkflow;
@@ -16,6 +18,7 @@ use App\Services\CreatorActionWorkflow;
 use App\Services\CreatorReportAccess;
 use App\Services\DisputeWorkflow;
 use App\Services\DomainStateTransitionException;
+use App\Services\ImprovementOpportunityWorkflow;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Auth;
@@ -39,8 +42,13 @@ final class ShowReport extends Component
 
     public string $disputeStatement = '';
 
+    public string $completionEvidence = '';
+
     /** @var array<string, mixed> */
     public array $reportData = [];
+
+    /** @var array<int, array<string, mixed>> */
+    public array $opportunities = [];
 
     public function mount(int|string $evaluationId): void
     {
@@ -106,6 +114,64 @@ final class ShowReport extends Component
         } catch (Throwable $exception) {
             report($exception);
             $this->addError('action', 'The creator action could not be updated.');
+        }
+    }
+
+    public function transitionOpportunity(int $opportunityId, string $status): void
+    {
+        $this->resetErrorBag('opportunity');
+
+        try {
+            $opportunityStatus = ImprovementOpportunityStatus::tryFrom($status);
+            if ($opportunityStatus === null) {
+                throw new DomainStateTransitionException('The improvement opportunity status is invalid.');
+            }
+
+            $opportunity = $this->evaluation()
+                ->improvementOpportunities()
+                ->whereKey($opportunityId)
+                ->firstOrFail();
+
+            app(ImprovementOpportunityWorkflow::class)->transition(
+                $opportunity,
+                $this->authenticatedUser(),
+                $opportunityStatus,
+            );
+
+            $this->loadOpportunities();
+            session()->flash('success', 'Improvement opportunity updated.');
+        } catch (AuthorizationException|DomainStateTransitionException $exception) {
+            $this->addError('opportunity', $exception->getMessage());
+        } catch (Throwable $exception) {
+            report($exception);
+            $this->addError('opportunity', 'The improvement opportunity could not be updated.');
+        }
+    }
+
+    public function completeOpportunity(int $opportunityId): void
+    {
+        $this->resetErrorBag('opportunity');
+
+        try {
+            $opportunity = $this->evaluation()
+                ->improvementOpportunities()
+                ->whereKey($opportunityId)
+                ->firstOrFail();
+
+            app(ImprovementOpportunityWorkflow::class)->complete(
+                $opportunity,
+                $this->authenticatedUser(),
+                $this->completionEvidence,
+            );
+
+            $this->completionEvidence = '';
+            $this->loadOpportunities();
+            session()->flash('success', 'Improvement opportunity completed.');
+        } catch (AuthorizationException|DomainStateTransitionException $exception) {
+            $this->addError('opportunity', $exception->getMessage());
+        } catch (Throwable $exception) {
+            report($exception);
+            $this->addError('opportunity', 'The improvement opportunity could not be completed.');
         }
     }
 
@@ -221,6 +287,34 @@ final class ShowReport extends Component
             $currentId = $this->reportData['report']['current_version_id'] ?? null;
             $this->selectedVersionId = is_numeric($currentId) ? (int) $currentId : null;
         }
+
+        $this->loadOpportunities();
+    }
+
+    private function loadOpportunities(): void
+    {
+        $this->opportunities = $this->evaluation()
+            ->improvementOpportunities()
+            ->with(['finding', 'improvementGuidance', 'assignee', 'creatorAction'])
+            ->latest('id')
+            ->get()
+            ->map(fn (ImprovementOpportunity $opportunity): array => [
+                'id' => $opportunity->getKey(),
+                'title' => $opportunity->title,
+                'target_outcome' => $opportunity->target_outcome,
+                'evidence_required' => $opportunity->evidence_required,
+                'completion_evidence' => $opportunity->completion_evidence,
+                'priority' => $opportunity->priority->value,
+                'status' => $opportunity->status->value,
+                'due_at' => $opportunity->due_at?->toISOString(),
+                'completed_at' => $opportunity->completed_at?->toISOString(),
+                'assignee_name' => $opportunity->assignee?->name,
+                'finding_title' => $opportunity->finding?->title,
+                'guidance_id' => $opportunity->improvement_guidance_id,
+                'action_id' => $opportunity->creatorAction?->getKey(),
+            ])
+            ->values()
+            ->all();
     }
 
     private function evaluation(): Evaluation

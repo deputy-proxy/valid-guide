@@ -13,6 +13,7 @@ use App\Models\Dispute;
 use App\Models\DisputeReviewer;
 use App\Models\Evaluation;
 use App\Models\EvaluationRequest;
+use App\Models\ImprovementOpportunity;
 use App\Models\Report;
 use App\Models\User;
 use Carbon\CarbonImmutable;
@@ -50,6 +51,25 @@ final class RoleActionQueue
         }
 
         $items = collect();
+
+        ImprovementOpportunity::query()
+            ->whereIn('organization_id', $organizationIds)
+            ->whereIn('status', ['open', 'in_progress'])
+            ->orderByDesc('updated_at')
+            ->limit(25)
+            ->get()
+            ->each(function (ImprovementOpportunity $opportunity) use ($items): void {
+                $items->push(new ActionQueueItem(
+                    'improvement-opportunity:'.$opportunity->getKey(),
+                    'improvement',
+                    'Improvement opportunity',
+                    sprintf('Continue work on: %s.', $opportunity->title),
+                    'improvement_opportunity',
+                    (int) $opportunity->getKey(),
+                    false,
+                    CarbonImmutable::instance($opportunity->updated_at),
+                ));
+            });
 
         EvaluationRequest::query()
             ->whereIn('organization_id', $organizationIds)

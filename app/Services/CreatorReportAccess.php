@@ -11,6 +11,7 @@ use App\Models\Evaluation;
 use App\Models\Organization;
 use App\Models\ReportVersion;
 use App\Models\User;
+use Carbon\CarbonInterface;
 use Illuminate\Auth\Access\AuthorizationException;
 
 final class CreatorReportAccess
@@ -61,7 +62,7 @@ final class CreatorReportAccess
                 'status' => $evaluation->status->value,
                 'decision' => $evaluation->decision,
                 'overall_score' => $evaluation->overall_score,
-                'completed_at' => $evaluation->completed_at?->toISOString(),
+                'completed_at' => $this->dateString($evaluation->getAttribute('completed_at')),
             ],
             'organization' => [
                 'id' => $organization->getKey(),
@@ -79,7 +80,7 @@ final class CreatorReportAccess
                     ? (string) $productRelease->version
                     : null,
                 'edition' => $productRelease->edition,
-                'published_at' => $productRelease->published_at?->toISOString(),
+                'published_at' => $this->dateString($productRelease->getAttribute('published_at')),
             ],
             'standard_version' => [
                 'id' => $standardVersion->getKey(),
@@ -101,12 +102,12 @@ final class CreatorReportAccess
             'clarifications' => $evaluation->clarificationRequests
                 ->map(fn (ClarificationRequest $clarification): array => [
                     'id' => $clarification->getKey(),
-                    'type' => $clarification->type->value,
-                    'status' => $clarification->status->value,
+                    'type' => (string) $clarification->getAttribute('type'),
+                    'status' => (string) $clarification->getAttribute('status'),
                     'message' => (string) $clarification->message,
                     'response' => $clarification->response,
-                    'submitted_at' => $clarification->submitted_at?->toISOString(),
-                    'resolved_at' => $clarification->resolved_at?->toISOString(),
+                    'submitted_at' => $this->dateString($clarification->getAttribute('submitted_at')),
+                    'resolved_at' => $this->dateString($clarification->getAttribute('resolved_at')),
                 ])
                 ->values()
                 ->all(),
@@ -116,8 +117,8 @@ final class CreatorReportAccess
                     'status' => $dispute->status->value,
                     'grounds' => $dispute->grounds,
                     'statement' => $dispute->decision_rationale,
-                    'submitted_at' => $dispute->submitted_at?->toISOString(),
-                    'resolved_at' => $dispute->resolved_at?->toISOString(),
+                    'submitted_at' => $this->dateString($dispute->getAttribute('submitted_at')),
+                    'resolved_at' => $this->dateString($dispute->getAttribute('resolved_at')),
                 ])
                 ->values()
                 ->all(),
@@ -165,7 +166,7 @@ final class CreatorReportAccess
             'content_structure' => $version->content_structure,
             'decision_snapshot' => $version->decision_snapshot,
             'standard_version_snapshot' => $version->standard_version_snapshot,
-            'published_at' => $version->published_at?->toISOString(),
+            'published_at' => $this->dateString($version->getAttribute('published_at')),
             'change_reason' => $version->change_reason,
         ];
     }
@@ -173,11 +174,16 @@ final class CreatorReportAccess
     /** @return array<int, array<string, mixed>> */
     private function creatorFindings(?ReportVersion $version): array
     {
-        if ($version === null || ! is_array($version->content_structure)) {
+        if ($version === null) {
             return [];
         }
 
-        $findings = $version->content_structure['findings'] ?? [];
+        $contentStructure = $version->getAttribute('content_structure');
+        if (! is_array($contentStructure)) {
+            return [];
+        }
+
+        $findings = $contentStructure['findings'] ?? [];
         if (! is_array($findings)) {
             return [];
         }
@@ -214,16 +220,18 @@ final class CreatorReportAccess
             return null;
         }
 
+        $badge = $validation->badge;
+
         return [
             'id' => $validation->getKey(),
-            'status' => $validation->status->value,
-            'issued_at' => $validation->issued_at?->toISOString(),
+            'status' => (string) $validation->getAttribute('status'),
+            'issued_at' => $this->dateString($validation->getAttribute('issued_at')),
             'status_reason' => $validation->status_reason,
             'verification_identifier' => $validation->verification_identifier,
-            'badge' => $validation->badge === null ? null : [
-                'status' => $validation->badge->status->value,
-                'embed_version' => $validation->badge->embed_version,
-                'verification_identifier' => $validation->badge->verification_identifier,
+            'badge' => $badge === null ? null : [
+                'status' => (string) $badge->getAttribute('status'),
+                'embed_version' => $badge->embed_version,
+                'verification_identifier' => $badge->verification_identifier,
             ],
             'verification_url' => $validation->publicVerificationRecord === null
                 ? null
@@ -231,5 +239,14 @@ final class CreatorReportAccess
                     'verificationIdentifier' => $validation->verification_identifier,
                 ]),
         ];
+    }
+
+    private function dateString(mixed $value): ?string
+    {
+        if ($value instanceof CarbonInterface) {
+            return $value->toISOString();
+        }
+
+        return is_string($value) ? $value : null;
     }
 }

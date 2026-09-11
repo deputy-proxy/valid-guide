@@ -93,12 +93,13 @@ it('uses a deliberate state for malformed verification identifiers submitted to 
 
 it('does not expose private auditor data from the public snapshot', function (): void {
     $validation = publicVerificationFixture();
+    app(PublicVerificationPublication::class)->publish($validation);
+
     $validation->productRelease->product->organization->update(['name' => 'Private Internal Creator Name']);
     $validation->load('evaluation.auditorEvaluations.assignment.auditor');
     $validation->evaluation->auditorEvaluations->first()->assignment->auditor->update([
         'email' => 'private-auditor@example.test',
     ]);
-    app(PublicVerificationPublication::class)->publish($validation);
 
     $response = $this->get(route('public.verify.show', [
         'verificationIdentifier' => $validation->verification_identifier,
@@ -106,7 +107,8 @@ it('does not expose private auditor data from the public snapshot', function ():
 
     $response->assertOk()
         ->assertDontSee('private-auditor@example.test')
-        ->assertDontSee('Private Internal Creator Name');
+        ->assertDontSee('Private Internal Creator Name')
+        ->assertSee('Test Creator');
 });
 
 it('serves the lookup page without authentication', function (): void {

@@ -9,7 +9,5 @@ use Illuminate\Contracts\Events\ShouldDispatchAfterCommit;
 
 final readonly class AuditorEvaluationSubmitted implements ShouldDispatchAfterCommit
 {
-    public function __construct(public AuditorEvaluation $auditorEvaluation)
-    {
-    }
+    public function __construct(public AuditorEvaluation $auditorEvaluation) {}
 }

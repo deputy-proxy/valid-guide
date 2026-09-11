@@ -3,8 +3,6 @@
 declare(strict_types=1);
 
 use App\Enums\AuditorProfileStatus;
-use App\Filament\Auditor\Pages\Assignment;
-use App\Filament\Auditor\Pages\Assignments;
 use App\Models\AuditorAnnualConflictDeclaration;
 use App\Models\AuditorProfile;
 use App\Models\User;
@@ -93,12 +91,12 @@ it('renders only the authenticated auditors cleared assignments', function () {
     ]);
 
     $this->actingAs($auditor)
-        ->get(Assignments::getUrl())
+        ->get('/auditor/assignments')
         ->assertSuccessful()
         ->assertSee($assignment->evaluation->product->title)
         ->assertSee('View assignment');
 
     $this->actingAs($auditor)
-        ->get(Assignment::getUrl(['assignment' => $otherAssignment->id]))
+        ->get('/auditor/assignments/'.$otherAssignment->id)
         ->assertForbidden();
 });

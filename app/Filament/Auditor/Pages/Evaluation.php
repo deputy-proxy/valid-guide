@@ -139,6 +139,7 @@ final class Evaluation extends Page
         return $this->isLocked() ? 'Submitted and locked' : 'Draft';
     }
 
+    /** @return array<string,string> */
     public function assessmentOptions(): array
     {
         return collect(CriterionAssessment::cases())
@@ -153,6 +154,7 @@ final class Evaluation extends Page
         return $this->auditorEvaluation->criterionResults->firstWhere('criterion_id', $criterionId);
     }
 
+    /** @return array{min:int,max:int}|null */
     public function scoreRangeFor(int $criterionId): ?array
     {
         $draft = $this->drafts[$criterionId] ?? null;
@@ -165,9 +167,7 @@ final class Evaluation extends Page
             return null;
         }
 
-        return app(AuditorEvaluationWorkspace::class)
-            ->findFor($this->auditorEvaluation->assignment->auditor, $this->auditorEvaluation->assignment->getKey())
-            ->evaluation->standardVersion->scoreAnchorFor($assessment);
+        return $this->auditorEvaluation->evaluation->standardVersion->scoreAnchorFor($assessment);
     }
 
     public function assignmentUrl(): string
@@ -185,12 +185,13 @@ final class Evaluation extends Page
     private function hydrateDraft(int $criterionId): void
     {
         $result = $this->resultFor($criterionId);
+        $assessment = $result === null ? null : CriterionAssessment::tryFrom((string) $result->getRawOriginal('assessment'));
 
         $this->drafts[$criterionId] = [
-            'assessment' => $result?->assessment?->value ?? '',
-            'score' => $result?->score !== null ? (string) $result->score : '',
-            'rationale' => $result?->rationale ?? '',
-            'confidence' => $result?->confidence !== null ? (string) $result->confidence : '',
+            'assessment' => $assessment?->value ?? '',
+            'score' => $result === null || $result->score === null ? '' : (string) $result->score,
+            'rationale' => $result === null ? '' : $result->rationale,
+            'confidence' => $result === null || $result->confidence === null ? '' : (string) $result->confidence,
         ];
     }
 }

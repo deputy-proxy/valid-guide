@@ -259,6 +259,8 @@ The remaining work is an integration and quality audit, not another major featur
 11. Run Pint/lint, PHPStan and the complete test suite.
 12. Update implementation/audit documentation.
 
+The executable Phase 3 regression matrix is maintained in `docs/phase-3-integration-audit.md`, with its presence and referenced feature-test coverage guarded by `tests/Feature/Phase3IntegrationAuditTest.php`.
+
 ### Phase 3 exit criteria
 
 Phase 3 is **not complete yet**. It becomes complete only when #100 confirms all of the following:

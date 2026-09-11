@@ -159,10 +159,7 @@ final class CreatorReportAccess
             ->all();
     }
 
-    /**
-     * @param array<int, string> $types
-     * @return array<int, array<string, mixed>>
-     */
+    /** @param array<int, string> $types */
     private function creatorFindingsByType(Evaluation $evaluation, array $types): array
     {
         return $evaluation->findings

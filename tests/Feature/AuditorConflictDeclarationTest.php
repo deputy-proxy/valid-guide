@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Models\ConflictDeclaration;
 use App\Models\User;
 use App\Services\AuditorConflictDeclarationService;
+use App\Services\ConflictDeclarationDecision;
 use App\Services\DomainStateTransitionException;
 
 it('allows an auditor to submit a declaration for their own assignment', function () {
@@ -53,7 +54,7 @@ it('does not replace a determined assignment declaration', function () {
 
     $declaration = app(AuditorConflictDeclarationService::class)->submit($assignment, $auditor, 'Original disclosure.');
 
-    app(\App\Services\ConflictDeclarationDecision::class)->decide($declaration, 'cleared', $admin);
+    app(ConflictDeclarationDecision::class)->decide($declaration, 'cleared', $admin);
 
     expect(fn () => app(AuditorConflictDeclarationService::class)->submit($assignment, $auditor, 'Changed disclosure.'))
         ->toThrow(DomainStateTransitionException::class)

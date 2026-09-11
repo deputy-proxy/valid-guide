@@ -57,7 +57,7 @@ it('ranks eligible products by explicit public matching signals and explains the
         ->and($recommendations->first()->reasons)->toContain('Matches use case: Professional Development.')
         ->and($recommendations->first()->reasons)->toContain('Matches subject area: Leadership.')
         ->and($recommendations->first()->reasons)->toContain('Matches language: EN.')
-        ->and($recommendations->first()->reasons)->toContain('Currently validated for release v1.');
+        ->and($recommendations->first()->reasons)->toContain(sprintf('Currently validated for release %s.', $best->productRelease->release_identifier));
 });
 
 it('uses deterministic verification ordering for equal recommendation scores', function () {
@@ -133,7 +133,7 @@ it('renders recommendation explanations and verification links on the public dir
         ->assertSee('Why this is recommended')
         ->assertSee('Matches audience: Professionals.')
         ->assertSee('Matches use case: Professional Development.')
-        ->assertSee('Currently validated for release v1.')
+        ->assertSee(sprintf('Currently validated for release %s.', $validation->productRelease->release_identifier))
         ->assertSee($product->title)
         ->assertSee(route('public.verify.show', ['verificationIdentifier' => $validation->verification_identifier]), false)
         ->assertDontSee('guaranteed')

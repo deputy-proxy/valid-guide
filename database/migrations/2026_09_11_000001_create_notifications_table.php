@@ -10,6 +10,7 @@ return new class extends Migration
 {
     public function up(): void
     {
+        // Keep notification persistence independent from workflow state.
         Schema::create('notifications', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->string('type');

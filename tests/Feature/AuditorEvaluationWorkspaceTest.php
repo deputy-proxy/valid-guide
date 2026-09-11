@@ -14,7 +14,7 @@ use App\Services\DomainStateTransitionException;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Validation\ValidationException;
 
-function clearAuditor(User $auditor): void
+function prepareClearedAuditorForWorkspace(User $auditor): void
 {
     $reviewer = User::factory()->create();
 
@@ -39,7 +39,7 @@ function clearAuditor(User $auditor): void
 it('renders the authenticated auditors frozen evaluation workspace', function () {
     [$auditorEvaluation] = auditorEvaluationFixture();
     $auditor = $auditorEvaluation->assignment->auditor;
-    clearAuditor($auditor);
+    prepareClearedAuditorForWorkspace($auditor);
 
     $this->actingAs($auditor)
         ->get('/auditor/assignments/'.$auditorEvaluation->assignment->id.'/evaluation')
@@ -54,10 +54,10 @@ it('renders the authenticated auditors frozen evaluation workspace', function ()
 it('rejects another auditors evaluation workspace', function () {
     [$auditorEvaluation] = auditorEvaluationFixture();
     $auditor = $auditorEvaluation->assignment->auditor;
-    clearAuditor($auditor);
+    prepareClearedAuditorForWorkspace($auditor);
 
     [$otherEvaluation] = auditorEvaluationFixture();
-    clearAuditor($otherEvaluation->assignment->auditor);
+    prepareClearedAuditorForWorkspace($otherEvaluation->assignment->auditor);
 
     $this->actingAs($auditor)
         ->get('/auditor/assignments/'.$otherEvaluation->assignment->id.'/evaluation')
@@ -75,7 +75,7 @@ it('rejects evaluation work when annual clearance is missing', function () {
 it('orders criteria by the frozen standard version sequence', function () {
     [$auditorEvaluation] = auditorEvaluationFixture();
     $auditor = $auditorEvaluation->assignment->auditor;
-    clearAuditor($auditor);
+    prepareClearedAuditorForWorkspace($auditor);
 
     $standardVersion = $auditorEvaluation->evaluation->standardVersion;
     $later = Criterion::create([
@@ -107,7 +107,7 @@ it('orders criteria by the frozen standard version sequence', function () {
 it('saves a methodology controlled scored draft', function () {
     [$auditorEvaluation] = auditorEvaluationFixture();
     $auditor = $auditorEvaluation->assignment->auditor;
-    clearAuditor($auditor);
+    prepareClearedAuditorForWorkspace($auditor);
     $criterionId = $auditorEvaluation->criterionResults->first()->criterion_id;
 
     $result = app(AuditorEvaluationWorkspace::class)->saveDraft(
@@ -128,7 +128,7 @@ it('saves a methodology controlled scored draft', function () {
 it('rejects invalid assessment values and criteria from another standard version', function () {
     [$auditorEvaluation] = auditorEvaluationFixture();
     $auditor = $auditorEvaluation->assignment->auditor;
-    clearAuditor($auditor);
+    prepareClearedAuditorForWorkspace($auditor);
     $workspace = app(AuditorEvaluationWorkspace::class);
     $criterionId = $auditorEvaluation->criterionResults->first()->criterion_id;
 
@@ -156,7 +156,7 @@ it('rejects invalid assessment values and criteria from another standard version
 it('rejects scores that do not match the selected assessment', function () {
     [$auditorEvaluation] = auditorEvaluationFixture();
     $auditor = $auditorEvaluation->assignment->auditor;
-    clearAuditor($auditor);
+    prepareClearedAuditorForWorkspace($auditor);
     $workspace = app(AuditorEvaluationWorkspace::class);
     $criterionId = $auditorEvaluation->criterionResults->first()->criterion_id;
 
@@ -170,10 +170,10 @@ it('rejects scores that do not match the selected assessment', function () {
 it('does not allow a second auditor to overwrite the first auditors result', function () {
     [$auditorEvaluation] = auditorEvaluationFixture();
     $auditor = $auditorEvaluation->assignment->auditor;
-    clearAuditor($auditor);
+    prepareClearedAuditorForWorkspace($auditor);
 
     $otherAuditor = User::factory()->create();
-    clearAuditor($otherAuditor);
+    prepareClearedAuditorForWorkspace($otherAuditor);
 
     $criterionId = $auditorEvaluation->criterionResults->first()->criterion_id;
 
@@ -194,7 +194,7 @@ it('does not allow a second auditor to overwrite the first auditors result', fun
 it('rejects draft mutation after the evaluation is locked', function () {
     [$auditorEvaluation] = auditorEvaluationFixture();
     $auditor = $auditorEvaluation->assignment->auditor;
-    clearAuditor($auditor);
+    prepareClearedAuditorForWorkspace($auditor);
     $auditorEvaluation->update([
         'status' => 'submitted',
         'submitted_at' => now(),

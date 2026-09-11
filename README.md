@@ -10,7 +10,7 @@ Valid.guide is:
 
 - an independent validation service;
 - a transparent quality-assessment system;
-- a structured evaluation process performed by qualified independent Auditors;
+- a structured quality-assessment process performed by qualified independent Auditors;
 - a public trust signal backed by a verifiable record.
 
 Valid.guide is not:
@@ -62,15 +62,8 @@ The application is organized around explicit domain boundaries rather than a col
 - User
 - Organization
 - Organization Membership
-
-Organization membership roles:
-
-- Owner
-- Admin
-- Editor
-- Billing
-
-Platform administration is separate from organization membership.
+- Owner, Admin, Editor and Billing membership roles
+- Separate platform administration authority
 
 ### Product & Intake
 
@@ -111,8 +104,7 @@ Methodology is versioned. An Evaluation uses the Standard Version applicable whe
 - Validation
 - Badge
 - Public Verification Record
-- Report
-- Report Version
+- Report / Report Version
 - Clarification Request
 - Formal Dispute
 - Independent Review
@@ -135,7 +127,7 @@ Methodology is versioned. An Evaluation uses the Standard Version applicable whe
 
 ## Core Business Lifecycle
 
-The business lifecycle is separate from the application's development roadmap.
+The business lifecycle is separate from the development roadmap.
 
 ```text
 Evaluation Request
@@ -169,16 +161,7 @@ Clarifications and formal disputes are controlled workflows. They must not silen
 
 Valid.guide uses a common core methodology with product-type modules.
 
-Supported product formats include:
-
-- Course
-- Cohort course
-- Guide
-- Ebook learning product
-- Workshop
-- Program
-- Membership
-- Other approved format
+Supported product formats include Course, Cohort course, Guide, Ebook learning product, Workshop, Program, Membership and other approved formats.
 
 The Validation Methodology v1 defines ten dimensions:
 
@@ -219,63 +202,114 @@ A public verification record contains, where applicable:
 
 Validated products may appear in the public directory by default. Creators may opt out of directory listing while retaining a verifiable badge.
 
-## Development Status
+## Development Roadmap
 
-The repository has completed **Phase 3: Auditor, governance and post-evaluation workflows**.
+The phases below are the **original Valid.guide development roadmap**. They are intentionally product-oriented. Later implementation work introduced more technical issue groupings, but those issue groupings are implementation slices, not a replacement for this roadmap.
 
-Phase 3 contained nine implementation issues, #92 through #100. **All 9 of 9 issues are now complete and closed.** Issue #100 served as the final Phase 3 completion gate.
+### Phase 0 — Product & Architecture
 
-### Phase 3 completed work
+**Status: Complete**
 
-The following Phase 3 issues are closed:
+Define what Valid.guide is and establish the business, domain, methodology, trust and architecture decisions required before implementation.
 
-- **#92 — Auditor application foundation and assignment workspace**: Auditor navigation, assignment visibility, readiness presentation, authorization-driven actions and shared Auditor UI conventions.
-- **#93 — Auditor onboarding, eligibility and conflict-of-interest workflow**: Auditor profile/eligibility workflow plus annual and assignment-level conflict declarations and gates.
-- **#94 — Auditor evaluation workspace**: Frozen evaluation context, Standard Version enforcement, criterion workflow, Auditor notes/evidence boundaries and evaluation-state handling.
-- **#95 — Criterion assessment, evidence and findings interface**: Controlled criterion assessment, evidence references, findings, voting inputs and historical submission protection.
-- **#96 — Auditor submission and evaluation finalization**: Completeness validation, controlled submission, immutable submission boundary, concurrency/idempotency protections and explicit handoff to review/decision.
-- **#97 — Platform administration and governance interfaces**: Evaluation operations, assignments, conflicts, submitted-material verification, decisions, Validation, reports, disputes, verification records and audit visibility.
-- **#98 — Creator reports, Validation results and permitted post-evaluation actions**: Creator-facing reports, Validation state, permitted disclosure, clarification/dispute entry points and badge/trust-state presentation.
-- **#99 — Notifications and role-based action queues**: Role-specific notifications and action queues derived from authoritative backend state with tenant and privacy protections.
-- **#100 — Phase 3 integration, accessibility and regression audit**: Final specification-to-code audit, regression matrix, authorization and privacy boundary verification, accessibility checks, mutation-boundary checks and complete quality-gate verification.
+Completed foundations include the product positioning, actor model, domain boundaries, Product Release model, evaluation and Validation lifecycles, Auditor eligibility and COI rules, methodology v1, trust/verification architecture, reports and disputes, commerce rules, tenancy/authorization principles and historical-integrity requirements.
 
-These closures establish the main Phase 3 application surfaces across the **Auditor**, **Platform Administrator** and **Creator** workflows. The implementation has consistently treated authorization, tenancy, privacy, methodology versioning and historical integrity as server-side concerns rather than presentation-only behavior.
+### Phase 1 — Application Foundation & Domain Implementation
 
-### Phase 3 audit result
+**Status: Complete**
 
-Issue **#100 is complete**. The executable regression matrix is maintained in `docs/phase-3-integration-audit.md`, with its presence and referenced feature-test coverage guarded by `tests/Feature/Phase3IntegrationAuditTest.php`.
+Turn the approved architecture into a secure, persistent Laravel domain foundation.
 
-The final Phase 3 CI run passed:
+Completed work includes the core Eloquent/domain model, migrations and constraints, organization tenancy and authorization, lifecycle transitions, auditability, methodology persistence and versioning, trust/public-verification persistence, historical-integrity protections, and regression coverage.
 
-- Pint/lint;
-- PHPStan;
-- the complete test suite;
-- GitHub Actions CI.
+Phase 1 completion was formally audited through issue **#33**, including Pint/lint, PHPStan, the complete test suite and CI.
 
-The audit specifically protects the Phase 3 boundaries around tenancy, authorization, Auditor eligibility/COI, methodology versioning, historical integrity, notification state, Livewire transport and accessibility landmarks.
+### Phase 2 — Evaluator & Action Plan
 
-### Phase 3 exit criteria
+**Status: Substantially implemented; reconciliation required**
 
-All Phase 3 exit criteria are satisfied:
+Build the actual evaluation engine and the structured work produced from an evaluation: evaluation intake, standards, Auditor work, evidence/findings, decisions, reports, Validation and the resulting action-oriented output.
 
-- all Phase 3 acceptance requirements have executable coverage or documented test-layer rationale;
-- no known role, tenancy, privacy, lifecycle, methodology, historical-integrity or trust-boundary finding remains open;
-- Creator, Auditor and Platform Administrator experiences remain consistent with backend state;
-- private Auditor work and platform-only information cannot leak through UI or direct requests within the audited boundaries;
-- accessibility-critical and responsive requirements are covered by the implemented regression checks;
-- Pint/lint passes;
-- PHPStan passes;
-- the complete test suite passes;
-- CI is green on the final Phase 3 implementation; and
-- this README records Phase 3 completion.
+The current repository contains substantial implementation of this scope across the former technical Phase 2 and Phase 3 issue groups, including Evaluation Requests, commerce/intake, Auditor onboarding, assignments, criterion assessment, evidence, findings, submission, evaluation finalization, decisions, reports and Validation workflows.
 
-### Current phase summary
+The work should be treated as implementation coverage of this original phase, not as a reason to renumber or redefine the roadmap.
 
-| Phase | Status | Progress |
+### Phase 3 — Guides, Opportunities & Matching
+
+**Status: Not yet implemented as a dedicated product capability**
+
+Expand Valid.guide beyond validation results into actionable guidance and discovery: structured recommendations, improvement opportunities, matching validated products to relevant audiences/use cases, and the product experiences that make evaluation results useful after the report is delivered.
+
+Existing findings, reports and recommendations are foundations for this phase, but they do not by themselves constitute the complete Guides, Opportunities & Matching product.
+
+### Phase 4 — Experts, Marketplace & Community
+
+**Status: Partially implemented; dedicated marketplace/community scope remains**
+
+Build the broader expert ecosystem around Valid.guide: Auditor Board growth, expert profiles, discovery, community participation, expert opportunities and marketplace capabilities while preserving independence and avoiding pay-to-play incentives.
+
+The repository already contains Auditor onboarding, eligibility, COI, assignment and operational workflows. Those are foundations for this phase, not evidence that the marketplace/community phase is complete.
+
+### Phase 5 — Monitor, Subscription & Public Product
+
+**Status: Partially implemented; major product scope remains**
+
+Build the public-facing product around ongoing trust and user value: monitoring, subscriptions, public discovery, verification, directory experiences, public website surfaces and lifecycle notifications.
+
+The repository already contains the persisted Public Verification Record and the public verification experience, plus role-based notifications and action queues. Public verification therefore does not need to be rebuilt. Monitoring, subscription products and the broader public product remain to be completed.
+
+### Phase 6 — Optimization & Scale
+
+**Status: Not started**
+
+Prepare Valid.guide for sustained operation and scale: calibration, quality measurement, operational optimization, automation, analytics, performance, reliability, observability, security hardening and product iteration based on real-world usage.
+
+This phase begins only after the core public product and operating model are sufficiently mature.
+
+## Current Reconciliation
+
+The current repository should be understood against the roadmap above as follows:
+
+| Original phase | Current status | Reconciliation |
 | --- | --- | --- |
-| Phase 1 | Complete | Foundation and domain decisions established |
-| Phase 2 | Complete | Core domain/application implementation completed |
-| **Phase 3** | **Complete** | **9/9 issues closed; final integration audit passed** |
-| **Phase 4** | **Unblocked** | Ready to begin |
+| **Phase 0 — Product & Architecture** | **Complete** | Architecture and product decisions are established and documented. |
+| **Phase 1 — Application Foundation & Domain Implementation** | **Complete** | Foundation, domain integrity, tenancy, authorization, methodology and trust persistence are implemented and audited. |
+| **Phase 2 — Evaluator & Action Plan** | **Substantially implemented** | Current former Phase 2 and Phase 3 work covers much of the evaluation engine and operational workflow. A dedicated original-phase completion audit is still appropriate before declaring the whole product capability complete. |
+| **Phase 3 — Guides, Opportunities & Matching** | **Not started as a dedicated phase** | Findings/reports provide groundwork, but the broader guidance, opportunities and matching product is not yet a distinct implemented capability. |
+| **Phase 4 — Experts, Marketplace & Community** | **Partially implemented** | Auditor infrastructure exists; marketplace and community capabilities remain. |
+| **Phase 5 — Monitor, Subscription & Public Product** | **Partially implemented** | Public verification and notifications exist; monitoring, subscriptions and the complete public product remain. |
+| **Phase 6 — Optimization & Scale** | **Not started** | Reserved for post-core-product optimization and operational scale. |
 
-The development roadmap can now advance to **Phase 4**. Human beings may proceed to create more tickets, as tradition demands.
+## Existing Implementation Milestones
+
+The technical implementation history should remain visible because it explains how the original roadmap has been executed:
+
+- **Phase 1 completion:** issue **#33** closed after final specification, invariant and CI audit.
+- **Former technical Phase 2 completion:** issue **#50** closed after the creator intake, commerce, payment, refund and readiness audit.
+- **Public verification:** issue **#57** implemented the public verification experience on top of the persisted trust snapshot.
+- **Current Auditor/governance implementation:** issues **#92–#100** established and audited the main Auditor, Creator post-evaluation and Platform Administrator workflow surfaces.
+
+These implementation milestones are subordinate to the original product roadmap. They should not be interpreted as a new phase numbering system.
+
+## Authoritative Specifications
+
+- `docs/domain-and-database-specification.md` — authoritative domain model, persistence model, lifecycle rules, authorization boundaries, trust model, commerce rules and public verification architecture.
+- `docs/validation-methodology-v1.md` — authoritative Validation Methodology v1.0, including dimensions, criteria, scoring, blockers, Auditor rules, complexity and decision logic.
+- `docs/phase-1-decisions.md` — implementation-significant decisions made while completing Phase 1.
+- `docs/implementation-decisions.md` — implementation decisions and intentional deviations recorded during development.
+
+## Development Rules
+
+1. Important architectural, product, methodology, workflow, policy, security and data decisions must be documented.
+2. Do not silently contradict an approved specification.
+3. Preserve historical truth. Completed Auditor work, standards, decisions, reports and Validation records must remain interpretable at their defined boundaries.
+4. Authorization must be enforced server-side. UI visibility is never the security boundary.
+5. Trust-sensitive mutations must use controlled application/domain workflows rather than raw or bulk database writes.
+6. Every implementation issue must account for Pint/lint, PHPStan and relevant automated tests.
+7. CI must be green before an implementation issue is considered complete.
+
+## Current Direction
+
+The repository has completed the foundational application work and the major Auditor/governance workflow implementation. The roadmap now returns to the original product sequence rather than creating another parallel phase numbering system.
+
+The next major product capability is therefore **Phase 3 — Guides, Opportunities & Matching**, while unfinished Phase 4 and Phase 5 capabilities should be tracked explicitly as dependencies or follow-on work rather than being silently absorbed into a renamed roadmap.

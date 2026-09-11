@@ -62,11 +62,14 @@ it('returns only creator-permitted report and validation data', function () {
     $data = app(CreatorReportAccess::class)->show($creator, $evaluation->id);
 
     expect($data['evaluation']['decision'])->toBe('validated')
+        ->and($data['evaluation']['overall_score'])->toBe('80.00')
+        ->and($data)->toHaveKeys(['criteria', 'findings', 'strengths', 'weaknesses', 'report', 'validation'])
         ->and($data['report']['current']['version_number'])->toBe(1)
         ->and($data['validation']['status'])->toBe('active')
         ->and($data['validation']['badge']['embed_version'])->toBe('1')
         ->and($data)->not->toHaveKey('auditor_evaluations')
         ->and($data)->not->toHaveKey('assignments')
+        ->and($data)->not->toHaveKey('evidence')
         ->and($data['evaluation'])->not->toHaveKey('decision_rationale');
 });
 
@@ -106,6 +109,36 @@ it('rejects users outside the evaluation organization', function () {
         ->toThrow(AuthorizationException::class);
 });
 
+it('rejects non-content organization roles', function () {
+    [$evaluation, $admin] = creatorReportFixture();
+    app(ReportVersioning::class)->createInitial($evaluation, $admin);
+
+    $organization = $evaluation->request->organization;
+    $billing = User::factory()->create();
+    $organization->users()->attach($billing, ['role' => 'billing']);
+
+    expect(fn () => app(CreatorReportAccess::class)->show($billing, $evaluation->id))
+        ->toThrow(AuthorizationException::class);
+});
+
+it('rejects evaluations that are not completed', function () {
+    [$evaluation, $admin] = creatorReportFixture();
+    app(ReportVersioning::class)->createInitial($evaluation, $admin);
+
+    $organization = $evaluation->request->organization;
+    $creator = User::factory()->create();
+    $organization->users()->attach($creator, ['role' => 'editor']);
+
+    DB::table('evaluations')
+        ->where('id', $evaluation->id)
+        ->update(['status' => 'in_progress']);
+
+    $evaluation->refresh();
+
+    expect(fn () => app(CreatorReportAccess::class)->show($creator, $evaluation->id))
+        ->toThrow(AuthorizationException::class);
+});
+
 it('renders the creator report through Livewire', function () {
     [$evaluation, $admin] = creatorReportFixture();
     app(ReportVersioning::class)->createInitial($evaluation, $admin);
@@ -117,6 +150,9 @@ it('renders the creator report through Livewire', function () {
         ->test(ShowReport::class, ['evaluationId' => $evaluation->id])
         ->assertStatus(200)
         ->assertSee('Report')
+        ->assertSee('Criterion results')
+        ->assertSee('Strengths')
+        ->assertSee('Weaknesses')
         ->assertSee('validated')
         ->assertSee('Private Auditor evidence and deliberation are intentionally excluded.');
 });

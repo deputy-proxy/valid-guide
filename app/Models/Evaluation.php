@@ -164,6 +164,12 @@ class Evaluation extends Model
         return $this->hasMany(ImprovementGuidance::class);
     }
 
+    /** @return HasMany<ImprovementOpportunity, $this> */
+    public function improvementOpportunities(): HasMany
+    {
+        return $this->hasMany(ImprovementOpportunity::class);
+    }
+
     /** @return HasMany<Dispute, $this> */
     public function disputes(): HasMany
     {

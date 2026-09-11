@@ -10,7 +10,6 @@ use App\Models\Criterion;
 use App\Models\CriterionResult;
 use App\Models\User;
 use Illuminate\Auth\Access\AuthorizationException;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -36,7 +35,6 @@ final class AuditorEvaluationWorkspace
                 'evaluation.productRelease',
                 'evaluation.request',
                 'evaluation.standardVersion',
-                'evaluation.standardVersion.criteria' => fn (Builder $query): Builder => $query->orderBy('sequence'),
                 'evaluation.standardVersion.criteria.guidance',
                 'criterionResults',
                 'evidence',
@@ -47,6 +45,11 @@ final class AuditorEvaluationWorkspace
         if ($evaluation === null) {
             throw new AuthorizationException('No Auditor evaluation is available for this assignment.');
         }
+
+        $evaluation->evaluation->standardVersion->load([
+            'criteria' => fn ($query) => $query->orderBy('sequence'),
+            'criteria.guidance',
+        ]);
 
         return $evaluation;
     }

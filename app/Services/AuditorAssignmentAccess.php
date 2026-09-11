@@ -11,7 +11,9 @@ use Illuminate\Database\Eloquent\Builder;
 
 final class AuditorAssignmentAccess
 {
-    public function __construct(private readonly AuditorEligibility $eligibility) {}
+    public function __construct(
+        private readonly AuditorEligibility $eligibility,
+    ) {}
 
     /**
      * @return Builder<AuditorAssignment>

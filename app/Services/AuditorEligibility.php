@@ -33,9 +33,9 @@ final class AuditorEligibility
             ->whereNotNull('determined_at')
             ->exists()
             && ! $assignment->conflictDeclarations()
-            ->whereNotNull('determined_at')
-            ->where('outcome', '!=', 'cleared')
-            ->exists();
+                ->whereNotNull('determined_at')
+                ->where('outcome', '!=', 'cleared')
+                ->exists();
     }
 
     public function canAccessAssignments(User $auditor): bool

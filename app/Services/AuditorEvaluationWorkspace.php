@@ -52,9 +52,10 @@ final class AuditorEvaluationWorkspace
     /** @return Collection<int, Criterion> */
     public function criteria(AuditorEvaluation $evaluation): Collection
     {
-        return $evaluation->evaluation->standardVersion->criteria
-            ->sortBy(fn (Criterion $criterion): int => $criterion->sequence ?? PHP_INT_MAX)
-            ->values();
+        return $evaluation->evaluation->standardVersion->criteria()
+            ->orderByRaw('sequence IS NULL')
+            ->orderBy('sequence')
+            ->get();
     }
 
     public function saveDraft(

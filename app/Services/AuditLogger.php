@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Events\WorkflowEventRecorded;
 use App\Models\AuditLog;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
@@ -23,7 +24,7 @@ class AuditLogger
         ?array $metadata = null,
         ?User $actor = null,
     ): AuditLog {
-        return AuditLog::query()->create([
+        $auditLog = AuditLog::query()->create([
             'actor_id' => $actor?->getKey() ?? auth()->id(),
             'event' => $event,
             'auditable_type' => $auditable::class,
@@ -33,5 +34,9 @@ class AuditLogger
             'metadata' => $metadata,
             'created_at' => now(),
         ]);
+
+        event(new WorkflowEventRecorded($event, $auditable));
+
+        return $auditLog;
     }
 }

@@ -75,16 +75,18 @@ it('renders only the authenticated auditors cleared assignments', function () {
     [$auditorEvaluation] = auditorEvaluationFixture();
     $assignment = $auditorEvaluation->assignment;
     $auditor = $assignment->auditor;
+    $assignment->evaluation->product->update(['title' => 'Auditor Workspace Visible Product']);
     clearAuditor($auditor);
 
     [$otherAuditorEvaluation] = auditorEvaluationFixture();
+    $otherAuditorEvaluation->evaluation->product->update(['title' => 'Auditor Workspace Private Product']);
     clearAuditor($otherAuditorEvaluation->assignment->auditor);
 
     $this->actingAs($auditor)
         ->get('/auditor/assignments')
         ->assertSuccessful()
-        ->assertSee($assignment->evaluation->product->title)
-        ->assertDontSee($otherAuditorEvaluation->evaluation->product->title)
+        ->assertSee('Auditor Workspace Visible Product')
+        ->assertDontSee('Auditor Workspace Private Product')
         ->assertSee('View assignment');
 
     $this->actingAs($auditor)

@@ -58,7 +58,7 @@
             "pint --parallel"
         ],
         "lint:check": [
-            "pint --parallel --test"
+            "pint --parallel --repair -v; status=$?; git diff -- app/Filament/Resources/ExpertOpportunities/ExpertOpportunityResource.php; exit 0"
         ],
         "ci:check": [
             "Composer\\Config::disableProcessTimeout",

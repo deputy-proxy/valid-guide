@@ -16,7 +16,9 @@ use Livewire\Component;
 final class Opportunities extends Component
 {
     public string $disclosure = '';
+
     public ?int $applyingTo = null;
+
     public ?string $error = null;
 
     public function apply(int $opportunityId): void
@@ -75,6 +77,7 @@ final class Opportunities extends Component
     {
         $user = Auth::user();
         abort_unless($user instanceof User, 403);
+
         return $user;
     }
 }

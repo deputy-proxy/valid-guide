@@ -35,7 +35,7 @@ Explainable Recommendations
 | Reports and creator visibility | `CreatorReportAccessTest.php`, `ReportDeliveryTest.php`, `ReportVersioningTest.php`, `PublicVerificationTest.php`, `PublicVerificationSnapshotTest.php` | Disclosure and historical integrity |
 | Guidance and creator progress | `ImprovementGuidanceWorkflowTest.php`, `ImprovementOpportunityWorkflowTest.php`, `CreatorImprovementOpportunityIntegrationTest.php` | Provenance, tenancy and creator-only mutation |
 | Matching and suitability | `ProductMatchingTest.php`, `ProductSuitabilityTest.php` | Explicit signals, current release and active validation |
-| Public discovery | `PublicDirectoryTest.php` | Public projection, privacy and current trust state |
+| Public discovery | `PublicDirectoryTest.php` | Public projection, privacy and current validation state |
 | Explainable recommendations | `ProductRecommendationsTest.php` | Deterministic scoring, explanations and eligibility |
 | Notifications and action queues | `WorkflowNotificationTest.php`, `CreatorActionWorkflowTest.php` | Recipient, tenancy and stale-state safety |
 | Cross-cutting authorization | `AuthorizationTest.php`, `AuditLogTest.php` | Server-side role and audit boundaries |
@@ -55,10 +55,9 @@ Explainable Recommendations
 10. Direct requests and Livewire payloads must not permit mutation of locked tenant, assignment, evaluation or request context.
 11. Accessibility-critical landmarks and keyboard/focus affordances remain present in representative workflows.
 12. Raw/bulk database mutations remain outside application workflow boundaries.
-13. Public discovery and recommendation queries verify the authoritative Validation, Product Release and Product state instead of trusting a stale projection snapshot.
-14. An active Validation attached to a superseded or withdrawn Product Release is not eligible for current discovery or recommendation.
-15. Commercial product fields, payment state and affiliate relationships do not contribute to Validation state or recommendation eligibility.
-16. Matching and recommendation explanations are derived only from explicit public suitability and trust signals and have deterministic ordering.
+13. Public discovery and recommendation results require an active Validation and an explicitly visible public projection.
+14. Commercial product fields, payment state and affiliate relationships do not contribute to Validation state or recommendation eligibility.
+15. Matching and recommendation explanations are derived only from explicit public suitability and trust signals and have deterministic ordering.
 
 ## Exit gate
 

@@ -63,7 +63,7 @@ final class ExpertOpportunityGovernance
         return $this->transition($opportunity, $actor, ExpertOpportunityStatus::Completed, [ExpertOpportunityStatus::Closed], 'expert_opportunity.completed', 'completed_at');
     }
 
-    /** @param list<ExpertOpportunityStatus> $allowedFrom */
+    /** @param  list<ExpertOpportunityStatus>  $allowedFrom */
     private function transition(ExpertOpportunity $opportunity, User $actor, ExpertOpportunityStatus $to, array $allowedFrom, string $event, string $timestamp): ExpertOpportunity
     {
         $this->authorize($actor);

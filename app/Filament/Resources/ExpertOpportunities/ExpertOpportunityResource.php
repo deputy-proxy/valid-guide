@@ -30,8 +30,8 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Support\Facades\Auth;
-use UnitEnum;
 use Throwable;
+use UnitEnum;
 
 final class ExpertOpportunityResource extends Resource
 {

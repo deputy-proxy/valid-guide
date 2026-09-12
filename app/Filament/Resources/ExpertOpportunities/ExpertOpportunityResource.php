@@ -95,7 +95,10 @@ final class ExpertOpportunityResource extends Resource
         ];
     }
 
-    /** @param list<BackedEnum> $cases */
+    /**
+     * @param list<BackedEnum> $cases
+     * @return array<string, string>
+     */
     private static function enumOptions(array $cases, bool $replaceUnderscores = false): array
     {
         return collect($cases)->mapWithKeys(function (BackedEnum $case) use ($replaceUnderscores): array {

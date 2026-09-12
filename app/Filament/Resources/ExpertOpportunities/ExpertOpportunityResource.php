@@ -76,10 +76,23 @@ final class ExpertOpportunityResource extends Resource
             ])
             ->recordActions([
                 EditAction::make()->visible(fn (ExpertOpportunity $record): bool => $record->status === ExpertOpportunityStatus::Draft),
-                Action::make('publish')->color('success')->visible(fn (ExpertOpportunity $record): bool => $record->status === ExpertOpportunityStatus::Draft)->action(fn (ExpertOpportunity $record) => self::run(fn () => app(ExpertOpportunityGovernance::class)->publish($record, self::user()), 'Opportunity published')),
-                Action::make('close')->color('warning')->visible(fn (ExpertOpportunity $record): bool => $record->status === ExpertOpportunityStatus::Published)->action(fn (ExpertOpportunity $record) => self::run(fn () => app(ExpertOpportunityGovernance::class)->close($record, self::user()), 'Opportunity closed')),
-                Action::make('cancel')->color('danger')->visible(fn (ExpertOpportunity $record): bool => in_array($record->status, [ExpertOpportunityStatus::Draft, ExpertOpportunityStatus::Published, ExpertOpportunityStatus::Closed], true))->requiresConfirmation()->action(fn (ExpertOpportunity $record) => self::run(fn () => app(ExpertOpportunityGovernance::class)->cancel($record, self::user()), 'Opportunity cancelled')),
-                Action::make('complete')->color('success')->visible(fn (ExpertOpportunity $record): bool => $record->status === ExpertOpportunityStatus::Closed)->action(fn (ExpertOpportunity $record) => self::run(fn () => app(ExpertOpportunityGovernance::class)->complete($record, self::user()), 'Opportunity completed')),
+                Action::make('publish')
+                    ->color('success')
+                    ->visible(fn (ExpertOpportunity $record): bool => $record->status === ExpertOpportunityStatus::Draft)
+                    ->action(fn (ExpertOpportunity $record) => self::run(fn () => app(ExpertOpportunityGovernance::class)->publish($record, self::user()), 'Opportunity published')),
+                Action::make('close')
+                    ->color('warning')
+                    ->visible(fn (ExpertOpportunity $record): bool => $record->status === ExpertOpportunityStatus::Published)
+                    ->action(fn (ExpertOpportunity $record) => self::run(fn () => app(ExpertOpportunityGovernance::class)->close($record, self::user()), 'Opportunity closed')),
+                Action::make('cancel')
+                    ->color('danger')
+                    ->visible(fn (ExpertOpportunity $record): bool => in_array($record->status, [ExpertOpportunityStatus::Draft, ExpertOpportunityStatus::Published, ExpertOpportunityStatus::Closed], true))
+                    ->requiresConfirmation()
+                    ->action(fn (ExpertOpportunity $record) => self::run(fn () => app(ExpertOpportunityGovernance::class)->cancel($record, self::user()), 'Opportunity cancelled')),
+                Action::make('complete')
+                    ->color('success')
+                    ->visible(fn (ExpertOpportunity $record): bool => $record->status === ExpertOpportunityStatus::Closed)
+                    ->action(fn (ExpertOpportunity $record) => self::run(fn () => app(ExpertOpportunityGovernance::class)->complete($record, self::user()), 'Opportunity completed')),
             ]);
     }
 
@@ -95,7 +108,14 @@ final class ExpertOpportunityResource extends Resource
     /** @param list<BackedEnum> $cases */
     private static function enumOptions(array $cases, bool $replaceUnderscores = false): array
     {
-        return collect($cases)->mapWithKeys(fn (BackedEnum $case): array => [$case->value => str($case->value)->when($replaceUnderscores, fn ($value) => $value->replace('_', ' '))->title()->toString()])->all();
+        return collect($cases)->mapWithKeys(function (BackedEnum $case) use ($replaceUnderscores): array {
+            $label = str($case->value);
+            if ($replaceUnderscores) {
+                $label = $label->replace('_', ' ');
+            }
+
+            return [$case->value => $label->title()->toString()];
+        })->all();
     }
 
     private static function run(callable $callback, string $success): void
@@ -115,6 +135,7 @@ final class ExpertOpportunityResource extends Resource
     {
         $user = Auth::user();
         abort_unless($user instanceof User, 403);
+
         return $user;
     }
 }

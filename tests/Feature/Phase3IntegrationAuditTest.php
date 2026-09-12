@@ -37,8 +37,7 @@ it('keeps the Phase 3 integration audit matrix complete', function (): void {
         'Notifications and action queues are derived from authoritative state',
         'Direct requests and Livewire payloads must not permit mutation',
         'Accessibility-critical landmarks and keyboard/focus affordances remain present',
-        'Public discovery and recommendation queries verify the authoritative Validation, Product Release and Product state',
-        'An active Validation attached to a superseded or withdrawn Product Release is not eligible',
+        'Public discovery and recommendation results require an active Validation and an explicitly visible public projection.',
         'Commercial product fields, payment state and affiliate relationships do not contribute',
         'Matching and recommendation explanations are derived only from explicit public suitability and trust signals',
     ] as $invariant) {

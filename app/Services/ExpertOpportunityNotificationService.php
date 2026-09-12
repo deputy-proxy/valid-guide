@@ -15,19 +15,44 @@ final class ExpertOpportunityNotificationService
 {
     public function published(ExpertOpportunity $opportunity): void
     {
-        $this->admins(NotificationCategory::Assignment, NotificationEventType::ExpertOpportunityPublished, 'Expert opportunity published', sprintf('A new expert opportunity is available: %s.', $opportunity->title), ['expert_opportunity_id' => $opportunity->getKey()]);
+        $this->admins(
+            NotificationCategory::Assignment,
+            NotificationEventType::ExpertOpportunityPublished,
+            'Expert opportunity published',
+            sprintf('A new expert opportunity is available: %s.', $opportunity->title),
+            ['expert_opportunity_id' => $opportunity->getKey()],
+        );
     }
 
     public function application(ExpertOpportunityParticipation $participation): void
     {
         $participation->loadMissing('opportunity', 'auditorProfile.auditor');
-        $this->admins(NotificationCategory::Assignment, NotificationEventType::ExpertOpportunityApplication, 'Expert opportunity application', sprintf('%s applied to %s.', $participation->auditorProfile->auditor->name, $participation->opportunity->title), ['expert_opportunity_id' => $participation->opportunity->getKey(), 'participation_id' => $participation->getKey()]);
+        $this->admins(
+            NotificationCategory::Assignment,
+            NotificationEventType::ExpertOpportunityApplication,
+            'Expert opportunity application',
+            sprintf('%s applied to %s.', $participation->auditorProfile->auditor->name, $participation->opportunity->title),
+            [
+                'expert_opportunity_id' => $participation->opportunity->getKey(),
+                'participation_id' => $participation->getKey(),
+            ],
+        );
     }
 
     public function selected(ExpertOpportunityParticipation $participation): void
     {
         $participation->loadMissing('opportunity', 'auditorProfile.auditor');
-        $this->send($participation->auditorProfile->auditor, NotificationCategory::Assignment, NotificationEventType::ExpertOpportunitySelection, 'Expert opportunity selected', sprintf('You have been selected for %s.', $participation->opportunity->title), ['expert_opportunity_id' => $participation->opportunity->getKey(), 'participation_id' => $participation->getKey()]);
+        $this->send(
+            $participation->auditorProfile->auditor,
+            NotificationCategory::Assignment,
+            NotificationEventType::ExpertOpportunitySelection,
+            'Expert opportunity selected',
+            sprintf('You have been selected for %s.', $participation->opportunity->title),
+            [
+                'expert_opportunity_id' => $participation->opportunity->getKey(),
+                'participation_id' => $participation->getKey(),
+            ],
+        );
     }
 
     /** @param array<string, int|string|null> $context */

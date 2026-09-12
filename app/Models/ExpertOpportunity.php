@@ -15,18 +15,18 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
- * @property ExpertOpportunityType $type
- * @property ExpertOpportunityStatus $status
- * @property list<string>|null $expertise_areas
- * @property list<string>|null $product_types
- * @property array<string, mixed>|null $eligibility_constraints
- * @property Carbon|null $starts_at
- * @property Carbon|null $ends_at
- * @property Carbon|null $application_deadline
- * @property Carbon|null $published_at
- * @property Carbon|null $closed_at
- * @property Carbon|null $cancelled_at
- * @property Carbon|null $completed_at
+ * @property  ExpertOpportunityType  $type
+ * @property  ExpertOpportunityStatus  $status
+ * @property  list<string>|null  $expertise_areas
+ * @property  list<string>|null  $product_types
+ * @property  array<string, mixed>|null  $eligibility_constraints
+ * @property  Carbon|null  $starts_at
+ * @property  Carbon|null  $ends_at
+ * @property  Carbon|null  $application_deadline
+ * @property  Carbon|null  $published_at
+ * @property  Carbon|null  $closed_at
+ * @property  Carbon|null  $cancelled_at
+ * @property  Carbon|null  $completed_at
  */
 class ExpertOpportunity extends Model
 {

@@ -95,3 +95,12 @@ it('requires eligible board membership', function () {
     expect(fn () => app(ExpertOpportunityParticipationService::class)->apply($opportunity, $expert, 'Clear.'))
         ->toThrow(DomainStateTransitionException::class);
 });
+
+it('protects published opportunity details', function () {
+    $admin = opportunityAdmin();
+    $opportunity = opportunityDraft($admin);
+    app(ExpertOpportunityGovernance::class)->publish($opportunity, $admin);
+
+    expect(fn () => $opportunity->update(['title' => 'Changed']))
+        ->toThrow(DomainStateTransitionException::class);
+});

@@ -6,8 +6,8 @@ namespace App\Services;
 
 use App\Enums\AuditorProfileStatus;
 use App\Enums\ExpertBoardMembershipStatus;
-use App\Enums\ExpertPublicProfileStatus;
 use App\Enums\ExpertiseArea;
+use App\Enums\ExpertPublicProfileStatus;
 use App\Enums\ProductType;
 use App\Models\ExpertPublicProfile;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;

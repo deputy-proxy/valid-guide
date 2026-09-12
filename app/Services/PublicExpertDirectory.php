@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Enums\AuditorProfileStatus;
 use App\Enums\ExpertBoardMembershipStatus;
 use App\Enums\ExpertPublicProfileStatus;
 use App\Enums\ExpertiseArea;
@@ -25,6 +26,9 @@ final class PublicExpertDirectory
         $builder = ExpertPublicProfile::query()
             ->with('auditorProfile.expertBoardMembership')
             ->where('status', ExpertPublicProfileStatus::Published->value)
+            ->whereHas('auditorProfile', function (Builder $builder): void {
+                $builder->where('status', AuditorProfileStatus::Approved->value);
+            })
             ->whereHas('auditorProfile.expertBoardMembership', function (Builder $builder): void {
                 $builder->where('status', ExpertBoardMembershipStatus::Approved->value);
             });
@@ -60,6 +64,9 @@ final class PublicExpertDirectory
             ->with('auditorProfile.expertBoardMembership')
             ->where('slug', $slug)
             ->where('status', ExpertPublicProfileStatus::Published->value)
+            ->whereHas('auditorProfile', function (Builder $builder): void {
+                $builder->where('status', AuditorProfileStatus::Approved->value);
+            })
             ->whereHas('auditorProfile.expertBoardMembership', function (Builder $builder): void {
                 $builder->where('status', ExpertBoardMembershipStatus::Approved->value);
             })

@@ -57,8 +57,17 @@ final class Opportunities extends Component
     public function render(): View
     {
         $user = $this->user();
-        $profileId = $user->auditorProfile?->getKey();
-        $opportunities = ExpertOpportunity::query()->where('status', 'published')->with(['participations' => fn ($query) => $query->when($profileId !== null, fn ($query) => $query->where('auditor_profile_id', $profileId))])->latest('published_at')->get();
+        $profile = $user->auditorProfile;
+        if ($profile === null) {
+            return view('livewire.expert.opportunities', ['opportunities' => collect()]);
+        }
+
+        $opportunities = ExpertOpportunity::query()
+            ->where('status', 'published')
+            ->with(['participations' => fn ($query) => $query->where('auditor_profile_id', $profile->getKey())])
+            ->latest('published_at')
+            ->get();
+
         return view('livewire.expert.opportunities', compact('opportunities'));
     }
 

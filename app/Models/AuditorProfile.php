@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 /**
  * @property list<string>|null $format_experience
@@ -56,5 +57,11 @@ class AuditorProfile extends Model
     public function reviews(): HasMany
     {
         return $this->hasMany(AuditorProfileReview::class);
+    }
+
+    /** @return HasOne<ExpertBoardMembership, $this> */
+    public function expertBoardMembership(): HasOne
+    {
+        return $this->hasOne(ExpertBoardMembership::class);
     }
 }

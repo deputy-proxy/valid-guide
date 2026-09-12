@@ -77,7 +77,6 @@ final class ExpertBoardGovernance
                 ->lockForUpdate()
                 ->findOrFail($membership->getKey());
             /** @var ExpertBoardMembership $membership */
-
             if ($membership->status !== ExpertBoardMembershipStatus::Pending) {
                 throw new DomainStateTransitionException('Only pending Expert Board applications can be approved.');
             }
@@ -149,7 +148,6 @@ final class ExpertBoardGovernance
                 ->lockForUpdate()
                 ->findOrFail($membership->getKey());
             /** @var ExpertBoardMembership $membership */
-
             if ($membership->status !== ExpertBoardMembershipStatus::Suspended) {
                 throw new DomainStateTransitionException('Only suspended Expert Board memberships can be reinstated.');
             }

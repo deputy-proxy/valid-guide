@@ -29,20 +29,9 @@ final class ExpertOpportunityGovernance
             if ($opportunity->expertise_areas === [] && $opportunity->product_types === [] && $opportunity->eligibility_constraints === []) {
                 throw new DomainStateTransitionException('An opportunity must define at least one eligibility requirement.');
             }
-
-            $opportunity->forceFill([
-                'status' => ExpertOpportunityStatus::Published,
-                'published_by' => $actor->getKey(),
-                'published_at' => now(),
-            ])->save();
-
-            AuditLogger::record(
-                event: 'expert_opportunity.published',
-                auditable: $opportunity,
-                after: ['status' => ExpertOpportunityStatus::Published->value, 'published_by' => $actor->getKey()],
-                actor: $actor,
-            );
-
+            $opportunity->forceFill(['status' => ExpertOpportunityStatus::Published, 'published_by' => $actor->getKey(), 'published_at' => now()])->save();
+            AuditLogger::record(event: 'expert_opportunity.published', auditable: $opportunity, after: ['status' => ExpertOpportunityStatus::Published->value, 'published_by' => $actor->getKey()], actor: $actor);
+            app(ExpertOpportunityNotificationService::class)->published($opportunity);
             return $opportunity->refresh();
         });
     }
@@ -66,29 +55,18 @@ final class ExpertOpportunityGovernance
     private function transition(ExpertOpportunity $opportunity, User $actor, ExpertOpportunityStatus $to, array $allowedFrom, string $event, string $timestamp): ExpertOpportunity
     {
         $this->authorize($actor);
-
         return DB::transaction(function () use ($opportunity, $actor, $to, $allowedFrom, $event, $timestamp): ExpertOpportunity {
             $opportunity = ExpertOpportunity::query()->lockForUpdate()->findOrFail($opportunity->getKey());
             $from = $opportunity->status;
-            if (in_array($from, $allowedFrom, true) === false) {
-                throw new DomainStateTransitionException("Invalid opportunity transition from {$from->value} to {$to->value}.");
-            }
+            if (in_array($from, $allowedFrom, true) === false) throw new DomainStateTransitionException("Invalid opportunity transition from {$from->value} to {$to->value}.");
             $opportunity->forceFill(['status' => $to, $timestamp => now()])->save();
-            AuditLogger::record(
-                event: $event,
-                auditable: $opportunity,
-                before: ['status' => $from->value],
-                after: ['status' => $to->value],
-                actor: $actor,
-            );
+            AuditLogger::record(event: $event, auditable: $opportunity, before: ['status' => $from->value], after: ['status' => $to->value], actor: $actor);
             return $opportunity->refresh();
         });
     }
 
     private function authorize(User $actor): void
     {
-        if ($actor->isPlatformAdmin() === false) {
-            throw new DomainStateTransitionException('Only platform administrators can govern expert opportunities.');
-        }
+        if ($actor->isPlatformAdmin() === false) throw new DomainStateTransitionException('Only platform administrators can govern expert opportunities.');
     }
 }

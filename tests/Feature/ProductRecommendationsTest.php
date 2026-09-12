@@ -5,9 +5,11 @@ declare(strict_types=1);
 use App\Enums\PlatformRole;
 use App\Enums\ProductAudience;
 use App\Enums\ProductGoal;
+use App\Enums\ProductReleaseStatus;
 use App\Enums\ValidationStatus;
 use App\Models\User;
 use App\Services\ProductRecommendations;
+use App\Services\ProductReleaseStateTransition;
 use App\Services\ProductSuitability;
 use App\Services\PublicVerificationPublication;
 use App\Services\ValidationIssuance;
@@ -100,6 +102,20 @@ it('excludes hidden and non-current validation records from recommendations', fu
     $recommendations = app(ProductRecommendations::class)->recommend(audience: ProductAudience::Professionals);
 
     expect($recommendations->pluck('verificationIdentifier')->all())->toBe([$activeValidation->verification_identifier]);
+});
+
+it('excludes an active validation when its product release is no longer current', function () {
+    [$validation, $product, $admin] = recommendationFixture([ProductAudience::Professionals->value]);
+    $release = $validation->productRelease;
+
+    expect($release->status)->toBe(ProductReleaseStatus::Current);
+
+    app(ProductReleaseStateTransition::class)->supersede($release, $admin);
+
+    expect($validation->refresh()->status)->toBe(ValidationStatus::Active)
+        ->and($product->refresh()->status->value)->toBe('active')
+        ->and(app(ProductRecommendations::class)->recommend(audience: ProductAudience::Professionals))
+        ->toHaveCount(0);
 });
 
 it('does not expose private or commercial fields in recommendation results', function () {

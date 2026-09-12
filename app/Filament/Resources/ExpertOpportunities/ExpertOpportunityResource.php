@@ -78,45 +78,11 @@ final class ExpertOpportunityResource extends Resource
                 SelectFilter::make('status')->options(self::enumOptions(ExpertOpportunityStatus::cases())),
             ])
             ->recordActions([
-                EditAction::make()
-                    ->visible(fn (ExpertOpportunity $record): bool => $record->status === ExpertOpportunityStatus::Draft),
-                Action::make('publish')
-                    ->color('success')
-                    ->visible(fn (ExpertOpportunity $record): bool => $record->status === ExpertOpportunityStatus::Draft)
-                    ->action(fn (ExpertOpportunity $record) => self::run(
-                        fn () => app(ExpertOpportunityGovernance::class)->publish($record, self::user()),
-                        'Opportunity published',
-                    )),
-                Action::make('close')
-                    ->color('warning')
-                    ->visible(fn (ExpertOpportunity $record): bool => $record->status === ExpertOpportunityStatus::Published)
-                    ->action(fn (ExpertOpportunity $record) => self::run(
-                        fn () => app(ExpertOpportunityGovernance::class)->close($record, self::user()),
-                        'Opportunity closed',
-                    )),
-                Action::make('cancel')
-                    ->color('danger')
-                    ->visible(fn (ExpertOpportunity $record): bool => in_array(
-                        $record->status,
-                        [
-                            ExpertOpportunityStatus::Draft,
-                            ExpertOpportunityStatus::Published,
-                            ExpertOpportunityStatus::Closed,
-                        ],
-                        true,
-                    ))
-                    ->requiresConfirmation()
-                    ->action(fn (ExpertOpportunity $record) => self::run(
-                        fn () => app(ExpertOpportunityGovernance::class)->cancel($record, self::user()),
-                        'Opportunity cancelled',
-                    )),
-                Action::make('complete')
-                    ->color('success')
-                    ->visible(fn (ExpertOpportunity $record): bool => $record->status === ExpertOpportunityStatus::Closed)
-                    ->action(fn (ExpertOpportunity $record) => self::run(
-                        fn () => app(ExpertOpportunityGovernance::class)->complete($record, self::user()),
-                        'Opportunity completed',
-                    )),
+                EditAction::make()->visible(fn (ExpertOpportunity $record): bool => $record->status === ExpertOpportunityStatus::Draft),
+                Action::make('publish')->color('success')->visible(fn (ExpertOpportunity $record): bool => $record->status === ExpertOpportunityStatus::Draft)->action(fn (ExpertOpportunity $record) => self::run(fn () => app(ExpertOpportunityGovernance::class)->publish($record, self::user()), 'Opportunity published')),
+                Action::make('close')->color('warning')->visible(fn (ExpertOpportunity $record): bool => $record->status === ExpertOpportunityStatus::Published)->action(fn (ExpertOpportunity $record) => self::run(fn () => app(ExpertOpportunityGovernance::class)->close($record, self::user()), 'Opportunity closed')),
+                Action::make('cancel')->color('danger')->visible(fn (ExpertOpportunity $record): bool => in_array($record->status, [ExpertOpportunityStatus::Draft, ExpertOpportunityStatus::Published, ExpertOpportunityStatus::Closed], true))->requiresConfirmation()->action(fn (ExpertOpportunity $record) => self::run(fn () => app(ExpertOpportunityGovernance::class)->cancel($record, self::user()), 'Opportunity cancelled')),
+                Action::make('complete')->color('success')->visible(fn (ExpertOpportunity $record): bool => $record->status === ExpertOpportunityStatus::Closed)->action(fn (ExpertOpportunity $record) => self::run(fn () => app(ExpertOpportunityGovernance::class)->complete($record, self::user()), 'Opportunity completed')),
             ]);
     }
 

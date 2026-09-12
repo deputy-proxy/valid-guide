@@ -36,17 +36,44 @@ class AuditorProfile extends Model
     }
 
     /** @return BelongsTo<User, $this> */
-    public function auditor(): BelongsTo { return $this->belongsTo(User::class, 'auditor_id'); }
+    public function auditor(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'auditor_id');
+    }
+
     /** @return BelongsTo<User, $this> */
-    public function approvedBy(): BelongsTo { return $this->belongsTo(User::class, 'approved_by'); }
+    public function approvedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'approved_by');
+    }
+
     /** @return HasMany<AuditorCompetency, $this> */
-    public function competencies(): HasMany { return $this->hasMany(AuditorCompetency::class); }
+    public function competencies(): HasMany
+    {
+        return $this->hasMany(AuditorCompetency::class);
+    }
+
     /** @return HasMany<AuditorProfileReview, $this> */
-    public function reviews(): HasMany { return $this->hasMany(AuditorProfileReview::class); }
+    public function reviews(): HasMany
+    {
+        return $this->hasMany(AuditorProfileReview::class);
+    }
+
     /** @return HasOne<ExpertBoardMembership, $this> */
-    public function expertBoardMembership(): HasOne { return $this->hasOne(ExpertBoardMembership::class); }
+    public function expertBoardMembership(): HasOne
+    {
+        return $this->hasOne(ExpertBoardMembership::class);
+    }
+
     /** @return HasOne<ExpertPublicProfile, $this> */
-    public function expertPublicProfile(): HasOne { return $this->hasOne(ExpertPublicProfile::class); }
+    public function expertPublicProfile(): HasOne
+    {
+        return $this->hasOne(ExpertPublicProfile::class);
+    }
+
     /** @return HasMany<ExpertOpportunityParticipation, $this> */
-    public function opportunityParticipations(): HasMany { return $this->hasMany(ExpertOpportunityParticipation::class); }
+    public function opportunityParticipations(): HasMany
+    {
+        return $this->hasMany(ExpertOpportunityParticipation::class);
+    }
 }

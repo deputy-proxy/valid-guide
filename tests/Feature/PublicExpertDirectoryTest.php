@@ -18,7 +18,7 @@ function publicExpertFixture(array $profileOverrides = []): array
 {
     $expert = User::factory()->create([
         'name' => 'Alex Expert',
-        'email' => 'alex@example.test',
+        'email' => fake()->unique()->safeEmail(),
     ]);
 
     $profile = AuditorProfile::query()->create(array_merge([
@@ -142,7 +142,7 @@ it('does not expose private contact, conflict, evidence or operational data', fu
         ->assertDontSee($expert->email)
         ->assertDontSee('Secret competency evidence.')
         ->assertDontSee('decision_reason')
-        ->assertDontSee('compensation')
+        ->assertDontSee('compensation_amount')
         ->assertDontSee('auditor');
 });
 

@@ -173,4 +173,4 @@ it('does not discover an Expert after current Board membership is suspended', fu
     $this->get(route('public.experts.show', ['slug' => $publicProfile->slug]))
         ->assertNotFound();
 });
-
+ 

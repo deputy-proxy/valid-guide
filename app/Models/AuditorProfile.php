@@ -70,4 +70,10 @@ class AuditorProfile extends Model
     {
         return $this->hasOne(ExpertPublicProfile::class);
     }
+
+    /** @return HasMany<ExpertOpportunityParticipation, $this> */
+    public function opportunityParticipations(): HasMany
+    {
+        return $this->hasMany(ExpertOpportunityParticipation::class);
+    }
 }

@@ -8,6 +8,7 @@ use App\Http\Controllers\StripeWebhookController;
 use App\Livewire\Creator\EvaluationRequests\CreateEvaluationRequest;
 use App\Livewire\Creator\Reports\ShowGuidance;
 use App\Livewire\Creator\Reports\ShowReport;
+use App\Livewire\Expert\Opportunities;
 use Illuminate\Support\Facades\Route;
 
 Route::view('/', 'public.pages.home')->name('home');
@@ -62,6 +63,7 @@ Route::post('webhooks/stripe', StripeWebhookController::class)->withoutMiddlewar
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::view('dashboard', 'dashboard')->name('dashboard');
+    Route::get('expert/opportunities', Opportunities::class)->name('expert.opportunities');
     Route::get('creator/organizations/{organizationId}/evaluation-requests/create/{evaluationRequestId?}', CreateEvaluationRequest::class)
         ->whereNumber('organizationId')->whereNumber('evaluationRequestId')->name('creator.evaluation-requests.create');
     Route::get('creator/evaluations/{evaluationId}/report', ShowReport::class)

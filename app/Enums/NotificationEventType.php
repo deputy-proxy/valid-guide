@@ -19,4 +19,7 @@ enum NotificationEventType: string
     case ImprovementOpportunityCreated = 'improvement_opportunity_created';
     case ImprovementOpportunityAssigned = 'improvement_opportunity_assigned';
     case ImprovementOpportunityCompleted = 'improvement_opportunity_completed';
+    case ExpertOpportunityPublished = 'expert_opportunity_published';
+    case ExpertOpportunityApplication = 'expert_opportunity_application';
+    case ExpertOpportunitySelection = 'expert_opportunity_selection';
 }

@@ -74,8 +74,8 @@ final class ExpertBoardMembershipResource extends Resource
                             Notification::make()->danger()->title('Approval failed')->send();
                         }
                     }),
-                self::reasonAction('reject', 'Reject', 'Reject application', 'danger', [ExpertBoardMembershipStatus::Pending]),
-                self::reasonAction('suspend', 'Suspend', 'Suspend membership', 'warning', [ExpertBoardMembershipStatus::Approved]),
+                self::reasonAction('reject', 'Reject', 'Reject application', 'danger', [ExpertBoardMembershipStatus::Pending], 'Expert Board application rejected'),
+                self::reasonAction('suspend', 'Suspend', 'Suspend membership', 'warning', [ExpertBoardMembershipStatus::Approved], 'Expert Board membership suspended'),
                 Action::make('reinstate')
                     ->label('Reinstate')
                     ->icon('heroicon-o-arrow-path')
@@ -92,7 +92,7 @@ final class ExpertBoardMembershipResource extends Resource
                             Notification::make()->danger()->title('Reinstatement failed')->send();
                         }
                     }),
-                self::reasonAction('remove', 'Remove', 'Remove from Expert Board', 'danger', [ExpertBoardMembershipStatus::Approved, ExpertBoardMembershipStatus::Suspended]),
+                self::reasonAction('remove', 'Remove', 'Remove from Expert Board', 'danger', [ExpertBoardMembershipStatus::Approved, ExpertBoardMembershipStatus::Suspended], 'Expert Board membership removed'),
             ]);
     }
 
@@ -116,6 +116,7 @@ final class ExpertBoardMembershipResource extends Resource
         string $heading,
         string $color,
         array $statuses,
+        string $successTitle,
     ): Action {
         return Action::make($name)
             ->label($label)
@@ -130,7 +131,7 @@ final class ExpertBoardMembershipResource extends Resource
                     ->maxLength(2000),
             ])
             ->modalHeading($heading)
-            ->action(function (ExpertBoardMembership $record, array $data) use ($name): void {
+            ->action(function (ExpertBoardMembership $record, array $data) use ($name, $successTitle): void {
                 try {
                     $governance = app(ExpertBoardGovernance::class);
                     $actor = self::authenticatedUser();
@@ -143,13 +144,7 @@ final class ExpertBoardMembershipResource extends Resource
                         default => throw new DomainStateTransitionException('Unsupported Expert Board action.'),
                     };
 
-                    $title = match ($name) {
-                        'reject' => 'Expert Board application rejected',
-                        'suspend' => 'Expert Board membership suspended',
-                        'remove' => 'Expert Board membership removed',
-                        default => 'Expert Board action completed',
-                    };
-                    Notification::make()->success()->title($title)->send();
+                    Notification::make()->success()->title($successTitle)->send();
                 } catch (DomainStateTransitionException $exception) {
                     Notification::make()->danger()->title(ucfirst($name).' blocked')->body($exception->getMessage())->send();
                 } catch (Throwable $exception) {

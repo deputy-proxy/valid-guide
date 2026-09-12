@@ -16,6 +16,7 @@ final class ExpertOpportunityGovernance
         $this->authorize($actor);
 
         return DB::transaction(function () use ($opportunity, $actor): ExpertOpportunity {
+            /** @var ExpertOpportunity $opportunity */
             $opportunity = ExpertOpportunity::query()->lockForUpdate()->findOrFail($opportunity->getKey());
             if ($opportunity->status !== ExpertOpportunityStatus::Draft) {
                 throw new DomainStateTransitionException('Only draft opportunities can be published.');
@@ -68,6 +69,7 @@ final class ExpertOpportunityGovernance
         $this->authorize($actor);
 
         return DB::transaction(function () use ($opportunity, $actor, $to, $allowedFrom, $event, $timestamp): ExpertOpportunity {
+            /** @var ExpertOpportunity $opportunity */
             $opportunity = ExpertOpportunity::query()->lockForUpdate()->findOrFail($opportunity->getKey());
             $from = $opportunity->status;
             if (in_array($from, $allowedFrom, true) === false) {

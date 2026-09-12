@@ -7,7 +7,6 @@ namespace App\Models;
 use App\Enums\ExpertOpportunityStatus;
 use App\Enums\ExpertOpportunityType;
 use App\Services\DomainStateTransitionException;
-use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;

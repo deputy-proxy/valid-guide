@@ -74,8 +74,13 @@ final class ExpertOpportunityParticipationService
         if ($participation->status !== ExpertOpportunityParticipationStatus::Applied || $participation->conflict_outcome !== 'cleared' || $participation->conflict_determined_at === null) {
             throw new DomainStateTransitionException('Only an eligible, conflict-cleared application can be selected.');
         }
-        $this->eligible($participation->auditorProfile->auditor, $participation->opportunity);
-        if (! in_array($participation->opportunity->status, [ExpertOpportunityStatus::Published, ExpertOpportunityStatus::Closed], true)) {
+        $expert = $participation->auditorProfile?->auditor;
+        $opportunity = $participation->opportunity;
+        if (! $expert instanceof User || ! $opportunity instanceof ExpertOpportunity) {
+            throw new DomainStateTransitionException('The opportunity participation has incomplete provenance.');
+        }
+        $this->eligible($expert, $opportunity);
+        if (! in_array($opportunity->status, [ExpertOpportunityStatus::Published, ExpertOpportunityStatus::Closed], true)) {
             throw new DomainStateTransitionException('The opportunity is no longer accepting a selection.');
         }
         $participation->forceFill(['status' => ExpertOpportunityParticipationStatus::Selected, 'selected_at' => now(), 'reviewed_by' => $actor->getKey(), 'reviewed_at' => now()])->save();
@@ -91,7 +96,11 @@ final class ExpertOpportunityParticipationService
         if ($participation->status !== ExpertOpportunityParticipationStatus::Selected) {
             throw new DomainStateTransitionException('Only selected experts can accept an opportunity.');
         }
-        $this->eligible($expert, $participation->opportunity);
+        $opportunity = $participation->opportunity;
+        if (! $opportunity instanceof ExpertOpportunity) {
+            throw new DomainStateTransitionException('The opportunity participation has incomplete provenance.');
+        }
+        $this->eligible($expert, $opportunity);
         $participation->forceFill(['status' => ExpertOpportunityParticipationStatus::Accepted, 'accepted_at' => now()])->save();
         AuditLogger::record(event: 'expert_opportunity.engagement_accepted', auditable: $participation, actor: $expert);
 
@@ -166,7 +175,8 @@ final class ExpertOpportunityParticipationService
 
     private function assertOwner(ExpertOpportunityParticipation $participation, User $expert): void
     {
-        if ((int) $participation->auditorProfile->auditor_id !== (int) $expert->getKey()) {
+        $profile = $participation->auditorProfile;
+        if (! $profile instanceof AuditorProfile || (int) $profile->auditor_id !== (int) $expert->getKey()) {
             throw new DomainStateTransitionException('You may only manage your own participation.');
         }
     }

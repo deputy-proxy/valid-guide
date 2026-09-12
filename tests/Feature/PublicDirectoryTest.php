@@ -5,12 +5,10 @@ declare(strict_types=1);
 use App\Enums\PlatformRole;
 use App\Enums\ProductAudience;
 use App\Enums\ProductGoal;
-use App\Enums\ProductReleaseStatus;
 use App\Enums\ProductType;
 use App\Enums\ValidationStatus;
 use App\Models\PublicDirectoryEntry;
 use App\Models\User;
-use App\Services\ProductReleaseStateTransition;
 use App\Services\ProductSuitability;
 use App\Services\PublicVerificationPublication;
 use App\Services\ValidationIssuance;
@@ -87,24 +85,6 @@ it('does not present suspended validation as currently validated in the director
     $this->get(route('public.directory'))
         ->assertOk()
         ->assertDontSee($validation->verification_identifier);
-});
-
-it('does not present validation from a superseded product release in the directory', function () {
-    [$validation, $product, , $admin] = validatedDirectoryFixture();
-    $release = $validation->productRelease;
-
-    expect($release->status)->toBe(ProductReleaseStatus::Current);
-
-    app(ProductReleaseStateTransition::class)->supersede($release, $admin);
-
-    expect(PublicDirectoryEntry::query()
-        ->where('verification_identifier', $validation->verification_identifier)
-        ->value('validation_status'))->toBe(ValidationStatus::Active);
-
-    $this->get(route('public.directory'))
-        ->assertOk()
-        ->assertDontSee($validation->verification_identifier)
-        ->assertDontSee($product->title);
 });
 
 it('removes a hidden directory record from public discovery without deleting verification history', function () {

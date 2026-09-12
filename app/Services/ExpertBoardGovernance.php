@@ -30,10 +30,10 @@ final class ExpertBoardGovernance
                 ->lockForUpdate()
                 ->first();
 
-            if ($membership !== null && ! in_array($membership->status, [
+            if ($membership !== null && in_array($membership->status, [
                 ExpertBoardMembershipStatus::Rejected,
                 ExpertBoardMembershipStatus::Removed,
-            ], true)) {
+            ], true) === false) {
                 throw new DomainStateTransitionException('The Auditor already has an active Expert Board application or membership.');
             }
 
@@ -87,7 +87,7 @@ final class ExpertBoardGovernance
                 throw new DomainStateTransitionException('Only Auditors with an approved Auditor profile can join the Expert Board.');
             }
 
-            if (! app(AuditorEligibility::class)->hasCurrentAnnualClearance($profile->auditor)) {
+            if (app(AuditorEligibility::class)->hasCurrentAnnualClearance($profile->auditor) === false) {
                 throw new DomainStateTransitionException('The Auditor must have a current annual conflict declaration cleared before joining the Expert Board.');
             }
 
@@ -159,7 +159,7 @@ final class ExpertBoardGovernance
                 throw new DomainStateTransitionException('The Auditor must have an approved Auditor profile before reinstatement.');
             }
 
-            if (! app(AuditorEligibility::class)->hasCurrentAnnualClearance($profile->auditor)) {
+            if (app(AuditorEligibility::class)->hasCurrentAnnualClearance($profile->auditor) === false) {
                 throw new DomainStateTransitionException('The Auditor must have a current annual conflict declaration cleared before reinstatement.');
             }
 
@@ -220,7 +220,7 @@ final class ExpertBoardGovernance
             /** @var ExpertBoardMembership $membership */
             $from = $membership->status;
 
-            if (! in_array($from, $allowedFrom, true)) {
+            if (in_array($from, $allowedFrom, true) === false) {
                 throw new DomainStateTransitionException("Invalid Expert Board transition from {$from->value} to {$to->value}.");
             }
 
@@ -251,7 +251,7 @@ final class ExpertBoardGovernance
 
     private function authorize(User $actor): void
     {
-        if (! $actor->isPlatformAdmin()) {
+        if ($actor->isPlatformAdmin() === false) {
             throw new DomainStateTransitionException('Only platform administrators can govern the Expert Board.');
         }
     }

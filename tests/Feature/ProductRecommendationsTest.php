@@ -56,7 +56,7 @@ it('ranks eligible products by explicit public matching signals and explains the
         ->and($recommendations->first()->reasons)->toContain('Matches audience: Professionals.')
         ->and($recommendations->first()->reasons)->toContain('Matches use case: Professional Development.')
         ->and($recommendations->first()->reasons)->toContain('Matches subject area: Leadership.')
-        ->and($recommendations->first()->reasons)->toContain('Matches language: EN.')
+        ->and($recommendations->first()->reasons)->toContain('Matches language: en.')
         ->and($recommendations->first()->reasons)->toContain(sprintf('Currently validated for release %s.', $best->productRelease->release_identifier));
 });
 

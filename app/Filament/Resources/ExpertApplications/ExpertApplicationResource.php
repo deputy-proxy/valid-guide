@@ -52,26 +52,48 @@ final class ExpertApplicationResource extends Resource
                     ->label('Clear conflict')
                     ->color('success')
                     ->visible(fn (ExpertOpportunityParticipation $record): bool => $record->conflict_determined_at === null)
-                    ->action(fn (ExpertOpportunityParticipation $record) => self::run(fn () => app(ExpertOpportunityParticipationService::class)->determineConflict($record, self::user(), 'cleared'), 'Conflict cleared')),
+                    ->action(function (ExpertOpportunityParticipation $record): void {
+                        self::run(
+                            fn () => app(ExpertOpportunityParticipationService::class)->determineConflict($record, self::user(), 'cleared'),
+                            'Conflict cleared',
+                        );
+                    }),
                 Action::make('select')
                     ->color('success')
                     ->visible(fn (ExpertOpportunityParticipation $record): bool => $record->status === ExpertOpportunityParticipationStatus::Applied && $record->conflict_outcome === 'cleared')
-                    ->action(fn (ExpertOpportunityParticipation $record) => self::run(fn () => app(ExpertOpportunityParticipationService::class)->select($record, self::user()), 'Expert selected')),
+                    ->action(function (ExpertOpportunityParticipation $record): void {
+                        self::run(
+                            fn () => app(ExpertOpportunityParticipationService::class)->select($record, self::user()),
+                            'Expert selected',
+                        );
+                    }),
                 Action::make('reject')
                     ->color('danger')
                     ->visible(fn (ExpertOpportunityParticipation $record): bool => $record->status === ExpertOpportunityParticipationStatus::Applied)
                     ->form([Textarea::make('reason')->required()->minLength(3)->maxLength(2000)])
-                    ->action(fn (ExpertOpportunityParticipation $record, array $data) => self::run(fn () => app(ExpertOpportunityParticipationService::class)->reject($record, self::user(), (string) $data['reason']), 'Application rejected')),
+                    ->action(function (ExpertOpportunityParticipation $record, array $data): void {
+                        self::run(
+                            fn () => app(ExpertOpportunityParticipationService::class)->reject($record, self::user(), (string) $data['reason']),
+                            'Application rejected',
+                        );
+                    }),
                 Action::make('complete')
                     ->color('success')
                     ->visible(fn (ExpertOpportunityParticipation $record): bool => $record->status === ExpertOpportunityParticipationStatus::Accepted)
-                    ->action(fn (ExpertOpportunityParticipation $record) => self::run(fn () => app(ExpertOpportunityParticipationService::class)->complete($record, self::user()), 'Engagement completed')),
+                    ->action(function (ExpertOpportunityParticipation $record): void {
+                        self::run(
+                            fn () => app(ExpertOpportunityParticipationService::class)->complete($record, self::user()),
+                            'Engagement completed',
+                        );
+                    }),
             ]);
     }
 
     public static function getPages(): array
     {
-        return ['index' => Pages\ListExpertApplications::route('/')];
+        return [
+            'index' => Pages\ListExpertApplications::route('/'),
+        ];
     }
 
     private static function run(callable $callback, string $success): void

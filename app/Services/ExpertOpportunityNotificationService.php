@@ -6,6 +6,7 @@ namespace App\Services;
 
 use App\Enums\NotificationCategory;
 use App\Enums\NotificationEventType;
+use App\Enums\PlatformRole;
 use App\Models\ExpertOpportunity;
 use App\Models\ExpertOpportunityParticipation;
 use App\Models\User;
@@ -58,9 +59,9 @@ final class ExpertOpportunityNotificationService
     /** @param array<string, int|string|null> $context */
     private function admins(NotificationCategory $category, NotificationEventType $event, string $title, string $body, array $context): void
     {
-        foreach (User::query()->whereNotNull('platform_role')->cursor() as $user) {
+        User::query()->where('platform_role', PlatformRole::Admin)->cursor()->each(function (User $user) use ($category, $event, $title, $body, $context): void {
             $this->send($user, $category, $event, $title, $body, $context);
-        }
+        });
     }
 
     /** @param array<string, int|string|null> $context */

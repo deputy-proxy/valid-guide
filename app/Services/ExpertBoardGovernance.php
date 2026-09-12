@@ -6,7 +6,6 @@ namespace App\Services;
 
 use App\Enums\AuditorProfileStatus;
 use App\Enums\ExpertBoardMembershipStatus;
-use App\Models\AuditorProfile;
 use App\Models\ExpertBoardMembership;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;

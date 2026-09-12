@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace App\Filament\Resources\ExpertOpportunities;
 
+use App\Enums\ExpertiseArea;
 use App\Enums\ExpertOpportunityStatus;
 use App\Enums\ExpertOpportunityType;
+use App\Enums\ProductType;
 use App\Filament\Resources\ExpertOpportunities\Pages\CreateExpertOpportunity;
 use App\Filament\Resources\ExpertOpportunities\Pages\EditExpertOpportunity;
 use App\Filament\Resources\ExpertOpportunities\Pages\ListExpertOpportunities;
@@ -15,10 +17,12 @@ use App\Services\DomainStateTransitionException;
 use App\Services\ExpertOpportunityGovernance;
 use BackedEnum;
 use Filament\Actions\Action;
+use Filament\Actions\EditAction;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
@@ -46,38 +50,52 @@ final class ExpertOpportunityResource extends Resource
         return $schema->components([
             TextInput::make('title')->required()->maxLength(255),
             Textarea::make('description')->required()->rows(5),
-            Select::make('type')->required()->options(collect(ExpertOpportunityType::cases())->mapWithKeys(fn (ExpertOpportunityType $type): array => [$type->value => str($type->value)->title()->toString()])->all()),
-            Select::make('expertise_areas')->multiple()->options(fn (): array => \App\Enums\ExpertiseArea::cases() ? collect(\App\Enums\ExpertiseArea::cases())->mapWithKeys(fn ($area): array => [$area->value => str($area->value)->replace('_', ' ')->title()->toString()])->all() : []),
-            Select::make('product_types')->multiple()->options(collect(\App\Enums\ProductType::cases())->mapWithKeys(fn ($type): array => [$type->value => str($type->value)->replace('_', ' ')->title()->toString()])->all()),
+            Select::make('type')->required()->options(self::enumOptions(ExpertOpportunityType::cases())),
+            Select::make('expertise_areas')->multiple()->options(self::enumOptions(ExpertiseArea::cases(), true)),
+            Select::make('product_types')->multiple()->options(self::enumOptions(ProductType::cases(), true)),
             TextInput::make('workload')->maxLength(255),
             DateTimePicker::make('starts_at'),
             DateTimePicker::make('ends_at'),
             DateTimePicker::make('application_deadline'),
-            Select::make('eligibility_constraints.methodology_literate')->label('Requires methodology literacy')->options([true => 'Yes', false => 'No'])->default(false),
+            Toggle::make('eligibility_constraints.methodology_literate')->label('Requires methodology literacy')->default(false),
         ]);
     }
 
     public static function table(Table $table): Table
     {
-        return $table->columns([
-            TextColumn::make('title')->searchable()->sortable(),
-            TextColumn::make('type')->badge(),
-            TextColumn::make('status')->badge(),
-            TextColumn::make('application_deadline')->dateTime()->sortable(),
-            TextColumn::make('participations_count')->counts('participations')->label('Applications'),
-        ])->filters([
-            SelectFilter::make('status')->options(collect(ExpertOpportunityStatus::cases())->mapWithKeys(fn (ExpertOpportunityStatus $status): array => [$status->value => str($status->value)->title()->toString()])->all()),
-        ])->recordActions([
-            Action::make('publish')->color('success')->visible(fn (ExpertOpportunity $record): bool => $record->status === ExpertOpportunityStatus::Draft)->action(fn (ExpertOpportunity $record) => self::run(fn () => app(ExpertOpportunityGovernance::class)->publish($record, self::user()), 'Opportunity published')),
-            Action::make('close')->color('warning')->visible(fn (ExpertOpportunity $record): bool => $record->status === ExpertOpportunityStatus::Published)->action(fn (ExpertOpportunity $record) => self::run(fn () => app(ExpertOpportunityGovernance::class)->close($record, self::user()), 'Opportunity closed')),
-            Action::make('cancel')->color('danger')->visible(fn (ExpertOpportunity $record): bool => in_array($record->status, [ExpertOpportunityStatus::Draft, ExpertOpportunityStatus::Published, ExpertOpportunityStatus::Closed], true))->requiresConfirmation()->action(fn (ExpertOpportunity $record) => self::run(fn () => app(ExpertOpportunityGovernance::class)->cancel($record, self::user()), 'Opportunity cancelled')),
-            Action::make('complete')->color('success')->visible(fn (ExpertOpportunity $record): bool => $record->status === ExpertOpportunityStatus::Closed)->action(fn (ExpertOpportunity $record) => self::run(fn () => app(ExpertOpportunityGovernance::class)->complete($record, self::user()), 'Opportunity completed')),
-        ]);
+        return $table
+            ->columns([
+                TextColumn::make('title')->searchable()->sortable(),
+                TextColumn::make('type')->badge(),
+                TextColumn::make('status')->badge(),
+                TextColumn::make('application_deadline')->dateTime()->sortable(),
+                TextColumn::make('participations_count')->counts('participations')->label('Applications'),
+            ])
+            ->filters([
+                SelectFilter::make('status')->options(self::enumOptions(ExpertOpportunityStatus::cases())),
+            ])
+            ->recordActions([
+                EditAction::make()->visible(fn (ExpertOpportunity $record): bool => $record->status === ExpertOpportunityStatus::Draft),
+                Action::make('publish')->color('success')->visible(fn (ExpertOpportunity $record): bool => $record->status === ExpertOpportunityStatus::Draft)->action(fn (ExpertOpportunity $record) => self::run(fn () => app(ExpertOpportunityGovernance::class)->publish($record, self::user()), 'Opportunity published')),
+                Action::make('close')->color('warning')->visible(fn (ExpertOpportunity $record): bool => $record->status === ExpertOpportunityStatus::Published)->action(fn (ExpertOpportunity $record) => self::run(fn () => app(ExpertOpportunityGovernance::class)->close($record, self::user()), 'Opportunity closed')),
+                Action::make('cancel')->color('danger')->visible(fn (ExpertOpportunity $record): bool => in_array($record->status, [ExpertOpportunityStatus::Draft, ExpertOpportunityStatus::Published, ExpertOpportunityStatus::Closed], true))->requiresConfirmation()->action(fn (ExpertOpportunity $record) => self::run(fn () => app(ExpertOpportunityGovernance::class)->cancel($record, self::user()), 'Opportunity cancelled')),
+                Action::make('complete')->color('success')->visible(fn (ExpertOpportunity $record): bool => $record->status === ExpertOpportunityStatus::Closed)->action(fn (ExpertOpportunity $record) => self::run(fn () => app(ExpertOpportunityGovernance::class)->complete($record, self::user()), 'Opportunity completed')),
+            ]);
     }
 
     public static function getPages(): array
     {
-        return ['index' => ListExpertOpportunities::route('/'), 'create' => CreateExpertOpportunity::route('/create'), 'edit' => EditExpertOpportunity::route('/{record}/edit')];
+        return [
+            'index' => ListExpertOpportunities::route('/'),
+            'create' => CreateExpertOpportunity::route('/create'),
+            'edit' => EditExpertOpportunity::route('/{record}/edit'),
+        ];
+    }
+
+    /** @param list<BackedEnum> $cases */
+    private static function enumOptions(array $cases, bool $replaceUnderscores = false): array
+    {
+        return collect($cases)->mapWithKeys(fn (BackedEnum $case): array => [$case->value => str($case->value)->when($replaceUnderscores, fn ($value) => $value->replace('_', ' '))->title()->toString()])->all();
     }
 
     private static function run(callable $callback, string $success): void

@@ -29,17 +29,18 @@ final class ExpertOpportunityNotificationService
     {
         $participation->loadMissing('opportunity', 'auditorProfile.auditor');
         $expert = $participation->auditorProfile?->auditor;
-        if (! $expert instanceof User) {
-            throw new DomainStateTransitionException('The opportunity application is missing its Expert.');
+        $opportunity = $participation->opportunity;
+        if (! $expert instanceof User || ! $opportunity instanceof ExpertOpportunity) {
+            throw new DomainStateTransitionException('The opportunity application has incomplete provenance.');
         }
 
         $this->admins(
             NotificationCategory::Assignment,
             NotificationEventType::ExpertOpportunityApplication,
             'Expert opportunity application',
-            sprintf('%s applied to %s.', $expert->name, $participation->opportunity->title),
+            sprintf('%s applied to %s.', $expert->name, $opportunity->title),
             [
-                'expert_opportunity_id' => $participation->opportunity->getKey(),
+                'expert_opportunity_id' => $opportunity->getKey(),
                 'participation_id' => $participation->getKey(),
             ],
         );
@@ -49,8 +50,9 @@ final class ExpertOpportunityNotificationService
     {
         $participation->loadMissing('opportunity', 'auditorProfile.auditor');
         $expert = $participation->auditorProfile?->auditor;
-        if (! $expert instanceof User) {
-            throw new DomainStateTransitionException('The opportunity selection is missing its Expert.');
+        $opportunity = $participation->opportunity;
+        if (! $expert instanceof User || ! $opportunity instanceof ExpertOpportunity) {
+            throw new DomainStateTransitionException('The opportunity selection has incomplete provenance.');
         }
 
         $this->send(
@@ -58,9 +60,9 @@ final class ExpertOpportunityNotificationService
             NotificationCategory::Assignment,
             NotificationEventType::ExpertOpportunitySelection,
             'Expert opportunity selected',
-            sprintf('You have been selected for %s.', $participation->opportunity->title),
+            sprintf('You have been selected for %s.', $opportunity->title),
             [
-                'expert_opportunity_id' => $participation->opportunity->getKey(),
+                'expert_opportunity_id' => $opportunity->getKey(),
                 'participation_id' => $participation->getKey(),
             ],
         );

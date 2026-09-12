@@ -17,8 +17,8 @@ use Filament\Resources\Resource;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Support\Facades\Auth;
-use UnitEnum;
 use Throwable;
+use UnitEnum;
 
 final class ExpertApplicationResource extends Resource
 {

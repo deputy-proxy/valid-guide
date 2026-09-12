@@ -13,7 +13,13 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-/** @property ExpertOpportunityType $type */
+/**
+ * @property ExpertOpportunityType $type
+ * @property ExpertOpportunityStatus $status
+ * @property list<string>|null $expertise_areas
+ * @property list<string>|null $product_types
+ * @property array<string, mixed>|null $eligibility_constraints
+ */
 class ExpertOpportunity extends Model
 {
     /** @use HasFactory<Factory> */

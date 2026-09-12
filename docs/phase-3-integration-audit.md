@@ -1,11 +1,27 @@
 # Phase 3 Integration and Regression Audit
 
-Issue: #100
+Issue: #14
 Status: completion gate
 
 ## Scope
 
-This audit closes the specification-to-code gap for Phase 3. The eight implementation issues preceding #100 provide the role-specific application surfaces; this document records the regression matrix that must remain true while those surfaces evolve.
+This audit closes the specification-to-code gap for the complete Phase 3 lifecycle. It records the regression matrix and the authoritative-state boundaries that must remain true as guidance, opportunities, matching, discovery and recommendations evolve.
+
+## Lifecycle
+
+```text
+Evaluation Findings / Report
+        ↓
+Structured Guidance
+        ↓
+Improvement Opportunities / Creator Progress
+        ↓
+Audience & Use-Case Matching
+        ↓
+Public Discovery
+        ↓
+Explainable Recommendations
+```
 
 ## Regression matrix
 
@@ -17,7 +33,11 @@ This audit closes the specification-to-code gap for Phase 3. The eight implement
 | Auditor submission | `AuditorEvaluationSubmissionTest.php`, `AuditorEvaluationFinalizationTest.php` | Submission boundary, concurrency and immutability |
 | Platform governance | `PlatformGovernanceInterfaceTest.php`, `EvaluationDecisionServiceTest.php`, `ValidationIssuanceTest.php`, `ValidationStateTransitionTest.php` | Controlled governance workflows |
 | Reports and creator visibility | `CreatorReportAccessTest.php`, `ReportDeliveryTest.php`, `ReportVersioningTest.php`, `PublicVerificationTest.php`, `PublicVerificationSnapshotTest.php` | Disclosure and historical integrity |
-| Notifications and action queues | `WorkflowNotificationTest.php` | Recipient, tenancy and stale-state safety |
+| Guidance and creator progress | `ImprovementGuidanceWorkflowTest.php`, `ImprovementOpportunityWorkflowTest.php`, `CreatorImprovementOpportunityIntegrationTest.php` | Provenance, tenancy and creator-only mutation |
+| Matching and suitability | `ProductMatchingTest.php`, `ProductSuitabilityTest.php` | Explicit signals, current release and active validation |
+| Public discovery | `PublicDirectoryTest.php` | Public projection, privacy and current trust state |
+| Explainable recommendations | `ProductRecommendationsTest.php` | Deterministic scoring, explanations and eligibility |
+| Notifications and action queues | `WorkflowNotificationTest.php`, `CreatorActionWorkflowTest.php` | Recipient, tenancy and stale-state safety |
 | Cross-cutting authorization | `AuthorizationTest.php`, `AuditLogTest.php` | Server-side role and audit boundaries |
 | UI and Livewire transport | `Phase2UiAuditTest.php`, Auditor workspace tests | No client-controlled lifecycle or tenant identifiers |
 
@@ -35,7 +55,11 @@ This audit closes the specification-to-code gap for Phase 3. The eight implement
 10. Direct requests and Livewire payloads must not permit mutation of locked tenant, assignment, evaluation or request context.
 11. Accessibility-critical landmarks and keyboard/focus affordances remain present in representative workflows.
 12. Raw/bulk database mutations remain outside application workflow boundaries.
+13. Public discovery and recommendation queries verify the authoritative Validation, Product Release and Product state instead of trusting a stale projection snapshot.
+14. An active Validation attached to a superseded or withdrawn Product Release is not eligible for current discovery or recommendation.
+15. Commercial product fields, payment state and affiliate relationships do not contribute to Validation state or recommendation eligibility.
+16. Matching and recommendation explanations are derived only from explicit public suitability and trust signals and have deterministic ordering.
 
 ## Exit gate
 
-Phase 3 may be declared complete only after the regression matrix passes in CI with Pint/lint, PHPStan and the complete test suite green. Any newly discovered security, tenancy, privacy, lifecycle, methodology, historical-integrity or accessibility blocker reopens the Phase 3 gate.
+Phase 3 may be declared complete only after the regression matrix passes in CI with Pint/lint, PHPStan and the complete test suite green. Any newly discovered security, tenancy, privacy, lifecycle, methodology, historical-integrity, performance or accessibility blocker reopens the Phase 3 gate.

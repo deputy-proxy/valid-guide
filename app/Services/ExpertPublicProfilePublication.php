@@ -22,7 +22,8 @@ final class ExpertPublicProfilePublication
 
         $profile = AuditorProfile::query()
             ->with(['auditor', 'competencies', 'expertBoardMembership'])
-            ->findOrFail($profile->getKey());
+            ->where('id', $profile->getKey())
+            ->firstOrFail();
 
         if ($profile->status !== AuditorProfileStatus::Approved) {
             throw new DomainStateTransitionException('Only approved Auditor profiles can be published as Experts.');

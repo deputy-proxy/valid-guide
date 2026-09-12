@@ -28,11 +28,16 @@ final class ExpertOpportunityNotificationService
     public function application(ExpertOpportunityParticipation $participation): void
     {
         $participation->loadMissing('opportunity', 'auditorProfile.auditor');
+        $expert = $participation->auditorProfile?->auditor;
+        if (! $expert instanceof User) {
+            throw new DomainStateTransitionException('The opportunity application is missing its Expert.');
+        }
+
         $this->admins(
             NotificationCategory::Assignment,
             NotificationEventType::ExpertOpportunityApplication,
             'Expert opportunity application',
-            sprintf('%s applied to %s.', $participation->auditorProfile->auditor->name, $participation->opportunity->title),
+            sprintf('%s applied to %s.', $expert->name, $participation->opportunity->title),
             [
                 'expert_opportunity_id' => $participation->opportunity->getKey(),
                 'participation_id' => $participation->getKey(),
@@ -43,8 +48,13 @@ final class ExpertOpportunityNotificationService
     public function selected(ExpertOpportunityParticipation $participation): void
     {
         $participation->loadMissing('opportunity', 'auditorProfile.auditor');
+        $expert = $participation->auditorProfile?->auditor;
+        if (! $expert instanceof User) {
+            throw new DomainStateTransitionException('The opportunity selection is missing its Expert.');
+        }
+
         $this->send(
-            $participation->auditorProfile->auditor,
+            $expert,
             NotificationCategory::Assignment,
             NotificationEventType::ExpertOpportunitySelection,
             'Expert opportunity selected',

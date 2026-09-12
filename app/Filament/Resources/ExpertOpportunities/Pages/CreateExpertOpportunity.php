@@ -19,6 +19,7 @@ final class CreateExpertOpportunity extends CreateRecord
         abort_unless($user instanceof User, 403);
         $data['created_by'] = $user->getKey();
         $data['status'] = 'draft';
+
         return $data;
     }
 }

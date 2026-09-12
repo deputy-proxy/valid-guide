@@ -143,12 +143,13 @@ final class ExpertBoardMembershipResource extends Resource
                         default => throw new DomainStateTransitionException('Unsupported Expert Board action.'),
                     };
 
-                    $titles = [
+                    $title = match ($name) {
                         'reject' => 'Expert Board application rejected',
                         'suspend' => 'Expert Board membership suspended',
                         'remove' => 'Expert Board membership removed',
-                    ];
-                    Notification::make()->success()->title($titles[$name])->send();
+                        default => 'Expert Board action completed',
+                    };
+                    Notification::make()->success()->title($title)->send();
                 } catch (DomainStateTransitionException $exception) {
                     Notification::make()->danger()->title(ucfirst($name).' blocked')->body($exception->getMessage())->send();
                 } catch (Throwable $exception) {

@@ -6,6 +6,8 @@ namespace App\Services;
 
 use App\Enums\ProductAudience;
 use App\Enums\ProductGoal;
+use App\Enums\ProductReleaseStatus;
+use App\Enums\ProductStatus;
 use App\Enums\ProductType;
 use App\Enums\ValidationStatus;
 use App\Models\PublicDirectoryEntry;
@@ -27,7 +29,18 @@ class PublicDirectory
     ): LengthAwarePaginator {
         $builder = PublicDirectoryEntry::query()
             ->where('directory_visible', true)
-            ->where('validation_status', ValidationStatus::Active->value);
+            ->where('validation_status', ValidationStatus::Active->value)
+            ->whereHas('publicVerificationRecord.validation', function (Builder $builder): void {
+                $builder
+                    ->where('status', ValidationStatus::Active->value)
+                    ->whereHas('productRelease', function (Builder $builder): void {
+                        $builder
+                            ->where('status', ProductReleaseStatus::Current->value)
+                            ->whereHas('product', function (Builder $builder): void {
+                                $builder->where('status', ProductStatus::Active->value);
+                            });
+                    });
+            });
 
         $query = $query !== null ? trim($query) : null;
         $subjectArea = $subjectArea !== null ? trim($subjectArea) : null;

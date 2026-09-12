@@ -9,7 +9,6 @@ use App\Enums\ProductGoal;
 use App\Enums\ProductType;
 use App\Enums\ValidationStatus;
 use App\Models\PublicDirectoryEntry;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 
 class ProductRecommendations
@@ -38,13 +37,6 @@ class ProductRecommendations
         $entries = PublicDirectoryEntry::query()
             ->where('directory_visible', true)
             ->where('validation_status', ValidationStatus::Active->value)
-            ->when($query !== null && $query !== '', function (Builder $builder) use ($query): void {
-                $builder->where(function (Builder $builder) use ($query): void {
-                    $builder->where('title', 'like', '%'.$query.'%')
-                        ->orWhere('creator_name', 'like', '%'.$query.'%')
-                        ->orWhere('subject_area', 'like', '%'.$query.'%');
-                });
-            })
             ->get();
 
         return $entries

@@ -15,7 +15,7 @@ final class ExpertOpportunityGovernance
     {
         $this->authorize($actor);
 
-        return DB::transaction(function () use ($opportunity, $actor): ExpertOpportunity {
+        DB::transaction(function () use ($opportunity, $actor): void {
             /** @var ExpertOpportunity $opportunity */
             $opportunity = ExpertOpportunity::query()->lockForUpdate()->findOrFail($opportunity->getKey());
             if ($opportunity->status !== ExpertOpportunityStatus::Draft) {
@@ -43,9 +43,9 @@ final class ExpertOpportunityGovernance
                 actor: $actor,
             );
             app(ExpertOpportunityNotificationService::class)->published($opportunity);
-
-            return $opportunity->refresh();
         });
+
+        return $opportunity->refresh();
     }
 
     public function close(ExpertOpportunity $opportunity, User $actor): ExpertOpportunity

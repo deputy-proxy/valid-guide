@@ -7,6 +7,7 @@ namespace App\Http\Controllers;
 use App\Enums\ProductAudience;
 use App\Enums\ProductGoal;
 use App\Enums\ProductType;
+use App\Services\ProductRecommendations;
 use App\Services\PublicDirectory;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -15,6 +16,7 @@ class PublicDirectoryController extends Controller
 {
     public function __construct(
         private readonly PublicDirectory $directory,
+        private readonly ProductRecommendations $recommendations,
     ) {}
 
     public function index(Request $request): View
@@ -25,15 +27,28 @@ class PublicDirectoryController extends Controller
         $productTypeValue = $request->string('product_type')->trim()->value();
         $subjectArea = $request->string('subject_area')->trim()->value();
         $language = $request->string('language')->trim()->value();
+        $audience = $audienceValue !== '' ? ProductAudience::tryFrom($audienceValue) : null;
+        $goal = $goalValue !== '' ? ProductGoal::tryFrom($goalValue) : null;
+        $productType = $productTypeValue !== '' ? ProductType::tryFrom($productTypeValue) : null;
+        $subject = $subjectArea !== '' ? $subjectArea : null;
+        $selectedLanguage = $language !== '' ? $language : null;
 
         return view('public.pages.directory', [
             'entries' => $this->directory->search(
                 query: $query !== '' ? $query : null,
-                audience: $audienceValue !== '' ? ProductAudience::tryFrom($audienceValue) : null,
-                goal: $goalValue !== '' ? ProductGoal::tryFrom($goalValue) : null,
-                productType: $productTypeValue !== '' ? ProductType::tryFrom($productTypeValue) : null,
-                subjectArea: $subjectArea !== '' ? $subjectArea : null,
-                language: $language !== '' ? $language : null,
+                audience: $audience,
+                goal: $goal,
+                productType: $productType,
+                subjectArea: $subject,
+                language: $selectedLanguage,
+            ),
+            'recommendations' => $this->recommendations->recommend(
+                audience: $audience,
+                goal: $goal,
+                productType: $productType,
+                subjectArea: $subject,
+                language: $selectedLanguage,
+                query: $query !== '' ? $query : null,
             ),
             'query' => $query,
             'audience' => $audienceValue,

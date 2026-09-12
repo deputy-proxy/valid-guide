@@ -21,7 +21,7 @@
 
                     <div>
                         <label for="directory-audience" class="block text-sm font-medium text-zinc-950 dark:text-white">Audience</label>
-                        <select id="directory-audience" name="audience" class="mt-2 block w-full rounded-lg border border-zinc-300 bg-white px-3 py-2.5 text-sm text-zinc-950 shadow-sm focus:border-zinc-950 focus:ring-2 focus:ring-zinc-950 dark:border-zinc-700 dark:bg-zinc-950 dark:text-white dark:focus:border-white dark:focus:ring-white">
+                        <select id="directory-audience" name="audience" class="mt-2 block w-full rounded-lg border border-zinc-300 bg-white px-3 py-2.5 text-sm text-zinc-950 shadow-sm focus:border-zinc-950 focus:ring-2 focus:ring-zinc-950 dark:border-zinc-700 dark:bg-zinc-950 dark:text-white dark:focus:ring-white">
                             <option value="">Any audience</option>
                             @foreach ($audiences as $option)
                                 <option value="{{ $option->value }}" @selected($audience === $option->value)>{{ str($option->value)->replace('_', ' ')->title() }}</option>
@@ -65,6 +65,42 @@
                     <a href="{{ route('public.directory') }}" class="inline-flex items-center justify-center rounded-lg border border-zinc-300 bg-white px-4 py-2.5 text-sm font-medium text-zinc-950 hover:bg-zinc-50 focus:outline-none focus:ring-2 focus:ring-zinc-950 focus:ring-offset-2 dark:border-zinc-700 dark:bg-zinc-950 dark:text-white dark:hover:bg-zinc-900 dark:focus:ring-white">Clear filters</a>
                 </div>
             </form>
+
+            @if ($recommendations->isNotEmpty())
+                <section class="mt-10" aria-labelledby="recommendations-heading">
+                    <div class="max-w-3xl">
+                        <h2 id="recommendations-heading" class="text-xl font-semibold text-zinc-950 dark:text-white">Recommended based on these criteria</h2>
+                        <p class="mt-2 text-sm leading-6 text-zinc-600 dark:text-zinc-400">
+                            These recommendations use only public product metadata and current validation status. They indicate relevance to the selected criteria, not product quality, guaranteed outcomes, or universal suitability.
+                        </p>
+                    </div>
+
+                    <div class="mt-5 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+                        @foreach ($recommendations as $recommendation)
+                            <article class="flex h-full flex-col rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/40">
+                                <div class="flex-1">
+                                    <div class="flex items-start justify-between gap-4">
+                                        <span class="rounded-full border border-zinc-200 px-2.5 py-1 text-xs font-medium text-zinc-600 dark:border-zinc-700 dark:text-zinc-300">{{ str($recommendation->productType->value)->replace('_', ' ')->title() }}</span>
+                                        <span class="text-xs font-medium text-zinc-600 dark:text-zinc-300">Validated</span>
+                                    </div>
+                                    <h3 class="mt-4 text-lg font-semibold text-zinc-950 dark:text-white">{{ $recommendation->title }}</h3>
+
+                                    <div class="mt-5">
+                                        <h4 class="text-xs font-medium uppercase tracking-wide text-zinc-500">Why this is recommended</h4>
+                                        <ul class="mt-2 space-y-1.5 text-sm text-zinc-700 dark:text-zinc-300">
+                                            @foreach ($recommendation->reasons as $reason)
+                                                <li>{{ $reason }}</li>
+                                            @endforeach
+                                        </ul>
+                                    </div>
+                                </div>
+
+                                <a href="{{ route('public.verify.show', ['verificationIdentifier' => $recommendation->verificationIdentifier]) }}" class="mt-6 inline-flex items-center justify-center rounded-lg border border-zinc-300 px-4 py-2.5 text-sm font-medium text-zinc-950 hover:bg-zinc-50 focus:outline-none focus:ring-2 focus:ring-zinc-950 focus:ring-offset-2 dark:border-zinc-700 dark:text-white dark:hover:bg-zinc-900 dark:focus:ring-white">View verification</a>
+                            </article>
+                        @endforeach
+                    </div>
+                </section>
+            @endif
 
             <div class="mt-10">
                 <div class="flex flex-wrap items-baseline justify-between gap-3">

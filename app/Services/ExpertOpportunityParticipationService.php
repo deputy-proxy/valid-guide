@@ -25,6 +25,7 @@ final class ExpertOpportunityParticipationService
         return DB::transaction(function () use ($opportunity, $profile, $expert, $disclosure): ExpertOpportunityParticipation {
             $participation = ExpertOpportunityParticipation::query()->create(['expert_opportunity_id' => $opportunity->getKey(), 'auditor_profile_id' => $profile->getKey(), 'status' => ExpertOpportunityParticipationStatus::Applied, 'conflict_disclosure' => trim($disclosure), 'applied_at' => now()]);
             AuditLogger::record(event: 'expert_opportunity.application_submitted', auditable: $participation, actor: $expert);
+            app(ExpertOpportunityNotificationService::class)->application($participation);
             return $participation->refresh();
         });
     }
@@ -52,8 +53,10 @@ final class ExpertOpportunityParticipationService
         $this->admin($actor);
         if ($participation->status !== ExpertOpportunityParticipationStatus::Applied || $participation->conflict_outcome !== 'cleared' || $participation->conflict_determined_at === null) throw new DomainStateTransitionException('Only an eligible, conflict-cleared application can be selected.');
         $this->eligible($participation->auditorProfile->auditor, $participation->opportunity);
+        if (! in_array($participation->opportunity->status, [ExpertOpportunityStatus::Published, ExpertOpportunityStatus::Closed], true)) throw new DomainStateTransitionException('The opportunity is no longer accepting a selection.');
         $participation->forceFill(['status' => ExpertOpportunityParticipationStatus::Selected, 'selected_at' => now(), 'reviewed_by' => $actor->getKey(), 'reviewed_at' => now()])->save();
         AuditLogger::record(event: 'expert_opportunity.expert_selected', auditable: $participation, actor: $actor);
+        app(ExpertOpportunityNotificationService::class)->selected($participation);
         return $participation->refresh();
     }
 

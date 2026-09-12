@@ -45,7 +45,6 @@ final class ExpertBoardMembershipResource extends Resource
                 TextColumn::make('auditorProfile.auditor.name')->label('Expert')->searchable()->sortable(),
                 TextColumn::make('auditorProfile.status')->label('Auditor profile')->badge(),
                 TextColumn::make('status')->badge(),
-                TextColumn::make('auditorProfile.competencies_count')->label('Competencies')->counts('auditorProfile.competencies'),
                 TextColumn::make('applied_at')->dateTime()->sortable(),
                 TextColumn::make('reviewedBy.name')->label('Reviewed by')->placeholder('—'),
             ])
@@ -101,7 +100,6 @@ final class ExpertBoardMembershipResource extends Resource
     {
         return parent::getEloquentQuery()->with([
             'auditorProfile.auditor',
-            'auditorProfile.competencies',
             'reviewedBy',
         ]);
     }
@@ -145,7 +143,12 @@ final class ExpertBoardMembershipResource extends Resource
                         default => throw new DomainStateTransitionException('Unsupported Expert Board action.'),
                     };
 
-                    Notification::make()->success()->title("Expert Board membership {$name}d")->send();
+                    $titles = [
+                        'reject' => 'Expert Board application rejected',
+                        'suspend' => 'Expert Board membership suspended',
+                        'remove' => 'Expert Board membership removed',
+                    ];
+                    Notification::make()->success()->title($titles[$name])->send();
                 } catch (DomainStateTransitionException $exception) {
                     Notification::make()->danger()->title(ucfirst($name).' blocked')->body($exception->getMessage())->send();
                 } catch (Throwable $exception) {

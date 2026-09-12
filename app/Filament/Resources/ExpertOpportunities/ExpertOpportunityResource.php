@@ -60,9 +60,7 @@ final class ExpertOpportunityResource extends Resource
             DateTimePicker::make('starts_at'),
             DateTimePicker::make('ends_at'),
             DateTimePicker::make('application_deadline'),
-            Toggle::make('eligibility_constraints.methodology_literate')
-                ->label('Requires methodology literacy')
-                ->default(false),
+            Toggle::make('eligibility_constraints.methodology_literate')->label('Requires methodology literacy')->default(false),
         ]);
     }
 

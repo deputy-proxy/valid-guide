@@ -4,12 +4,13 @@ declare(strict_types=1);
 
 use App\Enums\ExpertOpportunityParticipationStatus;
 use App\Services\DomainStateTransitionException;
+use App\Services\ExpertOpportunityGovernance;
 use App\Services\ExpertOpportunityParticipationService;
 
 it('requires conflict clearance before selection', function () {
     $admin = opportunityAdmin();
     $opportunity = opportunityDraft($admin);
-    app(\App\Services\ExpertOpportunityGovernance::class)->publish($opportunity, $admin);
+    app(ExpertOpportunityGovernance::class)->publish($opportunity, $admin);
     $expert = opportunityExpert();
     $service = app(ExpertOpportunityParticipationService::class);
     $participation = $service->apply($opportunity, $expert, 'Clear.');
@@ -22,7 +23,7 @@ it('requires conflict clearance before selection', function () {
 it('supports acceptance and completion', function () {
     $admin = opportunityAdmin();
     $opportunity = opportunityDraft($admin);
-    app(\App\Services\ExpertOpportunityGovernance::class)->publish($opportunity, $admin);
+    app(ExpertOpportunityGovernance::class)->publish($opportunity, $admin);
     $expert = opportunityExpert();
     $service = app(ExpertOpportunityParticipationService::class);
     $participation = $service->apply($opportunity, $expert, 'Clear.');
@@ -36,7 +37,7 @@ it('supports acceptance and completion', function () {
 it('prevents changing determined conflicts', function () {
     $admin = opportunityAdmin();
     $opportunity = opportunityDraft($admin);
-    app(\App\Services\ExpertOpportunityGovernance::class)->publish($opportunity, $admin);
+    app(ExpertOpportunityGovernance::class)->publish($opportunity, $admin);
     $participation = app(ExpertOpportunityParticipationService::class)->apply($opportunity, opportunityExpert(), 'Clear.');
     app(ExpertOpportunityParticipationService::class)->determineConflict($participation, $admin, 'cleared');
 
@@ -46,7 +47,7 @@ it('prevents changing determined conflicts', function () {
 it('prevents another expert from withdrawing an application', function () {
     $admin = opportunityAdmin();
     $opportunity = opportunityDraft($admin);
-    app(\App\Services\ExpertOpportunityGovernance::class)->publish($opportunity, $admin);
+    app(ExpertOpportunityGovernance::class)->publish($opportunity, $admin);
     $expert = opportunityExpert();
     $other = opportunityExpert();
     $participation = app(ExpertOpportunityParticipationService::class)->apply($opportunity, $expert, 'Clear.');

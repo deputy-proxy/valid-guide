@@ -136,17 +136,13 @@ it('rejects invalid transitions and blank reasons', function () {
 it('prevents suspended members from being reinstated without current annual clearance', function () {
     $admin = expertBoardAdmin();
     $profile = expertBoardProfile();
-    clearAnnualConflict($profile->auditor);
     $membership = ExpertBoardMembership::create([
         'auditor_profile_id' => $profile->id,
         'status' => ExpertBoardMembershipStatus::Suspended,
         'applied_at' => now(),
         'suspended_at' => now(),
     ]);
-    $governance = app(ExpertBoardGovernance::class);
 
-    AuditorAnnualConflictDeclaration::query()->delete();
-
-    expect(fn () => $governance->reinstate($membership, $admin))
+    expect(fn () => app(ExpertBoardGovernance::class)->reinstate($membership, $admin))
         ->toThrow(DomainStateTransitionException::class);
 });

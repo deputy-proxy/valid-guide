@@ -64,4 +64,10 @@ class AuditorProfile extends Model
     {
         return $this->hasOne(ExpertBoardMembership::class);
     }
+
+    /** @return HasOne<ExpertPublicProfile, $this> */
+    public function expertPublicProfile(): HasOne
+    {
+        return $this->hasOne(ExpertPublicProfile::class);
+    }
 }

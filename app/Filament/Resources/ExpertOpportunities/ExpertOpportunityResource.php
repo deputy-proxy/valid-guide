@@ -36,8 +36,11 @@ use Throwable;
 final class ExpertOpportunityResource extends Resource
 {
     protected static ?string $model = ExpertOpportunity::class;
+
     protected static string|UnitEnum|null $navigationGroup = 'Platform Admin';
+
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-briefcase';
+
     protected static ?string $navigationLabel = 'Expert Opportunities';
 
     public static function canAccess(): bool

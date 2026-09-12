@@ -8,6 +8,7 @@ use App\Enums\AuditorProfileStatus;
 use App\Enums\ExpertBoardMembershipStatus;
 use App\Enums\ExpertOpportunityParticipationStatus;
 use App\Enums\ExpertOpportunityStatus;
+use App\Models\AuditorProfile;
 use App\Models\ExpertOpportunity;
 use App\Models\ExpertOpportunityParticipation;
 use App\Models\User;
@@ -17,12 +18,12 @@ final class ExpertOpportunityParticipationService
 {
     public function apply(ExpertOpportunity $opportunity, User $expert, string $disclosure): ExpertOpportunityParticipation
     {
-        $this->eligible($expert, $opportunity);
+        $profile = $this->eligible($expert, $opportunity);
         if (trim($disclosure) === '') throw new DomainStateTransitionException('A conflict-of-interest disclosure is required.');
         if ($opportunity->status !== ExpertOpportunityStatus::Published || ($opportunity->application_deadline !== null && $opportunity->application_deadline->isPast())) throw new DomainStateTransitionException('This opportunity is not accepting applications.');
-        if ($opportunity->participations()->where('auditor_profile_id', $expert->auditorProfile->getKey())->exists()) throw new DomainStateTransitionException('The Expert has already applied to this opportunity.');
-        return DB::transaction(function () use ($opportunity, $expert, $disclosure): ExpertOpportunityParticipation {
-            $participation = ExpertOpportunityParticipation::query()->create(['expert_opportunity_id' => $opportunity->getKey(), 'auditor_profile_id' => $expert->auditorProfile->getKey(), 'status' => ExpertOpportunityParticipationStatus::Applied, 'conflict_disclosure' => trim($disclosure), 'applied_at' => now()]);
+        if ($opportunity->participations()->where('auditor_profile_id', $profile->getKey())->exists()) throw new DomainStateTransitionException('The Expert has already applied to this opportunity.');
+        return DB::transaction(function () use ($opportunity, $profile, $expert, $disclosure): ExpertOpportunityParticipation {
+            $participation = ExpertOpportunityParticipation::query()->create(['expert_opportunity_id' => $opportunity->getKey(), 'auditor_profile_id' => $profile->getKey(), 'status' => ExpertOpportunityParticipationStatus::Applied, 'conflict_disclosure' => trim($disclosure), 'applied_at' => now()]);
             AuditLogger::record(event: 'expert_opportunity.application_submitted', auditable: $participation, actor: $expert);
             return $participation->refresh();
         });
@@ -94,7 +95,7 @@ final class ExpertOpportunityParticipationService
         return $participation->refresh();
     }
 
-    private function eligible(User $expert, ExpertOpportunity $opportunity): void
+    private function eligible(User $expert, ExpertOpportunity $opportunity): AuditorProfile
     {
         $profile = $expert->auditorProfile;
         if ($profile === null || $profile->status !== AuditorProfileStatus::Approved || $profile->expertBoardMembership?->status !== ExpertBoardMembershipStatus::Approved) throw new DomainStateTransitionException('An approved Expert Board member is required.');
@@ -108,6 +109,7 @@ final class ExpertOpportunityParticipationService
             $topics = $profile->competencies()->whereNotNull('verified_at')->pluck('topic')->filter()->map(fn ($topic): string => strtolower((string) $topic))->all();
             if (array_intersect(array_map('strtolower', $requiredAreas), $topics) === []) throw new DomainStateTransitionException('The Expert does not match the required verified expertise.');
         }
+        return $profile;
     }
 
     private function assertOwner(ExpertOpportunityParticipation $participation, User $expert): void

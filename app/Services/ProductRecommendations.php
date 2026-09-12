@@ -6,6 +6,8 @@ namespace App\Services;
 
 use App\Enums\ProductAudience;
 use App\Enums\ProductGoal;
+use App\Enums\ProductReleaseStatus;
+use App\Enums\ProductStatus;
 use App\Enums\ProductType;
 use App\Enums\ValidationStatus;
 use App\Models\PublicDirectoryEntry;
@@ -38,6 +40,40 @@ class ProductRecommendations
         $entries = PublicDirectoryEntry::query()
             ->where('directory_visible', true)
             ->where('validation_status', ValidationStatus::Active->value)
+            ->whereHas('publicVerificationRecord.validation', function (Builder $builder): void {
+                $builder
+                    ->where('status', ValidationStatus::Active->value)
+                    ->whereHas('productRelease', function (Builder $builder): void {
+                        $builder
+                            ->where('status', ProductReleaseStatus::Current->value)
+                            ->whereHas('product', function (Builder $builder): void {
+                                $builder->where('status', ProductStatus::Active->value);
+                            });
+                    });
+            })
+            ->when($hasMatchingCriteria, function (Builder $builder) use ($audience, $goal, $productType, $subjectArea, $language): void {
+                $builder->where(function (Builder $builder) use ($audience, $goal, $productType, $subjectArea, $language): void {
+                    if ($audience !== null) {
+                        $builder->orWhereJsonContains('matching_audiences', $audience->value);
+                    }
+
+                    if ($goal !== null) {
+                        $builder->orWhereJsonContains('matching_goals', $goal->value);
+                    }
+
+                    if ($productType !== null) {
+                        $builder->orWhere('product_type', $productType->value);
+                    }
+
+                    if ($subjectArea !== null && $subjectArea !== '') {
+                        $builder->orWhereRaw('lower(subject_area) = ?', [mb_strtolower($subjectArea)]);
+                    }
+
+                    if ($language !== null && $language !== '') {
+                        $builder->orWhereRaw('lower(language) = ?', [mb_strtolower($language)]);
+                    }
+                });
+            })
             ->when($query !== null && $query !== '', function (Builder $builder) use ($query): void {
                 $builder->where(function (Builder $builder) use ($query): void {
                     $builder->where('title', 'like', '%'.$query.'%')

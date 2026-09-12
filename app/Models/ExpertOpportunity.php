@@ -7,6 +7,7 @@ namespace App\Models;
 use App\Enums\ExpertOpportunityStatus;
 use App\Enums\ExpertOpportunityType;
 use App\Services\DomainStateTransitionException;
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -19,6 +20,13 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property list<string>|null $expertise_areas
  * @property list<string>|null $product_types
  * @property array<string, mixed>|null $eligibility_constraints
+ * @property Carbon|null $starts_at
+ * @property Carbon|null $ends_at
+ * @property Carbon|null $application_deadline
+ * @property Carbon|null $published_at
+ * @property Carbon|null $closed_at
+ * @property Carbon|null $cancelled_at
+ * @property Carbon|null $completed_at
  */
 class ExpertOpportunity extends Model
 {

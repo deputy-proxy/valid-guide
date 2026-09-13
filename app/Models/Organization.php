@@ -44,6 +44,12 @@ class Organization extends Model
         return $this->hasMany(EvaluationRequest::class);
     }
 
+    /** @return HasMany<ValidationTrustMonitor, $this> */
+    public function validationTrustMonitors(): HasMany
+    {
+        return $this->hasMany(ValidationTrustMonitor::class);
+    }
+
     public function hasMemberWithRole(User $user, OrganizationRole $role): bool
     {
         return $this->users()->whereKey($user->getKey())

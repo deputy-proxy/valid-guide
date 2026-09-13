@@ -141,7 +141,7 @@ final class WorkflowNotificationInbox
 
     /**
      * @param array<string, mixed> $context
-     * @param list<string> $expected
+     * @param list<string>         $expected
      */
     private function monitorStatusIsStale(array $context, array $expected): bool
     {

@@ -113,8 +113,10 @@ final class MarketplaceTransactionService
         ], 'marketplace_transaction.refunded');
     }
 
-    /** @param  list<MarketplaceTransactionStatus>  $allowedFrom */
-    /** @param  array<string, mixed>  $updates */
+    /**
+     * @param  list<MarketplaceTransactionStatus> $allowedFrom
+     * @param  array<string, mixed>                $updates
+     */
     private function transition(MarketplaceTransaction $transaction, User $actor, MarketplaceTransactionStatus $to, array $allowedFrom, array $updates, string $event): MarketplaceTransaction
     {
         return DB::transaction(function () use ($transaction, $actor, $to, $allowedFrom, $updates, $event): MarketplaceTransaction {

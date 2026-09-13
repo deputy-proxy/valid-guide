@@ -89,10 +89,7 @@ final class CommunityContributionResource extends Resource
         return ['index' => ListCommunityContributions::route('/')];
     }
 
-    /**
-     * @param list<BackedEnum> $cases
-     * @return array<string, string>
-     */
+    /** @param array<int, BackedEnum> $cases */
     private static function enumOptions(array $cases): array
     {
         return collect($cases)->mapWithKeys(fn (BackedEnum $case): array => [(string) $case->value => str((string) $case->value)->replace('_', ' ')->title()->toString()])->all();

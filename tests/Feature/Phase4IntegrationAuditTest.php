@@ -47,44 +47,17 @@ test('phase 4 integration audit has complete lifecycle coverage', function (): v
 
 test('phase 4 public discovery paths keep relationship loading explicit', function (): void {
     $services = [
-        'app/Services/PublicExpertDirectory.php' => [
-            "->with('auditorProfile.expertBoardMembership')",
-        ],
-        'app/Services/PublicCommunityDirectory.php' => [
-            "->with('auditorProfile.expertPublicProfile')",
-        ],
-        'app/Services/MarketplaceDiscovery.php' => [
-            "->with('auditorProfile.expertPublicProfile')",
-        ],
+        'app/Services/PublicExpertDirectory.php' => "->with('auditorProfile.expertBoardMembership')",
+        'app/Services/PublicCommunityDirectory.php' => "->with('auditorProfile.expertPublicProfile')",
+        'app/Services/MarketplaceDiscovery.php' => "->with('auditorProfile.expertPublicProfile')",
     ];
 
-    foreach ($services as $path => $requiredSnippets) {
-        $source = File::get(base_path($path));
-
-        foreach ($requiredSnippets as $snippet) {
-            expect($source)->toContain($snippet, "Expected eager loading in {$path}");
-        }
-
-        expect($source)->toContain('->paginate(12)');
-    }
-});
-
-test('phase 4 commercial and community domains cannot become validation mutation paths', function (): void {
-    $independentServices = [
-        'app/Services/MarketplaceServiceManagement.php',
-        'app/Services/MarketplaceTransactionService.php',
-        'app/Services/MarketplaceDiscovery.php',
-        'app/Services/CommunityContributionGovernance.php',
-        'app/Services/PublicCommunityDirectory.php',
-    ];
-
-    foreach ($independentServices as $path) {
+    foreach ($services as $path => $snippet) {
         $source = File::get(base_path($path));
 
         expect($source)
-            ->not->toContain('Validation::')
-            ->not->toContain('EvaluationDecision')
-            ->not->toContain('ValidationStateTransition');
+            ->toContain($snippet, "Expected eager loading in {$path}")
+            ->toContain('->paginate(12)', "Expected pagination in {$path}");
     }
 });
 

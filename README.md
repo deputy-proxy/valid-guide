@@ -27,7 +27,7 @@ Valid.guide is not:
 
 Creators pay for an evaluation, never for a positive result. Payment must never influence the evaluation outcome.
 
-The application currently includes the validation domain and its supporting operational workflows, together with the completed Expert, marketplace and community capabilities from Phase 4. Guides, Opportunities & Matching are complete. Subscription, monitoring and the broader public product remain roadmap capabilities for Phase 5.
+The application currently includes the validation domain and its supporting operational workflows, together with the completed Expert, marketplace and community capabilities from Phase 4. Guides, Opportunities & Matching are complete. Phase 5 now adds trust-state monitoring, subscription products, public directory and product-detail discovery, public verification, public website surfaces, and lifecycle trust/billing communication.
 
 ---
 
@@ -160,7 +160,7 @@ Commercial state is intentionally separate from evaluation outcome.
 - Audit Log
 - Public Directory projection
 
-The Expert Board, expert discovery, community and marketplace capabilities are implemented as governed Phase 4 capabilities. The broader public directory, subscription and monitoring product remains part of Phase 5.
+The Expert Board, expert discovery, community and marketplace capabilities are implemented as governed Phase 4 capabilities. Phase 5 extends those foundations with governed monitoring, subscriptions, public discovery, verification, product-detail and website surfaces, and lifecycle communication.
 
 ---
 
@@ -327,7 +327,7 @@ A public verification record contains, where applicable:
 - Creator corrections enter controlled clarification workflows rather than mutating published history directly.
 - Validated products may be exposed through public verification and directory surfaces where applicable.
 - Expert discovery, community and marketplace public surfaces are governed by their Phase 4 disclosure rules.
-- The broader public directory, subscription and monitoring product is not yet a complete dedicated capability.
+- The public directory, subscription and monitoring capabilities are now implemented as dedicated Phase 5 product surfaces.
 
 ---
 
@@ -513,7 +513,7 @@ Phase 4 was formally closed by the Phase 4.7 integration audit in issue **#34**.
 
 ## Phase 5 — Monitor, Subscription & Public Product
 
-**Status: Partially implemented; major product scope remains**
+**Status: Complete**
 
 ### Objective
 
@@ -540,7 +540,7 @@ Build the public-facing product around ongoing trust and user value: monitoring,
 - Public product accessibility and authorization are audited.
 - Pint/lint, PHPStan and the complete test suite are green in CI.
 
-The persisted Public Verification Record/Snapshot, public verification experience, role-based notifications and action queues already exist. Monitoring, subscription products and the broader public product remain to be completed.
+Phase 5 was formally closed by the Phase 5.7 integration and accessibility audit in issue **#51**. Issues **#45–#50** implemented the monitoring, subscription, public directory, public verification/product, public website and lifecycle communication slices that the final audit integrated and verified.
 
 ---
 
@@ -587,7 +587,7 @@ The current repository should be understood against the original roadmap as foll
 | **Phase 2 — Evaluator & Action Plan** | **Complete** | Former technical Phase 2 and Phase 3 work covers most of the evaluation engine and operational workflow. The implementation has been reconciled back to the original product phase rather than replacing its numbering. |
 | **Phase 3 — Guides, Opportunities & Matching** | **Complete** | Issue #14 closed the Phase 3.6 integration, accessibility and regression audit across guidance, opportunities, matching, discovery and recommendations. |
 | **Phase 4 — Experts, Marketplace & Community** | **Complete** | Issues #28–#34 completed and audited the Expert Board, profiles, opportunities, community, marketplace and independence-governance lifecycle. |
-| **Phase 5 — Monitor, Subscription & Public Product** | **Partially implemented** | Public verification, notifications and action queues exist; monitoring, subscriptions, the broader public directory and the complete public product remain. |
+| **Phase 5 — Monitor, Subscription & Public Product** | **Complete** | Issue #51 closed the integration, accessibility and regression gate across monitoring, subscriptions, public discovery, verification/product, website surfaces and lifecycle communication. |
 | **Phase 6 — Optimization & Scale** | **Not started** | Reserved for post-core-product optimization and operational scale. |
 
 ### Reconciliation Rules
@@ -863,7 +863,7 @@ Lifecycle guards compare persisted state where necessary so Eloquent enum casts,
 
 ## Public Website
 
-The public surface includes public verification and supporting trust-oriented presentation. A complete marketing website and the broader public product are not yet a dedicated completed capability.
+The public surface includes the completed website, directory, product-detail and verification experiences, all backed by explicit public projections or persisted verification snapshots rather than private internal records.
 
 ## Authenticated Application
 
@@ -902,7 +902,7 @@ Dedicated queue architecture is **not a distinct current product capability docu
 
 ## Scheduled Tasks
 
-Dedicated recurring monitoring and subscription scheduling are **not applicable to the current core implementation**. They belong primarily to the future Monitor, Subscription & Public Product phase.
+Trust monitoring is scheduled every fifteen minutes and processes due monitor records with explicit cadence semantics. Subscription lifecycle transitions are controlled by the subscription domain service and communicate through the existing audit-driven notification pipeline. Production-scale operational scheduling and monitoring remain Phase 6 concerns.
 
 ## Failure Handling
 
@@ -1118,15 +1118,15 @@ Historical implementation decisions remain documented rather than silently remov
 
 # Current Direction
 
-The repository has completed the product-definition and application-foundation work and has implemented the evaluator, Auditor, governance, report, Validation, public-verification, Guides, Opportunities & Matching, Expert, marketplace and community capabilities described by Phases 0–4.
+The repository has completed the product-definition, application-foundation, evaluator, Auditor, governance, report, Validation, public-verification, Guides, Opportunities & Matching, Expert, marketplace, community and Phase 5 public-product capabilities described by Phases 0–5.
 
-The current product roadmap continues with the original product sequence. Phase 5 is now the active roadmap phase rather than creating another parallel phase numbering system.
+The current product roadmap continues with the original product sequence. Phase 5 is complete, and Phase 6 is now the next roadmap phase rather than creating another parallel phase numbering system.
 
 ### Immediate Objective
 
-The next major original product capability is **Phase 5 — Monitor, Subscription & Public Product**.
+The next major original product capability is **Phase 6 — Optimization & Scale**.
 
-This phase should build monitoring of Validation/trust state, subscription products, the broader public directory and discovery experience, public website surfaces and ongoing lifecycle communication on top of the existing Evaluation, Validation, public verification, Expert, marketplace and community foundations.
+Phase 5 has delivered monitoring of Validation/trust state, subscription products, public directory and discovery, public verification/product experiences, public website surfaces and ongoing lifecycle communication on top of the existing Evaluation, Validation, Expert, marketplace and community foundations. Phase 6 should now address calibration, quality measurement, operational optimization, automation, analytics, performance, reliability, observability and security hardening.
 
 ### Current Dependencies
 
@@ -1144,7 +1144,7 @@ This phase should build monitoring of Validation/trust state, subscription produ
 
 ### Next Product Milestone
 
-Deliver the first complete **Monitor, Subscription & Public Product** capability, extending the existing verification and discovery foundations into ongoing trust-state monitoring, subscriptions, public directory/product experiences and lifecycle communication while preserving the independence and historical integrity of the core Validation system.
+Deliver the first complete **Optimization & Scale** capability, extending the now-complete product foundation with measured calibration, quality, performance, reliability, observability, security and operational improvements while preserving the independence and historical integrity of the core Validation system.
 
 ---
 

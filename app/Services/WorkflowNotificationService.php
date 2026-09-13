@@ -6,6 +6,7 @@ namespace App\Services;
 
 use App\Enums\NotificationCategory;
 use App\Enums\NotificationEventType;
+use App\Enums\ValidationStatus;
 use App\Models\AuditorAssignment;
 use App\Models\AuditorEvaluation;
 use App\Models\ClarificationRequest;
@@ -65,17 +66,12 @@ final class WorkflowNotificationService
             return;
         }
 
-        $definition = match ($validation->status->value) {
-            'active' => [NotificationEventType::ValidationReactivated, 'Validation reactivated', 'The validation for your product is active again.'],
-            'suspended' => [NotificationEventType::ValidationSuspended, 'Validation suspended', 'The validation for your product has been suspended.'],
-            'revoked' => [NotificationEventType::ValidationRevoked, 'Validation revoked', 'The validation for your product has been revoked.'],
-            'superseded' => [NotificationEventType::ValidationSuperseded, 'Validation superseded', 'The validation for your product has been superseded by a newer validation.'],
-            default => null,
+        $definition = match ($validation->status) {
+            ValidationStatus::Active => [NotificationEventType::ValidationReactivated, 'Validation reactivated', 'The validation for your product is active again.'],
+            ValidationStatus::Suspended => [NotificationEventType::ValidationSuspended, 'Validation suspended', 'The validation for your product has been suspended.'],
+            ValidationStatus::Revoked => [NotificationEventType::ValidationRevoked, 'Validation revoked', 'The validation for your product has been revoked.'],
+            ValidationStatus::Superseded => [NotificationEventType::ValidationSuperseded, 'Validation superseded', 'The validation for your product has been superseded by a newer validation.'],
         };
-
-        if ($definition === null) {
-            return;
-        }
 
         [$eventType, $title, $body] = $definition;
         $this->sendToOrganization($organization, NotificationCategory::Trust, $eventType, $title, $body, ['validation_id' => $validation->getKey(), 'evaluation_id' => $validation->evaluation_id, 'status' => $validation->status->value, 'updated_at' => $validation->updated_at?->toIso8601String()]);

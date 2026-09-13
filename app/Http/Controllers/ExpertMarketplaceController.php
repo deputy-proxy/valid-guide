@@ -4,9 +4,10 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
-use App\Enums\MarketplaceServiceStatus;
 use App\Models\MarketplaceService;
+use App\Models\MarketplaceTransaction;
 use App\Services\MarketplaceServiceManagement;
+use App\Services\MarketplaceTransactionService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -19,8 +20,13 @@ class ExpertMarketplaceController extends Controller
             ->whereHas('auditorProfile', fn ($query) => $query->where('auditor_id', $request->user()->getKey()))
             ->latest('id')
             ->get();
+        $transactions = MarketplaceTransaction::query()
+            ->with(['marketplaceService', 'buyer'])
+            ->whereHas('auditorProfile', fn ($query) => $query->where('auditor_id', $request->user()->getKey()))
+            ->latest('id')
+            ->get();
 
-        return view('expert.marketplace', ['services' => $services]);
+        return view('expert.marketplace', ['services' => $services, 'transactions' => $transactions]);
     }
 
     public function store(Request $request, MarketplaceServiceManagement $management): RedirectResponse
@@ -51,10 +57,17 @@ class ExpertMarketplaceController extends Controller
         return to_route('expert.marketplace')->with('status', 'Marketplace service archived.');
     }
 
-    public function startTransaction(MarketplaceService $service, Request $request): RedirectResponse
+    public function startTransaction(MarketplaceTransaction $transaction, MarketplaceTransactionService $transactions, Request $request): RedirectResponse
     {
-        abort_unless($service->status === MarketplaceServiceStatus::Published, 404);
+        $transactions->start($transaction, $request->user());
 
-        return to_route('public.marketplace.show', $service->slug);
+        return to_route('expert.marketplace')->with('status', 'Marketplace engagement started.');
+    }
+
+    public function completeTransaction(MarketplaceTransaction $transaction, MarketplaceTransactionService $transactions, Request $request): RedirectResponse
+    {
+        $transactions->complete($transaction, $request->user());
+
+        return to_route('expert.marketplace')->with('status', 'Marketplace engagement completed.');
     }
 }

@@ -96,7 +96,9 @@ final class CommunityContributionGovernance
             ])->save();
             AuditLogger::record(event: 'community_contribution.published', auditable: $locked, actor: $actor);
 
-            return $locked->refresh();
+            $contribution->refresh();
+
+            return $contribution;
         });
     }
 

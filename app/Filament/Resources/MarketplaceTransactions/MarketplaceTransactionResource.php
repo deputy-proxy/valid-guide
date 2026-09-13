@@ -69,7 +69,7 @@ final class MarketplaceTransactionResource extends Resource
                     ], true))
                     ->requiresConfirmation()
                     ->form([Textarea::make('reason')->required()->maxLength(2000)])
-                    ->action(fn (MarketplaceTransaction $record, array $data) => self::run(fn () => app(MarketplaceTransactionService::class)->refund(self::user(), $record, (string) $data['reason']), 'Marketplace transaction refunded')),
+                    ->action(fn (MarketplaceTransaction $record, array $data) => self::run(fn () => app(MarketplaceTransactionService::class)->refund($record, self::user(), (string) $data['reason']), 'Marketplace transaction refunded')),
             ]);
     }
 

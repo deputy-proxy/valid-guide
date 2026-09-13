@@ -1,9 +1,9 @@
 name: phase-5-doc-update
 
 on:
-  push:
+  pull_request:
     branches:
-      - phase-5-completion-51
+      - main
 
 permissions:
   contents: write

@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Enums\PlatformRole;
 use App\Enums\ProductAudience;
 use App\Enums\ProductGoal;
 use App\Enums\ProductType;
@@ -12,81 +13,60 @@ use App\Services\ProductRecommendations;
 use App\Services\ProductSuitability;
 use App\Services\PublicVerificationPublication;
 use App\Services\ValidationIssuance;
+use App\Services\ValidationStateTransition;
 
 function validatedDirectoryFixture(): array
 {
-    $creator = User::factory()->create();
-    $organization = \App\Models\Organization::factory()->create();
-    \App\Models\OrganizationMembership::factory()->for($organization)->for($creator)->create([
-        'role' => 'owner',
+    [$evaluation, $organization, $creator] = creatorActionEvaluationFixture();
+    $product = $evaluation->productRelease->product;
+
+    app(ProductSuitability::class)->update($creator, $product, [
+        'matching_audiences' => [ProductAudience::Professionals->value],
+        'matching_goals' => [ProductGoal::ProfessionalDevelopment->value],
     ]);
 
-    $product = \App\Models\Product::factory()->for($organization)->create([
-        'name' => 'Directory Product '.fake()->unique()->numberBetween(1, 999999),
-    ]);
-    $release = \App\Models\ProductRelease::factory()->for($product)->create();
-    $standardVersion = \App\Models\StandardVersion::factory()->create([
-        'status' => 'approved',
-        'effective_at' => now()->subDay(),
-    ]);
-    $evaluationRequest = \App\Models\EvaluationRequest::factory()
-        ->for($organization)
-        ->for($product)
-        ->for($release, 'productRelease')
-        ->create([
-            'standard_version_id' => $standardVersion->id,
-            'status' => 'completed',
-        ]);
-    $evaluation = \App\Models\Evaluation::factory()
-        ->for($evaluationRequest)
-        ->create([
-            'status' => 'completed',
-        ]);
-    $validation = app(ValidationIssuance::class)->issue($evaluation, $creator);
+    $admin = User::factory()->create(['platform_role' => PlatformRole::Admin]);
+    $validation = app(ValidationIssuance::class)->issue($evaluation, $admin);
 
-    $publication = app(PublicVerificationPublication::class)->publish($validation, $creator);
-
-    expect($publication->verification_identifier)->toBe($validation->verification_identifier);
-
-    $entry = PublicDirectoryEntry::query()->where('verification_identifier', $validation->verification_identifier)->firstOrFail();
-
-    app(ProductSuitability::class)->setMatchingMetadata(
-        product: $product,
-        actor: $creator,
-        audience: [ProductAudience::Professionals->value],
-        goals: [ProductGoal::Learn->value],
-        productType: ProductType::Course->value,
-        subjectArea: 'Business',
-        language: 'English',
-    );
-
-    $entry->refresh();
-
-    return [$validation, $product, $entry, $creator];
+    return [$validation, $product, $creator, $admin];
 }
 
-it('publishes validated products to the public directory and links to public verification', function () {
+it('publishes validated products to the public directory and links to authoritative verification', function () {
     [$validation] = validatedDirectoryFixture();
 
-    $this->get(route('public.directory'))
-        ->assertOk()
+    $entry = PublicDirectoryEntry::query()->where('verification_identifier', $validation->verification_identifier)->first();
+
+    expect($entry)->not->toBeNull()
+        ->and($entry?->validation_status)->toBe(ValidationStatus::Active)
+        ->and($entry?->directory_visible)->toBeTrue();
+
+    $response = $this->get(route('public.directory'));
+
+    $response->assertOk()
+        ->assertSee('Find validated learning products')
         ->assertSee($validation->verification_identifier)
-        ->assertSee(route('public.verification.show', $validation->verification_identifier));
+        ->assertSee(route('public.verify.show', ['verificationIdentifier' => $validation->verification_identifier]), false);
 });
 
-it('searches and filters directory results using deterministic public criteria', function () {
-    [$validation] = validatedDirectoryFixture();
+it('searches and filters directory results using deterministic public metadata', function () {
+    [$validation, $product] = validatedDirectoryFixture();
 
-    $this->get(route('public.directory', [
-        'q' => 'Directory Product',
+    $response = $this->get(route('public.directory', [
+        'q' => $product->title,
         'audience' => ProductAudience::Professionals->value,
-        'goal' => ProductGoal::Learn->value,
+        'goal' => ProductGoal::ProfessionalDevelopment->value,
         'product_type' => ProductType::Course->value,
-        'subject_area' => 'Business',
-        'language' => 'English',
-    ]))
-        ->assertOk()
+        'subject_area' => $product->subject_area,
+        'language' => $product->language,
+    ]));
+
+    $response->assertOk()
+        ->assertSee($product->title)
         ->assertSee($validation->verification_identifier);
+
+    $this->get(route('public.directory', ['audience' => ProductAudience::Beginners->value]))
+        ->assertOk()
+        ->assertDontSee($validation->verification_identifier);
 });
 
 it('renders an explicit state and no results for invalid enum filters', function () {
@@ -127,16 +107,19 @@ it('orders equally scored directory entries deterministically', function () {
     [$firstValidation] = validatedDirectoryFixture();
     [$secondValidation] = validatedDirectoryFixture();
 
-    $identifiers = [
-        $firstValidation->verification_identifier,
-        $secondValidation->verification_identifier,
-    ];
+    PublicDirectoryEntry::query()
+        ->where('verification_identifier', $firstValidation->verification_identifier)
+        ->update(['title' => 'Same Directory Title']);
+    PublicDirectoryEntry::query()
+        ->where('verification_identifier', $secondValidation->verification_identifier)
+        ->update(['title' => 'Same Directory Title']);
 
-    sort($identifiers);
+    $expectedOrder = [$firstValidation->verification_identifier, $secondValidation->verification_identifier];
+    sort($expectedOrder);
 
-    $recommendations = app(ProductRecommendations::class)->recommend(limit: 2);
+    $response = $this->get(route('public.directory'));
 
-    expect($recommendations->pluck('verificationIdentifier')->all())->toBe($identifiers);
+    $response->assertOk()->assertSeeInOrder($expectedOrder);
 });
 
 it('paginates directory results while preserving filters', function () {
@@ -164,39 +147,46 @@ it('paginates directory results while preserving filters', function () {
 it('does not present suspended validation as currently validated in the directory', function () {
     [$validation, , , $admin] = validatedDirectoryFixture();
 
-    app(\App\Services\ValidationStateTransition::class)->transition(
-        validation: $validation,
-        to: ValidationStatus::Suspended,
-        actor: $admin,
-        reason: 'Directory trust review',
+    app(ValidationStateTransition::class)->transition(
+        $validation,
+        ValidationStatus::Suspended,
+        $admin,
+        'Temporary validation suspension for directory regression test.',
     );
+
+    expect(PublicDirectoryEntry::query()
+        ->where('verification_identifier', $validation->verification_identifier)
+        ->value('validation_status'))->toBe(ValidationStatus::Suspended);
 
     $this->get(route('public.directory'))
         ->assertOk()
         ->assertDontSee($validation->verification_identifier);
 });
 
-it('removes a hidden directory record from public discovery without deleting validation history', function () {
-    [$validation] = validatedDirectoryFixture();
+it('removes a hidden directory record from public discovery without deleting verification history', function () {
+    [$validation, , , $admin] = validatedDirectoryFixture();
+    $record = $validation->publicVerificationRecord()->firstOrFail();
 
-    PublicDirectoryEntry::query()
-        ->where('verification_identifier', $validation->verification_identifier)
-        ->update(['directory_visible' => false]);
+    app(PublicVerificationPublication::class)->setVisibility($record, false, false, $admin);
+
+    expect($validation->publicVerificationRecord()->first())->not->toBeNull()
+        ->and(PublicDirectoryEntry::query()
+            ->where('verification_identifier', $validation->verification_identifier)
+            ->value('directory_visible'))->toBeFalse();
 
     $this->get(route('public.directory'))
         ->assertOk()
         ->assertDontSee($validation->verification_identifier);
-
-    expect($validation->fresh())->not->toBeNull();
 });
 
 it('does not expose internal creator data through the directory projection', function () {
-    [$validation, , $entry] = validatedDirectoryFixture();
+    [$validation, $product, $creator] = validatedDirectoryFixture();
 
-    $this->get(route('public.directory'))
-        ->assertOk()
-        ->assertSee($entry->title)
-        ->assertSee($validation->verification_identifier)
-        ->assertDontSee('internal_creator_id')
-        ->assertDontSee('organization_id');
+    $response = $this->get(route('public.directory'));
+
+    $response->assertOk()
+        ->assertSee($product->title)
+        ->assertDontSee($creator->email)
+        ->assertDontSee('payment')
+        ->assertDontSee('auditor');
 });

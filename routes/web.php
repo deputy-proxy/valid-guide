@@ -8,6 +8,7 @@ use App\Http\Controllers\PublicCommunityController;
 use App\Http\Controllers\PublicDirectoryController;
 use App\Http\Controllers\PublicExpertController;
 use App\Http\Controllers\PublicMarketplaceController;
+use App\Http\Controllers\PublicProductController;
 use App\Http\Controllers\PublicVerificationController;
 use App\Http\Controllers\StripeWebhookController;
 use App\Livewire\Creator\EvaluationRequests\CreateEvaluationRequest;
@@ -38,6 +39,9 @@ Route::view('for-buyers', 'public.pages.placeholder', [
 ])->name('public.buyers');
 
 Route::get('directory', [PublicDirectoryController::class, 'index'])->name('public.directory');
+Route::get('products/{slug}', [PublicProductController::class, 'show'])
+    ->where('slug', '[A-Za-z0-9][A-Za-z0-9._-]{0,99}')
+    ->name('public.products.show');
 Route::get('experts', [PublicExpertController::class, 'index'])->name('public.experts');
 Route::get('experts/{slug}', [PublicExpertController::class, 'show'])
     ->where('slug', '[A-Za-z0-9][A-Za-z0-9._-]{0,99}')
@@ -88,7 +92,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('expert/marketplace/transactions/{transaction}/complete', [ExpertMarketplaceController::class, 'completeTransaction'])->name('expert.marketplace.transactions.complete');
     Route::get('creator/marketplace', [CreatorMarketplaceController::class, 'index'])->name('creator.marketplace');
     Route::post('creator/marketplace/{service}/purchase', [CreatorMarketplaceController::class, 'purchase'])->name('creator.marketplace.purchase');
-    Route::post('creator/marketplace/transactions/{transaction}/cancel', [CreatorMarketplaceController::class, 'cancel'])->name('creator.marketplace.cancel');
+    Route::post('creator/marketplace/transactions/{transaction}/cancel', [CreatorMarketplaceController::class, 'cancel'])->name('creator.marketplace.transactions.cancel');
     Route::post('community/{contribution}/reports', [CommunityReportController::class, 'store'])->name('community.reports.store');
     Route::get('creator/organizations/{organizationId}/evaluation-requests/create/{evaluationRequestId?}', CreateEvaluationRequest::class)
         ->whereNumber('organizationId')->whereNumber('evaluationRequestId')->name('creator.evaluation-requests.create');

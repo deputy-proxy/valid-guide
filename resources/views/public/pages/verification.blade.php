@@ -8,14 +8,6 @@
     $auditors = is_array($snapshot['auditors'] ?? null) ? $snapshot['auditors'] : [];
     $report = is_array($snapshot['report'] ?? null) ? $snapshot['report'] : [];
     $visibility = is_array($snapshot['visibility'] ?? null) ? $snapshot['visibility'] : [];
-    $status = is_string($verification['status'] ?? null) ? $verification['status'] : 'unknown';
-    $statusLabel = str($status)->replace('_', ' ')->title()->toString();
-    $statusTone = match ($status) {
-        'active' => 'success',
-        'revoked' => 'danger',
-        'suspended' => 'warning',
-        default => 'neutral',
-    };
 @endphp
 
 <x-layouts.public
@@ -28,24 +20,30 @@
         <div class="grid gap-8 lg:grid-cols-[minmax(0,1fr)_18rem] lg:items-start">
             <div>
                 <div class="flex flex-wrap items-center gap-3">
-                    <p class="text-sm font-semibold uppercase tracking-[0.16em] text-zinc-500 dark:text-zinc-400">Valid.guide verification</p>
+                    <p class="text-sm font-semibold uppercase tracking-[0.16em] text-zinc-500 dark:text-zinc-400">Valid.guide verification record</p>
                     <x-public.status :label="$statusLabel" :tone="$statusTone" />
                 </div>
                 <h1 class="mt-4 max-w-4xl text-4xl font-semibold tracking-tight text-zinc-950 sm:text-5xl dark:text-white">
                     {{ $product['title'] ?? 'Verified learning product' }}
                 </h1>
                 <p class="mt-4 max-w-3xl text-lg leading-8 text-zinc-600 dark:text-zinc-300">
-                    This page presents the persisted public verification record for the evaluated product release.
+                    This page presents the persisted public verification snapshot. It is the historical record for this verification identifier and does not reconstruct its meaning from mutable internal records.
                 </p>
             </div>
 
             <div class="rounded-2xl border border-zinc-200 bg-zinc-50 p-5 dark:border-zinc-800 dark:bg-zinc-900">
                 <p class="text-xs font-semibold uppercase tracking-[0.14em] text-zinc-500 dark:text-zinc-400">Verification ID</p>
                 <p class="mt-2 break-all font-mono text-sm font-semibold text-zinc-950 dark:text-white">{{ $verification['identifier'] ?? $snapshot['verification_identifier'] ?? 'Unavailable' }}</p>
-                <p class="mt-4 text-xs leading-5 text-zinc-500 dark:text-zinc-400">
-                    Issued {{ $verification['issued_at'] ?? 'on record' }}
-                </p>
+                <p class="mt-4 text-xs leading-5 text-zinc-500 dark:text-zinc-400">Issued {{ $verification['issued_at'] ?? 'on record' }}</p>
             </div>
+        </div>
+    </x-public.section>
+
+    <x-public.section class="py-8" aria-label="Trust status">
+        <div class="rounded-2xl border border-zinc-200 bg-zinc-50 p-6 dark:border-zinc-800 dark:bg-zinc-900/40">
+            <h2 class="text-xl font-semibold text-zinc-950 dark:text-white">{{ $statusLabel }} verification</h2>
+            <p class="mt-2 max-w-3xl text-sm leading-6 text-zinc-700 dark:text-zinc-300">{{ $statusExplanation }}</p>
+            <p class="mt-4 text-xs leading-5 text-zinc-500 dark:text-zinc-400">This trust status belongs to the persisted verification record above. It is distinct from any later internal product or Validation changes.</p>
         </div>
     </x-public.section>
 
@@ -53,9 +51,7 @@
         <x-public.section class="py-8">
             <div class="rounded-2xl border border-red-200 bg-red-50 p-6 dark:border-red-900 dark:bg-red-950/30">
                 <h2 class="text-xl font-semibold text-red-900 dark:text-red-100">This verification has been revoked</h2>
-                <p class="mt-2 text-sm leading-6 text-red-800 dark:text-red-200">
-                    The verification identifier remains resolvable so its trust history can be checked. The current status is revoked.
-                </p>
+                <p class="mt-2 text-sm leading-6 text-red-800 dark:text-red-200">The verification identifier remains resolvable so its trust history can be checked. The current status captured by this public record is revoked.</p>
                 @if ($statusHistory['revoked_at'] ?? null)
                     <p class="mt-3 text-sm font-medium text-red-900 dark:text-red-100">Revoked: {{ $statusHistory['revoked_at'] }}</p>
                 @endif
@@ -112,9 +108,7 @@
                     @foreach ($snapshot['criteria'] as $criterion)
                         @if (is_array($criterion))
                             <article class="grid gap-4 p-5 sm:grid-cols-[minmax(0,1fr)_8rem_8rem_6rem] sm:items-center">
-                                <div>
-                                    <h3 class="font-semibold">{{ $criterion['code'] ?? 'Criterion' }} · {{ $criterion['name'] ?? 'Unnamed criterion' }}</h3>
-                                </div>
+                                <div><h3 class="font-semibold">{{ $criterion['code'] ?? 'Criterion' }} · {{ $criterion['name'] ?? 'Unnamed criterion' }}</h3></div>
                                 <div><p class="text-xs text-zinc-500 dark:text-zinc-400">Assessment</p><p class="mt-1 font-medium">{{ $criterion['assessment'] ?? 'Not assessed' }}</p></div>
                                 <div><p class="text-xs text-zinc-500 dark:text-zinc-400">Score</p><p class="mt-1 font-medium">{{ $criterion['score'] ?? 'Not scored' }}</p></div>
                                 <div><p class="text-xs text-zinc-500 dark:text-zinc-400">Voters</p><p class="mt-1 font-medium">{{ $criterion['voter_count'] ?? 0 }}</p></div>
@@ -135,10 +129,7 @@
                 <div class="mt-5 space-y-5">
                     @forelse ($snapshot['strengths'] ?? [] as $finding)
                         @if (is_array($finding))
-                            <article>
-                                <h4 class="font-medium">{{ $finding['title'] ?? 'Strength' }}</h4>
-                                <p class="mt-1 text-sm leading-6 text-zinc-600 dark:text-zinc-400">{{ $finding['description'] ?? '' }}</p>
-                            </article>
+                            <article><h4 class="font-medium">{{ $finding['title'] ?? 'Strength' }}</h4><p class="mt-1 text-sm leading-6 text-zinc-600 dark:text-zinc-400">{{ $finding['description'] ?? '' }}</p></article>
                         @endif
                     @empty
                         <p class="text-sm text-zinc-500 dark:text-zinc-400">No public strengths were recorded.</p>
@@ -150,10 +141,7 @@
                 <div class="mt-5 space-y-5">
                     @forelse ($snapshot['weaknesses'] ?? [] as $finding)
                         @if (is_array($finding))
-                            <article>
-                                <h4 class="font-medium">{{ $finding['title'] ?? 'Weakness' }}</h4>
-                                <p class="mt-1 text-sm leading-6 text-zinc-600 dark:text-zinc-400">{{ $finding['description'] ?? '' }}</p>
-                            </article>
+                            <article><h4 class="font-medium">{{ $finding['title'] ?? 'Weakness' }}</h4><p class="mt-1 text-sm leading-6 text-zinc-600 dark:text-zinc-400">{{ $finding['description'] ?? '' }}</p></article>
                         @endif
                     @empty
                         <p class="text-sm text-zinc-500 dark:text-zinc-400">No public weaknesses were recorded.</p>
@@ -188,13 +176,10 @@
             <div class="rounded-2xl border border-zinc-200 p-6 dark:border-zinc-800">
                 <h3 class="text-lg font-semibold">Abstract</h3>
                 <p class="mt-4 whitespace-pre-line text-sm leading-7 text-zinc-600 dark:text-zinc-400">{{ $report['abstract'] }}</p>
-
                 @if (($visibility['full_report'] ?? false) === true && ($report['content'] ?? null) !== null)
                     <details class="mt-8 rounded-xl border border-zinc-200 dark:border-zinc-800">
                         <summary class="cursor-pointer px-5 py-4 font-medium focus:outline-none focus:ring-2 focus:ring-zinc-950 dark:focus:ring-white">Full report</summary>
-                        <div class="border-t border-zinc-200 p-5 dark:border-zinc-800">
-                            <pre class="overflow-x-auto whitespace-pre-wrap break-words text-sm leading-6 text-zinc-700 dark:text-zinc-300">{{ json_encode($report['content'], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) }}</pre>
-                        </div>
+                        <div class="border-t border-zinc-200 p-5 dark:border-zinc-800"><pre class="overflow-x-auto whitespace-pre-wrap break-words text-sm leading-6 text-zinc-700 dark:text-zinc-300">{{ json_encode($report['content'], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) }}</pre></div>
                     </details>
                 @endif
             </div>
@@ -202,11 +187,12 @@
     @endif
 
     <x-public.section title="Verification history">
+        <p class="mb-5 max-w-3xl text-sm leading-6 text-zinc-600 dark:text-zinc-400">The entries below are historical facts preserved by this public record. They do not imply that a later product state is identical to the state captured here.</p>
         <dl class="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-            <div class="rounded-xl border border-zinc-200 p-4 dark:border-zinc-800"><dt class="text-xs text-zinc-500 dark:text-zinc-400">Issued</dt><dd class="mt-1 text-sm font-medium">{{ $statusHistory['issued_at'] ?? 'Not recorded' }}</dd></div>
-            <div class="rounded-xl border border-zinc-200 p-4 dark:border-zinc-800"><dt class="text-xs text-zinc-500 dark:text-zinc-400">Suspended</dt><dd class="mt-1 text-sm font-medium">{{ $statusHistory['suspended_at'] ?? 'Not recorded' }}</dd></div>
-            <div class="rounded-xl border border-zinc-200 p-4 dark:border-zinc-800"><dt class="text-xs text-zinc-500 dark:text-zinc-400">Revoked</dt><dd class="mt-1 text-sm font-medium">{{ $statusHistory['revoked_at'] ?? 'Not recorded' }}</dd></div>
-            <div class="rounded-xl border border-zinc-200 p-4 dark:border-zinc-800"><dt class="text-xs text-zinc-500 dark:text-zinc-400">Superseded</dt><dd class="mt-1 text-sm font-medium">{{ $statusHistory['superseded_at'] ?? 'Not recorded' }}</dd></div>
+            <div class="rounded-xl border border-zinc-200 p-4 dark:border-zinc-800"><dt class="text-xs text-zinc-500 dark:text-zinc-400">Issued</dt><dd class="mt-1 break-words text-sm font-medium">{{ $statusHistory['issued_at'] ?? 'Not recorded' }}</dd></div>
+            <div class="rounded-xl border border-zinc-200 p-4 dark:border-zinc-800"><dt class="text-xs text-zinc-500 dark:text-zinc-400">Suspended</dt><dd class="mt-1 break-words text-sm font-medium">{{ $statusHistory['suspended_at'] ?? 'Not recorded' }}</dd></div>
+            <div class="rounded-xl border border-zinc-200 p-4 dark:border-zinc-800"><dt class="text-xs text-zinc-500 dark:text-zinc-400">Revoked</dt><dd class="mt-1 break-words text-sm font-medium">{{ $statusHistory['revoked_at'] ?? 'Not recorded' }}</dd></div>
+            <div class="rounded-xl border border-zinc-200 p-4 dark:border-zinc-800"><dt class="text-xs text-zinc-500 dark:text-zinc-400">Superseded</dt><dd class="mt-1 break-words text-sm font-medium">{{ $statusHistory['superseded_at'] ?? 'Not recorded' }}</dd></div>
         </dl>
     </x-public.section>
 </x-layouts.public>

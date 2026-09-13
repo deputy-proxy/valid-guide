@@ -1,6 +1,8 @@
 <?php
 
+use App\Http\Controllers\CommunityReportController;
 use App\Http\Controllers\CreatorPaymentStatusController;
+use App\Http\Controllers\PublicCommunityController;
 use App\Http\Controllers\PublicDirectoryController;
 use App\Http\Controllers\PublicExpertController;
 use App\Http\Controllers\PublicVerificationController;
@@ -8,6 +10,7 @@ use App\Http\Controllers\StripeWebhookController;
 use App\Livewire\Creator\EvaluationRequests\CreateEvaluationRequest;
 use App\Livewire\Creator\Reports\ShowGuidance;
 use App\Livewire\Creator\Reports\ShowReport;
+use App\Livewire\Expert\Community\Contributions;
 use App\Livewire\Expert\Opportunities;
 use Illuminate\Support\Facades\Route;
 
@@ -28,7 +31,7 @@ Route::view('for-creators', 'public.pages.placeholder', [
 Route::view('for-buyers', 'public.pages.placeholder', [
     'title' => 'For buyers and learners',
     'description' => 'Use Valid.guide validation information to make better-informed learning decisions.',
-    'message' => 'The buyer and learner information experience is being prepared for publication.',
+    'message' => 'The buyer and learner information experience is being prepared.',
 ])->name('public.buyers');
 
 Route::get('directory', [PublicDirectoryController::class, 'index'])->name('public.directory');
@@ -36,6 +39,10 @@ Route::get('experts', [PublicExpertController::class, 'index'])->name('public.ex
 Route::get('experts/{slug}', [PublicExpertController::class, 'show'])
     ->where('slug', '[A-Za-z0-9][A-Za-z0-9._-]{0,99}')
     ->name('public.experts.show');
+Route::get('community', [PublicCommunityController::class, 'index'])->name('public.community');
+Route::get('community/{slug}', [PublicCommunityController::class, 'show'])
+    ->where('slug', '[A-Za-z0-9][A-Za-z0-9._-]{0,99}')
+    ->name('public.community.show');
 Route::get('verify', [PublicVerificationController::class, 'index'])->name('public.verify');
 Route::get('verify/{verificationIdentifier}', [PublicVerificationController::class, 'show'])
     ->where('verificationIdentifier', '[A-Za-z0-9][A-Za-z0-9._-]{0,99}')
@@ -64,6 +71,8 @@ Route::post('webhooks/stripe', StripeWebhookController::class)->withoutMiddlewar
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::view('dashboard', 'dashboard')->name('dashboard');
     Route::get('expert/opportunities', Opportunities::class)->name('expert.opportunities');
+    Route::get('expert/community', Contributions::class)->name('expert.community');
+    Route::post('community/{contribution}/reports', [CommunityReportController::class, 'store'])->name('community.reports.store');
     Route::get('creator/organizations/{organizationId}/evaluation-requests/create/{evaluationRequestId?}', CreateEvaluationRequest::class)
         ->whereNumber('organizationId')->whereNumber('evaluationRequestId')->name('creator.evaluation-requests.create');
     Route::get('creator/evaluations/{evaluationId}/report', ShowReport::class)

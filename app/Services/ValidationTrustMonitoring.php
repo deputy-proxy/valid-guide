@@ -159,7 +159,7 @@ class ValidationTrustMonitoring
         return DB::transaction(function () use ($monitor, $now): array {
             $monitor = ValidationTrustMonitor::query()->whereKey($monitor->getKey())->lockForUpdate()->firstOrFail();
 
-            if ($monitor->status === ValidationTrustMonitorStatus::Cancelled || $monitor->next_check_at->isAfter($now)) {
+            if ($monitor->status === ValidationTrustMonitorStatus::Cancelled || $this->asDateTime($monitor->next_check_at)->isAfter($now)) {
                 return ['changed' => false, 'failed' => false, 'recovered' => false, 'skipped' => true];
             }
 
@@ -171,8 +171,9 @@ class ValidationTrustMonitoring
                 ValidationTrustMonitorStatus::Invalid,
             ], true);
 
-            if ($monitor->last_checked_at !== null
-                && $monitor->last_checked_at->addMinutes($monitor->cadence->intervalMinutes() * 2)->isBefore($now)
+            $lastCheckedAt = $monitor->last_checked_at === null ? null : $this->asDateTime($monitor->last_checked_at);
+            if ($lastCheckedAt !== null
+                && $lastCheckedAt->addMinutes($monitor->cadence->intervalMinutes() * 2)->isBefore($now)
                 && $previousStatus === ValidationTrustMonitorStatus::Active) {
                 $monitor->forceFill(['status' => ValidationTrustMonitorStatus::Stale, 'updated_at' => $now])->save();
                 AuditLogger::record(
@@ -262,36 +263,36 @@ class ValidationTrustMonitoring
                 'id' => $validation->getKey(),
                 'status' => $validation->status->value,
                 'status_reason' => $validation->status_reason,
-                'issued_at' => $validation->issued_at?->toIso8601String(),
-                'suspended_at' => $validation->suspended_at?->toIso8601String(),
-                'revoked_at' => $validation->revoked_at?->toIso8601String(),
-                'superseded_at' => $validation->superseded_at?->toIso8601String(),
-                'updated_at' => $validation->updated_at?->toIso8601String(),
+                'issued_at' => $this->iso8601($validation->issued_at),
+                'suspended_at' => $this->iso8601($validation->suspended_at),
+                'revoked_at' => $this->iso8601($validation->revoked_at),
+                'superseded_at' => $this->iso8601($validation->superseded_at),
+                'updated_at' => $this->iso8601($validation->updated_at),
             ],
             'product_release' => [
                 'id' => $release->getKey(),
                 'product_id' => $release->product_id,
                 'edition' => $release->edition,
                 'version' => $release->version,
-                'published_at' => $release->published_at?->toIso8601String(),
+                'published_at' => $this->iso8601($release->published_at),
                 'release_identifier' => $release->release_identifier,
                 'product_url_snapshot' => $release->product_url_snapshot,
                 'title_snapshot' => $release->title_snapshot,
                 'quantitative_metadata' => $release->quantitative_metadata,
                 'material_change_notes' => $release->material_change_notes,
                 'status' => $release->status->value,
-                'updated_at' => $release->updated_at?->toIso8601String(),
+                'updated_at' => $this->iso8601($release->updated_at),
             ],
             'report' => $report === null ? null : [
                 'id' => $report->getKey(),
                 'current_version_id' => $report->current_version_id,
-                'public_visible_at' => $report->public_visible_at?->toIso8601String(),
-                'delivered_at' => $report->delivered_at?->toIso8601String(),
-                'updated_at' => $report->updated_at?->toIso8601String(),
+                'public_visible_at' => $this->iso8601($report->public_visible_at),
+                'delivered_at' => $this->iso8601($report->delivered_at),
+                'updated_at' => $this->iso8601($report->updated_at),
                 'current_version' => $reportVersion === null ? null : [
                     'id' => $reportVersion->getKey(),
                     'version_number' => $reportVersion->version_number,
-                    'published_at' => $reportVersion->published_at?->toIso8601String(),
+                    'published_at' => $this->iso8601($reportVersion->published_at),
                     'change_reason' => $reportVersion->change_reason,
                 ],
             ],
@@ -300,9 +301,9 @@ class ValidationTrustMonitoring
                 'public_slug' => $publicRecord->public_slug,
                 'directory_visible' => $publicRecord->directory_visible,
                 'full_report_visible' => $publicRecord->full_report_visible,
-                'published_at' => $publicRecord->published_at?->toIso8601String(),
+                'published_at' => $this->iso8601($publicRecord->published_at),
                 'snapshot' => $publicRecord->snapshot,
-                'updated_at' => $publicRecord->updated_at?->toIso8601String(),
+                'updated_at' => $this->iso8601($publicRecord->updated_at),
             ],
         ];
     }
@@ -338,6 +339,20 @@ class ValidationTrustMonitoring
         }
 
         throw new ValidationTrustMonitoringException('Validation does not belong to a creator organization.');
+    }
+
+    private function asDateTime(mixed $value): CarbonImmutable
+    {
+        return CarbonImmutable::parse($value);
+    }
+
+    private function iso8601(mixed $value): ?string
+    {
+        if ($value === null) {
+            return null;
+        }
+
+        return CarbonImmutable::parse($value)->toIso8601String();
     }
 
     /** @param array<string,mixed> $payload */

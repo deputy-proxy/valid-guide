@@ -21,7 +21,7 @@ Artisan::command('valid:monitor-trust', function (ValidationTrustMonitoring $mon
         $stats['skipped'],
     ));
 
-    return self::SUCCESS;
+    return 0;
 })->purpose('Check due Validation trust monitors for deterministic post-publication changes.');
 
 Schedule::command('valid:monitor-trust')

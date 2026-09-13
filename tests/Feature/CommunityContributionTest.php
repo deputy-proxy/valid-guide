@@ -7,6 +7,9 @@ use App\Enums\CommunityContributionStatus;
 use App\Enums\CommunityReportReason;
 use App\Enums\CommunityReportStatus;
 use App\Enums\ExpertBoardMembershipStatus;
+use App\Filament\Resources\CommunityContributions\CommunityContributionResource;
+use App\Filament\Resources\CommunityReports\CommunityReportResource;
+use App\Models\AuditLog;
 use App\Models\AuditorAnnualConflictDeclaration;
 use App\Models\AuditorProfile;
 use App\Models\CommunityContribution;
@@ -115,7 +118,7 @@ it('allows an administrator to moderate and records immutable audit events', fun
 
     expect($contribution->refresh()->status)->toBe(CommunityContributionStatus::Published)
         ->and($contribution->published_at)->not->toBeNull()
-        ->and(App\Models\AuditLog::query()->where('event', 'community_contribution.published')->count())->toBe(1);
+        ->and(AuditLog::query()->where('event', 'community_contribution.published')->count())->toBe(1);
 });
 
 it('blocks non-administrators from moderation and requires moderation reasons', function () {
@@ -234,7 +237,7 @@ it('keeps community moderation independent from Validation history', function ()
     $service->publish($contribution, $admin);
     $service->remove($contribution, $admin, 'Policy violation.');
 
-    expect(App\Models\AuditLog::query()->where('auditable_type', CommunityContribution::class)->count())->toBeGreaterThanOrEqual(2);
+    expect(AuditLog::query()->where('auditable_type', CommunityContribution::class)->count())->toBeGreaterThanOrEqual(2);
     expect($contribution->refresh()->status)->toBe(CommunityContributionStatus::Removed);
 });
 
@@ -243,11 +246,11 @@ it('allows only administrators to access community moderation resources', functi
     $nonAdmin = User::factory()->create();
 
     $this->actingAs($nonAdmin);
-    expect(App\Filament\Resources\CommunityContributions\CommunityContributionResource::canAccess())->toBeFalse();
+    expect(CommunityContributionResource::canAccess())->toBeFalse();
 
     $this->actingAs($admin);
-    expect(App\Filament\Resources\CommunityContributions\CommunityContributionResource::canAccess())->toBeTrue();
-    expect(App\Filament\Resources\CommunityReports\CommunityReportResource::canAccess())->toBeTrue();
+    expect(CommunityContributionResource::canAccess())->toBeTrue();
+    expect(CommunityReportResource::canAccess())->toBeTrue();
 });
 
 it('renders the public community empty state and the Expert community page', function () {

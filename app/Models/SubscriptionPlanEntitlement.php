@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use Database\Factories\SubscriptionPlanEntitlementFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -27,7 +28,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 ])]
 final class SubscriptionPlanEntitlement extends Model
 {
-    /** @use HasFactory<\Database\Factories\SubscriptionPlanEntitlementFactory> */
+    /** @use HasFactory<SubscriptionPlanEntitlementFactory> */
     use HasFactory;
 
     protected function casts(): array

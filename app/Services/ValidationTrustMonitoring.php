@@ -135,20 +135,18 @@ class ValidationTrustMonitoring
         $now ??= CarbonImmutable::now();
         $stats = ['processed' => 0, 'changed' => 0, 'failed' => 0, 'recovered' => 0, 'skipped' => 0];
 
-        ValidationTrustMonitor::query()
+        foreach (ValidationTrustMonitor::query()
             ->where('status', '!=', ValidationTrustMonitorStatus::Cancelled->value)
             ->where('next_check_at', '<=', $now)
             ->orderBy('id')
-            ->chunkById(50, function ($monitors) use (&$stats, $now): void {
-                foreach ($monitors as $monitor) {
-                    $result = $this->runOne($monitor, $now);
-                    $stats['processed']++;
-                    $stats['changed'] += $result['changed'] ? 1 : 0;
-                    $stats['failed'] += $result['failed'] ? 1 : 0;
-                    $stats['recovered'] += $result['recovered'] ? 1 : 0;
-                    $stats['skipped'] += $result['skipped'] ? 1 : 0;
-                }
-            });
+            ->lazyById(50) as $monitor) {
+            $result = $this->runOne($monitor, $now);
+            $stats['processed']++;
+            $stats['changed'] += $result['changed'] ? 1 : 0;
+            $stats['failed'] += $result['failed'] ? 1 : 0;
+            $stats['recovered'] += $result['recovered'] ? 1 : 0;
+            $stats['skipped'] += $result['skipped'] ? 1 : 0;
+        }
 
         return $stats;
     }
@@ -334,11 +332,12 @@ class ValidationTrustMonitoring
     private function organizationFor(Validation $validation): Organization
     {
         $organization = $validation->productRelease?->product?->organization;
-        if (! $organization instanceof Organization) {
-            throw new ValidationTrustMonitoringException('Validation does not belong to a creator organization.');
+
+        if ($organization instanceof Organization) {
+            return $organization;
         }
 
-        return $organization;
+        throw new ValidationTrustMonitoringException('Validation does not belong to a creator organization.');
     }
 
     /** @param array<string,mixed> $payload */

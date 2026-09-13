@@ -18,28 +18,13 @@ final class CreateSubscription extends CreateRecord
 {
     protected static string $resource = SubscriptionResource::class;
 
-    public function mount(): void
+    protected function mutateFormDataBeforeCreate(array $data): array
     {
-        parent::mount();
-
         $user = Auth::user();
         abort_unless($user instanceof User, 403);
         abort_unless($user->can('create', [Subscription::class, app(OrganizationContext::class)->current($user)]), 403);
-    }
 
-    protected function getFormSchema(): array
-    {
-        return [
-            \Filament\Forms\Components\Select::make('subscription_plan_id')
-                ->label('Plan')
-                ->required()
-                ->searchable()
-                ->options(fn (): array => SubscriptionPlan::query()
-                    ->where('status', 'active')
-                    ->orderBy('name')
-                    ->pluck('name', 'id')
-                    ->all()),
-        ];
+        return $data;
     }
 
     protected function handleRecordCreation(array $data): Model

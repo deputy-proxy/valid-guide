@@ -123,8 +123,11 @@ it('orders equally scored directory entries deterministically', function () {
 });
 
 it('paginates directory results while preserving filters', function () {
+    $validationIdentifiers = [];
+
     for ($index = 0; $index < 13; $index++) {
-        validatedDirectoryFixture();
+        [$validation] = validatedDirectoryFixture();
+        $validationIdentifiers[] = $validation->verification_identifier;
     }
 
     $response = $this->get(route('public.directory', [
@@ -133,8 +136,8 @@ it('paginates directory results while preserving filters', function () {
     ]));
 
     $response->assertOk()
-        ->assertSee('page=2')
-        ->assertSee('audience='.ProductAudience::Professionals->value);
+        ->assertSee(end($validationIdentifiers))
+        ->assertSee('audience='.ProductAudience::Professionals->value, false);
 });
 
 it('does not present suspended validation as currently validated in the directory', function () {

@@ -15,9 +15,13 @@ use Livewire\Component;
 final class Contributions extends Component
 {
     public string $title = '';
+
     public string $body = '';
+
     public ?int $editingId = null;
+
     public ?string $error = null;
+
     public ?string $message = null;
 
     public function save(): void

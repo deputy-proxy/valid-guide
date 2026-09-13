@@ -16,7 +16,8 @@ class MarketplaceServicePolicy
 {
     public function view(User $user, MarketplaceService $service): bool
     {
-        return $service->status === MarketplaceServiceStatus::Published
+        return $user->isPlatformAdmin()
+            || $service->status === MarketplaceServiceStatus::Published
             || $this->owns($user, $service);
     }
 
@@ -37,12 +38,12 @@ class MarketplaceServicePolicy
 
     public function pause(User $user, MarketplaceService $service): bool
     {
-        return $this->owns($user, $service);
+        return $user->isPlatformAdmin() || $this->owns($user, $service);
     }
 
     public function archive(User $user, MarketplaceService $service): bool
     {
-        return $this->owns($user, $service);
+        return $user->isPlatformAdmin() || $this->owns($user, $service);
     }
 
     public function purchase(User $user, MarketplaceService $service): bool

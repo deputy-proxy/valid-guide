@@ -178,6 +178,8 @@ class AuditorAssignmentCreation
 
             throw new PriorProductParticipationException($evaluation, $auditor, $determinedBy);
         }
+
+        app(MarketplaceIndependence::class)->assertAuditorClear($evaluation, $auditor, $determinedBy ?? $auditor);
     }
 
     private function hasPriorProductParticipation(Evaluation $evaluation, User $auditor): bool

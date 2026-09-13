@@ -11,7 +11,7 @@ final class EditSubscriptionPlan extends EditRecord
 {
     protected static string $resource = SubscriptionPlanResource::class;
 
-    protected function getSavedNotificationTitle(): ?string
+    protected function getSavedNotificationTitle(): string
     {
         return 'Subscription plan updated';
     }

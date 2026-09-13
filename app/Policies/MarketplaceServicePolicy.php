@@ -10,6 +10,7 @@ use App\Enums\ExpertPublicProfileStatus;
 use App\Enums\MarketplaceServiceStatus;
 use App\Models\MarketplaceService;
 use App\Models\User;
+use Illuminate\Database\Eloquent\Builder;
 
 class MarketplaceServicePolicy
 {
@@ -59,8 +60,12 @@ class MarketplaceServicePolicy
     {
         return $user->auditorProfile()
             ->where('status', AuditorProfileStatus::Approved->value)
-            ->whereHas('expertBoardMembership', fn ($query) => $query->where('status', ExpertBoardMembershipStatus::Approved->value))
-            ->whereHas('expertPublicProfile', fn ($query) => $query->where('status', ExpertPublicProfileStatus::Published->value))
+            ->whereHas('expertBoardMembership', function (Builder $builder): void {
+                $builder->where('status', ExpertBoardMembershipStatus::Approved->value);
+            })
+            ->whereHas('expertPublicProfile', function (Builder $builder): void {
+                $builder->where('status', ExpertPublicProfileStatus::Published->value);
+            })
             ->exists();
     }
 }

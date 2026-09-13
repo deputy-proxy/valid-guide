@@ -30,12 +30,19 @@
                     <label for="currency" class="block text-sm font-medium">Currency</label>
                     <input id="currency" name="currency" value="EUR" maxlength="3" required class="mt-2 block w-full rounded-lg border border-zinc-300 px-3 py-2.5 uppercase dark:border-zinc-700 dark:bg-zinc-950">
                 </div>
+                <div>
+                    <label for="expertise_area" class="block text-sm font-medium">Expertise</label>
+                    <select id="expertise_area" name="expertise_areas[]" required class="mt-2 block w-full rounded-lg border border-zinc-300 px-3 py-2.5 dark:border-zinc-700 dark:bg-zinc-950">
+                        @foreach (\App\Enums\ExpertiseArea::cases() as $option)
+                            <option value="{{ $option->value }}">{{ str($option->value)->replace('_', ' ')->title() }}</option>
+                        @endforeach
+                    </select>
+                </div>
                 <div class="md:col-span-2">
                     <label for="description" class="block text-sm font-medium">Description</label>
                     <textarea id="description" name="description" rows="4" required class="mt-2 block w-full rounded-lg border border-zinc-300 px-3 py-2.5 dark:border-zinc-700 dark:bg-zinc-950"></textarea>
                 </div>
             </div>
-            <input type="hidden" name="expertise_areas[]" value="general">
             <div class="mt-5">
                 <button type="submit" class="rounded-lg bg-zinc-950 px-4 py-2.5 text-sm font-medium text-white dark:bg-white dark:text-zinc-950">Save draft</button>
             </div>
@@ -55,12 +62,12 @@
                                     <p class="mt-1 text-sm text-zinc-600 dark:text-zinc-400">{{ str($service->status->value)->replace('_', ' ')->title() }} · {{ number_format($service->price_minor / 100, 2) }} {{ $service->currency }}</p>
                                 </div>
                                 <div class="flex flex-wrap gap-2">
-                                    @if ($service->status->value === 'draft')
+                                    @if ($service->status === \App\Enums\MarketplaceServiceStatus::Draft)
                                         <form method="POST" action="{{ route('expert.marketplace.publish', $service) }}">@csrf<button class="rounded-lg bg-zinc-950 px-3 py-2 text-sm text-white dark:bg-white dark:text-zinc-950">Publish</button></form>
-                                    @elseif ($service->status->value === 'published')
+                                    @elseif ($service->status === \App\Enums\MarketplaceServiceStatus::Published)
                                         <form method="POST" action="{{ route('expert.marketplace.pause', $service) }}">@csrf<button class="rounded-lg border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700">Pause</button></form>
                                     @endif
-                                    @if ($service->status->value !== 'archived')
+                                    @if ($service->status !== \App\Enums\MarketplaceServiceStatus::Archived)
                                         <form method="POST" action="{{ route('expert.marketplace.archive', $service) }}">@csrf<button class="rounded-lg border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700">Archive</button></form>
                                     @endif
                                 </div>

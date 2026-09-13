@@ -45,6 +45,7 @@
                 <ul class="flex flex-wrap items-center justify-end gap-x-5 gap-y-2 text-sm font-medium text-zinc-600 dark:text-zinc-300">
                     <li><a class="rounded-md px-2 py-1 hover:text-zinc-950 focus:outline-none focus:ring-2 focus:ring-zinc-900 dark:hover:text-white dark:focus:ring-white" href="{{ route('public.directory') }}">Directory</a></li>
                     <li><a class="rounded-md px-2 py-1 hover:text-zinc-950 focus:outline-none focus:ring-2 focus:ring-zinc-900 dark:hover:text-white dark:focus:ring-white" href="{{ route('public.experts') }}">Experts</a></li>
+                    <li><a class="rounded-md px-2 py-1 hover:text-zinc-950 focus:outline-none focus:ring-2 focus:ring-zinc-900 dark:hover:text-white dark:focus:ring-white" href="{{ route('public.community') }}">Community</a></li>
                     <li><a class="rounded-md px-2 py-1 hover:text-zinc-950 focus:outline-none focus:ring-2 focus:ring-zinc-900 dark:hover:text-white dark:focus:ring-white" href="{{ route('public.how-it-works') }}">How it works</a></li>
                     <li><a class="rounded-md px-2 py-1 hover:text-zinc-950 focus:outline-none focus:ring-2 focus:ring-zinc-900 dark:hover:text-white dark:focus:ring-white" href="{{ route('public.creators') }}">For creators</a></li>
                     <li><a class="rounded-md px-2 py-1 hover:text-zinc-950 focus:outline-none focus:ring-2 focus:ring-zinc-900 dark:hover:text-white dark:focus:ring-white" href="{{ route('public.buyers') }}">For buyers</a></li>

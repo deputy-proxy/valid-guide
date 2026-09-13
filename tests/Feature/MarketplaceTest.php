@@ -105,7 +105,11 @@ it('discovers only published eligible services without commercial ranking signal
     $firstService = marketplaceService($first, true, 'A service');
     $secondService = marketplaceService($second, true, 'B service');
     $ineligible = marketplaceExpert(false);
-    marketplaceService($ineligible, true, 'Hidden service');
+    $hiddenService = marketplaceService($ineligible, false, 'Hidden service');
+    DB::table('marketplace_services')->whereKey($hiddenService->id)->update([
+        'status' => MarketplaceServiceStatus::Published->value,
+        'published_at' => now(),
+    ]);
 
     $results = app(MarketplaceDiscovery::class)->search();
 

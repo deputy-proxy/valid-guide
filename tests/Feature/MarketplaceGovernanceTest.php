@@ -3,9 +3,11 @@
 declare(strict_types=1);
 
 use App\Enums\AuditorProfileStatus;
+use App\Enums\EvaluationComplexity;
 use App\Enums\ExpertBoardMembershipStatus;
 use App\Enums\ExpertPublicProfileStatus;
 use App\Enums\MarketplaceServiceStatus;
+use App\Enums\MarketplaceTransactionStatus;
 use App\Models\AuditLog;
 use App\Models\AuditorProfile;
 use App\Models\MarketplaceService;
@@ -89,14 +91,14 @@ it('keeps marketplace discovery independent from transaction volume', function (
     $firstService = $management->publish($first, $firstService);
     $secondService = $management->publish($second, $secondService);
 
-    foreach (range(1, 5) as $index) {
+    for ($index = 0; $index < 5; $index++) {
         MarketplaceTransaction::query()->create([
             'marketplace_service_id' => $firstService->id,
             'auditor_profile_id' => $firstService->auditor_profile_id,
             'buyer_id' => User::factory()->create()->id,
             'amount_minor' => $firstService->price_minor,
             'currency' => $firstService->currency,
-            'status' => 'pending',
+            'status' => MarketplaceTransactionStatus::Pending,
         ]);
     }
 
@@ -108,7 +110,7 @@ it('keeps marketplace discovery independent from transaction volume', function (
 it('blocks Auditor assignment after a marketplace relationship with the product organization', function () {
     [$auditorEvaluation] = auditorEvaluationFixture();
     $evaluation = $auditorEvaluation->evaluation;
-    $evaluation->request->update(['complexity' => 'complex']);
+    $evaluation->request->update(['complexity' => EvaluationComplexity::Complex]);
     $auditor = eligibleAuditorForEvaluation($evaluation);
     $admin = User::factory()->create(['platform_role' => 'admin']);
     $service = governanceService($auditor);
@@ -122,7 +124,7 @@ it('blocks Auditor assignment after a marketplace relationship with the product 
         'organization_id' => $organization->id,
         'amount_minor' => $service->price_minor,
         'currency' => $service->currency,
-        'status' => 'completed',
+        'status' => MarketplaceTransactionStatus::Completed,
         'completed_at' => now(),
     ]);
 
@@ -142,7 +144,7 @@ it('blocks Auditor assignment after a marketplace relationship with the product 
         ->latest('created_at')
         ->first();
 
-    expect($transaction->exists)->toBeTrue()
+    expect(MarketplaceTransaction::query()->whereKey($transaction->id)->exists())->toBeTrue()
         ->and($audit)->not->toBeNull()
         ->and($audit?->after['conflict'])->toBe('marketplace_commercial_relationship')
         ->and($audit?->metadata['determined_by'])->toBe($admin->id);
@@ -151,7 +153,7 @@ it('blocks Auditor assignment after a marketplace relationship with the product 
 it('allows assignment when the marketplace relationship belongs to another organization', function () {
     [$auditorEvaluation] = auditorEvaluationFixture();
     $evaluation = $auditorEvaluation->evaluation;
-    $evaluation->request->update(['complexity' => 'complex']);
+    $evaluation->request->update(['complexity' => EvaluationComplexity::Complex]);
     $auditor = eligibleAuditorForEvaluation($evaluation);
     $admin = User::factory()->create(['platform_role' => 'admin']);
     $service = governanceService($auditor);
@@ -171,7 +173,7 @@ it('allows assignment when the marketplace relationship belongs to another organ
         'organization_id' => $otherOrganization,
         'amount_minor' => $service->price_minor,
         'currency' => $service->currency,
-        'status' => 'completed',
+        'status' => MarketplaceTransactionStatus::Completed,
         'completed_at' => now(),
     ]);
 

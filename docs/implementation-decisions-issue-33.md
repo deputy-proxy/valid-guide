@@ -36,7 +36,7 @@ Marketplace governance actions are exposed to platform administrators through de
 
 Marketplace service moderation is limited to controlled pause/archive transitions. Marketplace transaction refunds remain controlled by `MarketplaceTransactionService` and are administrator-authorized by the existing transaction policy.
 
-Governance actions are audit logged through the existing `AuditLogger` path. No second audit mechanism is introduced.
+Governance actions are audit logged through the existing `AuditLogger` path. Marketplace conflict decisions are logged outside the assignment transaction so the audit record survives a rolled-back assignment attempt.
 
 ## Abuse and fraud safeguards
 

@@ -12,7 +12,6 @@ use App\Services\DomainStateTransitionException;
 use App\Services\MarketplaceServiceManagement;
 use BackedEnum;
 use Filament\Actions\Action;
-use Filament\Forms\Components\Textarea;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
@@ -40,11 +39,7 @@ final class MarketplaceServiceResource extends Resource
 
     public static function form(Schema $schema): Schema
     {
-        return $schema->components([
-            Textarea::make('title')->disabled(),
-            Textarea::make('description')->disabled()->rows(8),
-            Textarea::make('status')->disabled(),
-        ]);
+        return $schema->components([]);
     }
 
     public static function table(Table $table): Table
@@ -66,14 +61,12 @@ final class MarketplaceServiceResource extends Resource
                 Action::make('pause')
                     ->color('warning')
                     ->visible(fn (MarketplaceService $record): bool => $record->status === MarketplaceServiceStatus::Published)
-                    ->form([Textarea::make('reason')->required()->maxLength(2000)])
-                    ->action(fn (MarketplaceService $record, array $data) => self::run(fn () => app(MarketplaceServiceManagement::class)->pause(self::user(), $record), 'Marketplace service paused')),
+                    ->action(fn (MarketplaceService $record) => self::run(fn () => app(MarketplaceServiceManagement::class)->pause(self::user(), $record), 'Marketplace service paused')),
                 Action::make('archive')
                     ->color('danger')
                     ->visible(fn (MarketplaceService $record): bool => $record->status !== MarketplaceServiceStatus::Archived)
                     ->requiresConfirmation()
-                    ->form([Textarea::make('reason')->required()->maxLength(2000)])
-                    ->action(fn (MarketplaceService $record, array $data) => self::run(fn () => app(MarketplaceServiceManagement::class)->archive(self::user(), $record), 'Marketplace service archived')),
+                    ->action(fn (MarketplaceService $record) => self::run(fn () => app(MarketplaceServiceManagement::class)->archive(self::user(), $record), 'Marketplace service archived')),
             ]);
     }
 

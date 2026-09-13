@@ -36,22 +36,6 @@ final class MarketplaceIndependence
             return;
         }
 
-        AuditLogger::record(
-            event: 'auditor_assignment.marketplace_conflict_detected',
-            auditable: $evaluation,
-            after: [
-                'auditor_id' => $auditor->getKey(),
-                'organization_id' => (int) $organizationId,
-                'conflict' => 'marketplace_commercial_relationship',
-            ],
-            metadata: [
-                'determined_by' => $determinedBy->getKey(),
-            ],
-            actor: $determinedBy,
-        );
-
-        throw new DomainStateTransitionException(
-            'The Auditor cannot be assigned because they have a marketplace commercial relationship with the product organization.'
-        );
+        throw new MarketplaceCommercialConflictException($evaluation, $auditor, $determinedBy);
     }
 }

@@ -40,13 +40,7 @@ final class MarketplaceTransactionResource extends Resource
 
     public static function form(Schema $schema): Schema
     {
-        return $schema->components([
-            Textarea::make('status')->disabled(),
-            Textarea::make('amount_minor')->disabled(),
-            Textarea::make('currency')->disabled(),
-            Textarea::make('cancellation_reason')->disabled()->rows(4),
-            Textarea::make('refund_reason')->disabled()->rows(4),
-        ]);
+        return $schema->components([]);
     }
 
     public static function table(Table $table): Table
@@ -73,6 +67,7 @@ final class MarketplaceTransactionResource extends Resource
                         MarketplaceTransactionStatus::InProgress,
                         MarketplaceTransactionStatus::Cancelled,
                     ], true))
+                    ->requiresConfirmation()
                     ->form([Textarea::make('reason')->required()->maxLength(2000)])
                     ->action(fn (MarketplaceTransaction $record, array $data) => self::run(fn () => app(MarketplaceTransactionService::class)->refund(self::user(), $record, (string) $data['reason']), 'Marketplace transaction refunded')),
             ]);

@@ -122,6 +122,21 @@ it('orders equally scored directory entries deterministically', function () {
     $response->assertOk()->assertSeeInOrder($expectedOrder);
 });
 
+it('paginates directory results while preserving filters', function () {
+    for ($index = 0; $index < 13; $index++) {
+        validatedDirectoryFixture();
+    }
+
+    $response = $this->get(route('public.directory', [
+        'audience' => ProductAudience::Professionals->value,
+        'page' => 2,
+    ]));
+
+    $response->assertOk()
+        ->assertSee('page=2')
+        ->assertSee('audience='.ProductAudience::Professionals->value);
+});
+
 it('does not present suspended validation as currently validated in the directory', function () {
     [$validation, , , $admin] = validatedDirectoryFixture();
 

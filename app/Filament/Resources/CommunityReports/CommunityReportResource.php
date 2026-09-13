@@ -26,8 +26,11 @@ use UnitEnum;
 final class CommunityReportResource extends Resource
 {
     protected static ?string $model = CommunityReport::class;
+
     protected static string|UnitEnum|null $navigationGroup = 'Platform Admin';
+
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-flag';
+
     protected static ?string $navigationLabel = 'Community Reports';
 
     public static function canAccess(): bool

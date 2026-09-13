@@ -7,7 +7,6 @@ use App\Enums\OrganizationRole;
 use App\Enums\PlatformRole;
 use App\Enums\ValidationStatus;
 use App\Enums\ValidationTrustMonitorCadence;
-use App\Models\DatabaseNotification;
 use App\Models\PublicDirectoryEntry;
 use App\Models\SubscriptionPlan;
 use App\Models\SubscriptionPlanEntitlement;
@@ -16,6 +15,7 @@ use App\Services\PublicVerificationPublication;
 use App\Services\SubscriptionManagement;
 use App\Services\ValidationStateTransition;
 use App\Services\ValidationTrustMonitoring;
+use Illuminate\Notifications\DatabaseNotification;
 
 it('exercises the phase 5 public trust lifecycle across discovery, verification, monitoring and billing', function (): void {
     $validation = publicVerificationFixture();

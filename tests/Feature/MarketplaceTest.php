@@ -170,9 +170,13 @@ it('enforces buyer and provider transaction authorization', function () {
     $workflow = app(MarketplaceTransactionService::class);
     $transaction = $workflow->create($buyer, $service);
 
+    $workflow->markPaid($transaction->fresh(), $buyer);
+
     expect(fn () => $workflow->markPaid($transaction->fresh(), $otherBuyer))
         ->toThrow(AuthorizationException::class)
         ->and(fn () => $workflow->markPaid($transaction->fresh(), $otherExpert))
+        ->toThrow(AuthorizationException::class)
+        ->and(fn () => $workflow->refund($transaction->fresh(), $buyer))
         ->toThrow(AuthorizationException::class);
 });
 

@@ -114,8 +114,8 @@ final class MarketplaceTransactionService
     }
 
     /**
-     * @phpstan-param list<MarketplaceTransactionStatus> $allowedFrom
-     * @phpstan-param array<string, mixed> $updates
+     * @param list<MarketplaceTransactionStatus> $allowedFrom
+     * @param array<string, mixed>               $updates
      */
     private function transition(MarketplaceTransaction $transaction, User $actor, MarketplaceTransactionStatus $to, array $allowedFrom, array $updates, string $event): MarketplaceTransaction
     {

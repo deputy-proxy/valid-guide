@@ -11,7 +11,7 @@ final class CreateSubscriptionPlan extends CreateRecord
 {
     protected static string $resource = SubscriptionPlanResource::class;
 
-    protected function getCreatedNotificationTitle(): ?string
+    protected function getCreatedNotificationTitle(): string
     {
         return 'Subscription plan created';
     }

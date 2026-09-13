@@ -6,10 +6,12 @@ namespace App\Models;
 
 use App\Enums\SubscriptionBillingStatus;
 use App\Services\DomainStateTransitionException;
+use Database\Factories\SubscriptionBillingRecordFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
 
 /**
  * @property int $subscription_id
@@ -20,8 +22,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string|null $provider
  * @property string|null $provider_payment_id
  * @property string|null $provider_reference
- * @property \Illuminate\Support\Carbon $period_start
- * @property \Illuminate\Support\Carbon $period_end
+ * @property Carbon $period_start
+ * @property Carbon $period_end
  */
 #[Fillable([
     'subscription_id',
@@ -44,7 +46,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 ])]
 final class SubscriptionBillingRecord extends Model
 {
-    /** @use HasFactory<\Database\Factories\SubscriptionBillingRecordFactory> */
+    /** @use HasFactory<SubscriptionBillingRecordFactory> */
     use HasFactory;
 
     protected function casts(): array
@@ -65,7 +67,7 @@ final class SubscriptionBillingRecord extends Model
 
     protected static function booted(): void
     {
-        static::updating(function (self $record): void {
+        self::updating(function (self $record): void {
             $immutable = [
                 'subscription_id',
                 'sequence',

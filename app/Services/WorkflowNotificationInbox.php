@@ -151,7 +151,7 @@ final class WorkflowNotificationInbox
         }
 
         $monitor = ValidationTrustMonitor::query()->find((int) $id);
-        if ($monitor === null || ! in_array($monitor->status->value, $expected, true)) {
+        if ($monitor === null || !in_array($monitor->status->value, $expected, true)) {
             return true;
         }
 
@@ -247,7 +247,7 @@ final class WorkflowNotificationInbox
             return $dispute->status->value !== 'resolved';
         }
 
-        return ! in_array($dispute->status->value, ['submitted', 'under_review'], true);
+        return !in_array($dispute->status->value, ['submitted', 'under_review'], true);
     }
 
     /** @param array<string, mixed> $context */
@@ -280,6 +280,6 @@ final class WorkflowNotificationInbox
             return $opportunity->status !== ImprovementOpportunityStatus::Completed;
         }
 
-        return ! in_array($opportunity->status, [ImprovementOpportunityStatus::Open, ImprovementOpportunityStatus::InProgress], true);
+        return !in_array($opportunity->status, [ImprovementOpportunityStatus::Open, ImprovementOpportunityStatus::InProgress], true);
     }
 }

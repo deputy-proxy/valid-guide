@@ -86,13 +86,7 @@ final class CommunityReportResource extends Resource
     {
         $options = [];
         foreach ($cases as $case) {
-            if ($case instanceof BackedEnum) {
-                $options[(string) $case->value] = str((string) $case->value)->replace('_', ' ')->title()->toString();
-
-                continue;
-            }
-
-            throw new \LogicException('Community report status cases must be backed enums.');
+            $options[(string) $case->value] = str((string) $case->value)->replace('_', ' ')->title()->toString();
         }
 
         return $options;

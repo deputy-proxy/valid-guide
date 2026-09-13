@@ -66,6 +66,7 @@ final class WorkflowNotificationService
         }
 
         $definition = match ($validation->status->value) {
+            'active' => [NotificationEventType::ValidationReactivated, 'Validation reactivated', 'The validation for your product is active again.'],
             'suspended' => [NotificationEventType::ValidationSuspended, 'Validation suspended', 'The validation for your product has been suspended.'],
             'revoked' => [NotificationEventType::ValidationRevoked, 'Validation revoked', 'The validation for your product has been revoked.'],
             'superseded' => [NotificationEventType::ValidationSuperseded, 'Validation superseded', 'The validation for your product has been superseded by a newer validation.'],
@@ -174,7 +175,7 @@ final class WorkflowNotificationService
         }
 
         [$title, $body] = $definition;
-        $this->sendToOrganization($subscription->organization, NotificationCategory::Billing, $eventType, $title, $body, ['subscription_id' => $subscription->getKey(), 'organization_id' => $subscription->organization_id, 'status' => $subscription->status->value, 'updated_at' => $subscription->updated_at?->toIso8601String()]);
+        $this->sendToBillingOrganization($subscription->organization, $eventType, $title, $body, ['subscription_id' => $subscription->getKey(), 'organization_id' => $subscription->organization_id, 'status' => $subscription->status->value, 'updated_at' => $subscription->updated_at?->toIso8601String()]);
     }
 
     /** @param array<string, int|string|null> $context */
@@ -208,6 +209,7 @@ final class WorkflowNotificationService
         if (is_int($evaluationId) || ctype_digit((string) $evaluationId)) {
             if (in_array($eventType, [
                 NotificationEventType::ValidationIssued,
+                NotificationEventType::ValidationReactivated,
                 NotificationEventType::ValidationSuspended,
                 NotificationEventType::ValidationRevoked,
                 NotificationEventType::ValidationSuperseded,
@@ -237,6 +239,14 @@ final class WorkflowNotificationService
     {
         foreach ($organization->users()->wherePivotIn('role', ['owner', 'admin', 'editor'])->cursor() as $user) {
             $this->send($user, $category, $eventType, $title, $body, $context);
+        }
+    }
+
+    /** @param array<string, int|string|null> $context */
+    private function sendToBillingOrganization(Organization $organization, NotificationEventType $eventType, string $title, string $body, array $context): void
+    {
+        foreach ($organization->users()->wherePivotIn('role', ['owner', 'admin', 'billing'])->cursor() as $user) {
+            $this->send($user, NotificationCategory::Billing, $eventType, $title, $body, $context);
         }
     }
 

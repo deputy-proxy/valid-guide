@@ -10,6 +10,7 @@ enum NotificationEventType: string
     case AuditorEvaluationSubmitted = 'auditor_evaluation_submitted';
     case EvaluationDecisionRecorded = 'evaluation_decision_recorded';
     case ValidationIssued = 'validation_issued';
+    case ValidationReactivated = 'validation_reactivated';
     case ValidationSuspended = 'validation_suspended';
     case ValidationRevoked = 'validation_revoked';
     case ValidationSuperseded = 'validation_superseded';

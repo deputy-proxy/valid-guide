@@ -89,6 +89,7 @@ final class WorkflowNotificationInbox
             NotificationEventType::ExpertOpportunityPublished,
             NotificationEventType::ExpertOpportunityApplication,
             NotificationEventType::ExpertOpportunitySelection => $this->existingWorkflowIsStale($eventType, $context),
+            NotificationEventType::ValidationReactivated => $this->validationStatusIsStale($context, 'active'),
             NotificationEventType::ValidationSuspended => $this->validationStatusIsStale($context, 'suspended'),
             NotificationEventType::ValidationRevoked => $this->validationStatusIsStale($context, 'revoked'),
             NotificationEventType::ValidationSuperseded => $this->validationStatusIsStale($context, 'superseded'),

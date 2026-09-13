@@ -8,6 +8,8 @@ use App\Enums\ExpertBoardMembershipStatus;
 use App\Enums\ExpertPublicProfileStatus;
 use App\Enums\MarketplaceServiceStatus;
 use App\Enums\MarketplaceTransactionStatus;
+use App\Filament\Resources\MarketplaceServices\MarketplaceServiceResource;
+use App\Filament\Resources\MarketplaceTransactions\MarketplaceTransactionResource;
 use App\Models\AuditLog;
 use App\Models\AuditorProfile;
 use App\Models\MarketplaceService;
@@ -15,6 +17,7 @@ use App\Models\MarketplaceTransaction;
 use App\Models\User;
 use App\Services\AuditorAssignmentCreation;
 use App\Services\DomainStateTransitionException;
+use App\Services\MarketplaceDiscovery;
 use App\Services\MarketplaceServiceManagement;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
@@ -102,7 +105,7 @@ it('keeps marketplace discovery independent from transaction volume', function (
         ]);
     }
 
-    $results = app(\App\Services\MarketplaceDiscovery::class)->search();
+    $results = app(MarketplaceDiscovery::class)->search();
 
     expect($results->pluck('id')->all())->toBe([$firstService->id, $secondService->id]);
 });
@@ -195,12 +198,12 @@ it('restricts marketplace governance resources to platform administrators', func
     $admin = User::factory()->create(['platform_role' => 'admin']);
 
     $this->actingAs($user);
-    expect(\App\Filament\Resources\MarketplaceServices\MarketplaceServiceResource::canAccess())->toBeFalse()
-        ->and(\App\Filament\Resources\MarketplaceTransactions\MarketplaceTransactionResource::canAccess())->toBeFalse();
+    expect(MarketplaceServiceResource::canAccess())->toBeFalse()
+        ->and(MarketplaceTransactionResource::canAccess())->toBeFalse();
 
     $this->actingAs($admin);
-    expect(\App\Filament\Resources\MarketplaceServices\MarketplaceServiceResource::canAccess())->toBeTrue()
-        ->and(\App\Filament\Resources\MarketplaceTransactions\MarketplaceTransactionResource::canAccess())->toBeTrue();
+    expect(MarketplaceServiceResource::canAccess())->toBeTrue()
+        ->and(MarketplaceTransactionResource::canAccess())->toBeTrue();
 });
 
 it('exposes the commercial independence disclosure on the public marketplace', function () {

@@ -13,7 +13,7 @@ use App\Models\Subscription;
 use App\Models\SubscriptionBillingRecord;
 use App\Models\SubscriptionPlan;
 use App\Models\User;
-use Illuminate\Support\Carbon;
+use Carbon\CarbonInterface;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 
@@ -88,7 +88,7 @@ final class SubscriptionManagement
             $subscription = $this->locked($subscription);
             $this->assertTransition($subscription, [SubscriptionStatus::Pending], SubscriptionStatus::Active);
 
-            $now = Carbon::now();
+            $now = \Illuminate\Support\Carbon::now();
             $end = $this->periodEnd($now, $subscription);
             $subscription->forceFill([
                 'status' => SubscriptionStatus::Active,
@@ -122,8 +122,8 @@ final class SubscriptionManagement
             $subscription = $this->locked($subscription);
             $this->assertTransition($subscription, [SubscriptionStatus::Active], SubscriptionStatus::Active);
 
-            $previousEnd = $subscription->current_period_end ?? Carbon::now();
-            $start = $previousEnd->isFuture() ? $previousEnd : Carbon::now();
+            $previousEnd = $subscription->current_period_end ?? \Illuminate\Support\Carbon::now();
+            $start = $previousEnd->isFuture() ? $previousEnd : \Illuminate\Support\Carbon::now();
             $end = $this->periodEnd($start, $subscription);
             $sequence = ((int) $subscription->billingRecords()->lockForUpdate()->max('sequence')) + 1;
 
@@ -174,7 +174,7 @@ final class SubscriptionManagement
             $subscription = $this->locked($subscription);
             $this->assertTransition($subscription, [SubscriptionStatus::PaymentFailed], SubscriptionStatus::Active);
 
-            $now = Carbon::now();
+            $now = \Illuminate\Support\Carbon::now();
             $start = $subscription->current_period_end?->isFuture() ? $subscription->current_period_end : $now;
             $end = $this->periodEnd($start, $subscription);
             $sequence = ((int) $subscription->billingRecords()->lockForUpdate()->max('sequence')) + 1;
@@ -259,7 +259,7 @@ final class SubscriptionManagement
             $this->assertTransition($subscription, [SubscriptionStatus::Active, SubscriptionStatus::PaymentFailed], SubscriptionStatus::Expired);
 
             $from = $subscription->status;
-            $expiresAt = $subscription->current_period_end ?? Carbon::now();
+            $expiresAt = $subscription->current_period_end ?? \Illuminate\Support\Carbon::now();
             $subscription->forceFill([
                 'status' => SubscriptionStatus::Expired,
                 'expires_at' => $expiresAt,
@@ -301,7 +301,7 @@ final class SubscriptionManagement
         }
     }
 
-    private function periodEnd(Carbon $start, Subscription $subscription): Carbon
+    private function periodEnd(CarbonInterface $start, Subscription $subscription): CarbonInterface
     {
         return match ($subscription->billing_interval_snapshot) {
             'day' => $start->copy()->addDays($subscription->billing_interval_count_snapshot),
@@ -311,9 +311,9 @@ final class SubscriptionManagement
         };
     }
 
-    private function createBillingRecord(Subscription $subscription, int $sequence, SubscriptionBillingStatus $status, ?Carbon $paidAt): SubscriptionBillingRecord
+    private function createBillingRecord(Subscription $subscription, int $sequence, SubscriptionBillingStatus $status, ?\Illuminate\Support\Carbon $paidAt): SubscriptionBillingRecord
     {
-        $periodStart = $subscription->current_period_start ?? Carbon::now();
+        $periodStart = $subscription->current_period_start ?? \Illuminate\Support\Carbon::now();
         $periodEnd = $subscription->current_period_end ?? $this->periodEnd($periodStart, $subscription);
 
         return $subscription->billingRecords()->create([

@@ -38,6 +38,7 @@ final class CommunityContributionGovernance
 
     public function updateDraft(CommunityContribution $contribution, User $expert, string $title, string $body): CommunityContribution
     {
+        $this->eligibleExpert($expert);
         $this->assertOwner($contribution, $expert);
         if (! in_array($contribution->status, [CommunityContributionStatus::Draft, CommunityContributionStatus::Rejected], true)) {
             throw new DomainStateTransitionException('Only draft or rejected contributions can be edited.');
@@ -61,6 +62,7 @@ final class CommunityContributionGovernance
 
     public function submit(CommunityContribution $contribution, User $expert): CommunityContribution
     {
+        $this->eligibleExpert($expert);
         $this->assertOwner($contribution, $expert);
         if (! in_array($contribution->status, [CommunityContributionStatus::Draft, CommunityContributionStatus::Rejected], true)) {
             throw new DomainStateTransitionException('Only draft or rejected contributions can be submitted.');

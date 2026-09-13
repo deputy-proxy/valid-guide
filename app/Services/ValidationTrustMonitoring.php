@@ -21,9 +21,6 @@ use Throwable;
 
 class ValidationTrustMonitoring
 {
-    /**
-     * Configure or resume monitoring for a validation within its owning organization.
-     */
     public function configure(
         Validation $validation,
         User $actor,
@@ -66,11 +63,7 @@ class ValidationTrustMonitoring
                 throw new AuthorizationException('The validation trust monitor belongs to another organization.');
             }
 
-            $before = [
-                'cadence' => $monitor->cadence->value,
-                'status' => $monitor->status->value,
-            ];
-
+            $before = ['cadence' => $monitor->cadence->value, 'status' => $monitor->status->value];
             $monitor->forceFill([
                 'cadence' => $cadence,
                 'status' => ValidationTrustMonitorStatus::Active,
@@ -81,20 +74,16 @@ class ValidationTrustMonitoring
                 'updated_by' => $actor->getKey(),
             ])->save();
 
-            if ($before['status'] === ValidationTrustMonitorStatus::Cancelled->value) {
+            $event = $before['status'] === ValidationTrustMonitorStatus::Cancelled->value
+                ? 'validation_trust_monitor.resumed'
+                : ($before['cadence'] !== $cadence->value ? 'validation_trust_monitor.cadence_changed' : null);
+
+            if ($event !== null) {
                 AuditLogger::record(
-                    event: 'validation_trust_monitor.resumed',
+                    event: $event,
                     auditable: $monitor,
                     before: $before,
                     after: ['cadence' => $cadence->value, 'status' => ValidationTrustMonitorStatus::Active->value],
-                    actor: $actor,
-                );
-            } elseif ($before['cadence'] !== $cadence->value) {
-                AuditLogger::record(
-                    event: 'validation_trust_monitor.cadence_changed',
-                    auditable: $monitor,
-                    before: $before,
-                    after: ['cadence' => $cadence->value, 'status' => $monitor->status->value],
                     actor: $actor,
                 );
             }
@@ -103,9 +92,6 @@ class ValidationTrustMonitoring
         });
     }
 
-    /**
-     * Cancel monitoring without changing the underlying Validation or public snapshot.
-     */
     public function cancel(ValidationTrustMonitor $monitor, User $actor, string $reason): ValidationTrustMonitor
     {
         Gate::forUser($actor)->authorize('cancel', $monitor);
@@ -128,14 +114,8 @@ class ValidationTrustMonitoring
                 'updated_by' => $actor->getKey(),
             ])->save();
 
-            $event = $this->recordEvent(
-                $monitor,
-                ValidationTrustMonitorEventType::MonitoringCancelled,
-                hash('sha256', $monitor->getKey().'|cancelled|'.$reason),
-                ['reason' => $reason],
-            );
-
-            if ($event !== null) {
+            $fingerprint = hash('sha256', $monitor->getKey().'|cancelled|'.$reason);
+            if ($this->recordEvent($monitor, ValidationTrustMonitorEventType::MonitoringCancelled, $fingerprint, ['reason' => $reason]) !== null) {
                 AuditLogger::record(
                     event: 'validation_trust_monitor.cancelled',
                     auditable: $monitor,
@@ -149,15 +129,10 @@ class ValidationTrustMonitoring
         });
     }
 
-    /**
-     * Process monitors that are due. The scheduler only triggers this command; cadence is stored per monitor.
-     *
-     * @return array{processed:int, changed:int, failed:int, recovered:int, skipped:int}
-     */
+    /** @return array{processed:int,changed:int,failed:int,recovered:int,skipped:int} */
     public function runDue(?CarbonImmutable $now = null): array
     {
         $now ??= CarbonImmutable::now();
-
         $stats = ['processed' => 0, 'changed' => 0, 'failed' => 0, 'recovered' => 0, 'skipped' => 0];
 
         ValidationTrustMonitor::query()
@@ -178,9 +153,7 @@ class ValidationTrustMonitoring
         return $stats;
     }
 
-    /**
-     * @return array{changed:bool, failed:bool, recovered:bool, skipped:bool}
-     */
+    /** @return array{changed:bool,failed:bool,recovered:bool,skipped:bool} */
     public function runOne(ValidationTrustMonitor $monitor, ?CarbonImmutable $now = null): array
     {
         $now ??= CarbonImmutable::now();
@@ -192,32 +165,31 @@ class ValidationTrustMonitoring
                 return ['changed' => false, 'failed' => false, 'recovered' => false, 'skipped' => true];
             }
 
-            $wasRecoverable = in_array($monitor->status, [
+            $previousStatus = $monitor->status;
+            $previousFingerprint = $monitor->observed_fingerprint;
+            $recoverable = in_array($previousStatus, [
                 ValidationTrustMonitorStatus::Failed,
                 ValidationTrustMonitorStatus::Stale,
                 ValidationTrustMonitorStatus::Invalid,
             ], true);
 
             if ($monitor->last_checked_at !== null
-                && $monitor->last_checked_at->addMinutes($monitor->cadence->intervalMinutes() * 2)->isBefore($now)) {
-                $monitor->forceFill([
-                    'status' => ValidationTrustMonitorStatus::Stale,
-                    'updated_at' => $now,
-                ])->save();
-
+                && $monitor->last_checked_at->addMinutes($monitor->cadence->intervalMinutes() * 2)->isBefore($now)
+                && $previousStatus === ValidationTrustMonitorStatus::Active) {
+                $monitor->forceFill(['status' => ValidationTrustMonitorStatus::Stale, 'updated_at' => $now])->save();
                 AuditLogger::record(
                     event: 'validation_trust_monitor.stale',
                     auditable: $monitor,
                     before: ['status' => ValidationTrustMonitorStatus::Active->value],
                     after: ['status' => ValidationTrustMonitorStatus::Stale->value],
                 );
-                $wasRecoverable = true;
+                $recoverable = true;
             }
 
             try {
-                $state = $this->observedState($monitor->validation()->firstOrFail());
+                $state = $this->observedState($monitor->validation()->firstOrFail(), (int) $monitor->organization_id);
                 $fingerprint = $this->fingerprint($state);
-                $changed = $monitor->observed_fingerprint !== null && $monitor->observed_fingerprint !== $fingerprint;
+                $changed = $previousFingerprint !== null && $previousFingerprint !== $fingerprint;
 
                 $monitor->forceFill([
                     'status' => ValidationTrustMonitorStatus::Active,
@@ -229,61 +201,52 @@ class ValidationTrustMonitoring
                     'updated_at' => $now,
                 ])->save();
 
-                if ($monitor->observed_fingerprint === null) {
+                if ($previousFingerprint === null) {
                     $this->recordEvent($monitor, ValidationTrustMonitorEventType::BaselineRecorded, $fingerprint, $state);
                 } elseif ($changed) {
                     $this->recordEvent($monitor, ValidationTrustMonitorEventType::TrustStateChanged, $fingerprint, [
-                        'previous_fingerprint' => $monitor->getOriginal('observed_fingerprint'),
+                        'previous_fingerprint' => $previousFingerprint,
                         'state' => $state,
                     ]);
                     AuditLogger::record(
                         event: 'validation_trust_monitor.trust_state_changed',
                         auditable: $monitor,
-                        before: ['fingerprint' => $monitor->getOriginal('observed_fingerprint')],
+                        before: ['fingerprint' => $previousFingerprint],
                         after: ['fingerprint' => $fingerprint, 'state' => $state],
                     );
                 }
 
-                $recovered = $wasRecoverable;
-                if ($recovered) {
+                if ($recoverable) {
                     $recoveryFingerprint = hash('sha256', $fingerprint.'|recovered');
-                    $this->recordEvent($monitor, ValidationTrustMonitorEventType::MonitoringRecovered, $recoveryFingerprint, [
-                        'fingerprint' => $fingerprint,
-                    ]);
+                    $this->recordEvent($monitor, ValidationTrustMonitorEventType::MonitoringRecovered, $recoveryFingerprint, ['fingerprint' => $fingerprint]);
                     AuditLogger::record(
                         event: 'validation_trust_monitor.recovered',
                         auditable: $monitor,
+                        before: ['status' => $previousStatus->value],
                         after: ['status' => ValidationTrustMonitorStatus::Active->value, 'fingerprint' => $fingerprint],
                     );
                 }
 
-                return ['changed' => $changed, 'failed' => false, 'recovered' => $recovered, 'skipped' => false];
+                return ['changed' => $changed, 'failed' => false, 'recovered' => $recoverable, 'skipped' => false];
             } catch (ValidationTrustMonitoringException $exception) {
                 $this->markInvalid($monitor, $exception->getMessage(), $now);
-
                 return ['changed' => false, 'failed' => true, 'recovered' => false, 'skipped' => false];
             } catch (Throwable $exception) {
                 $this->markFailed($monitor, $exception, $now);
-
                 return ['changed' => false, 'failed' => true, 'recovered' => false, 'skipped' => false];
             }
         });
     }
 
     /** @return array<string,mixed> */
-    private function observedState(Validation $validation): array
+    private function observedState(Validation $validation, int $expectedOrganizationId): array
     {
-        $validation->loadMissing([
-            'productRelease.product',
-            'publicVerificationRecord',
-            'evaluation.report.currentVersion',
-        ]);
-
+        $validation->loadMissing(['productRelease.product.organization', 'publicVerificationRecord', 'evaluation.report.currentVersion']);
         $release = $validation->productRelease;
         $organizationId = $release?->product?->organization_id;
 
-        if ($release === null || $release->product === null || $organizationId === null) {
-            throw new ValidationTrustMonitoringException('Validation provenance is incomplete.');
+        if ($release === null || $release->product === null || $organizationId === null || (int) $organizationId !== $expectedOrganizationId) {
+            throw new ValidationTrustMonitoringException('Validation provenance is incomplete or crosses the monitor tenant boundary.');
         }
 
         $publicRecord = $validation->publicVerificationRecord;
@@ -347,12 +310,9 @@ class ValidationTrustMonitoring
     /** @param array<string,mixed> $state */
     private function fingerprint(array $state): string
     {
-        $canonical = $this->canonicalize($state);
-
-        return hash('sha256', json_encode($canonical, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
+        return hash('sha256', json_encode($this->canonicalize($state), JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
     }
 
-    /** @return array<string,mixed>|list<mixed>|mixed */
     private function canonicalize(mixed $value): mixed
     {
         if (! is_array($value)) {
@@ -364,7 +324,6 @@ class ValidationTrustMonitoring
         }
 
         ksort($value);
-
         foreach ($value as $key => $item) {
             $value[$key] = $this->canonicalize($item);
         }
@@ -375,7 +334,6 @@ class ValidationTrustMonitoring
     private function organizationFor(Validation $validation): Organization
     {
         $organization = $validation->productRelease?->product?->organization;
-
         if (! $organization instanceof Organization) {
             throw new ValidationTrustMonitoringException('Validation does not belong to a creator organization.');
         }
@@ -422,12 +380,10 @@ class ValidationTrustMonitoring
             'updated_at' => $now,
         ])->save();
 
-        $event = $this->recordEvent($monitor, ValidationTrustMonitorEventType::MonitoringFailed, $fingerprint, [
+        if ($this->recordEvent($monitor, ValidationTrustMonitorEventType::MonitoringFailed, $fingerprint, [
             'reason' => $reason,
             'status' => ValidationTrustMonitorStatus::Invalid->value,
-        ]);
-
-        if ($event !== null) {
+        ]) !== null) {
             AuditLogger::record(
                 event: 'validation_trust_monitor.invalid',
                 auditable: $monitor,
@@ -449,12 +405,10 @@ class ValidationTrustMonitoring
             'updated_at' => $now,
         ])->save();
 
-        $event = $this->recordEvent($monitor, ValidationTrustMonitorEventType::MonitoringFailed, $fingerprint, [
+        if ($this->recordEvent($monitor, ValidationTrustMonitorEventType::MonitoringFailed, $fingerprint, [
             'reason' => $reason,
             'status' => ValidationTrustMonitorStatus::Failed->value,
-        ]);
-
-        if ($event !== null) {
+        ]) !== null) {
             AuditLogger::record(
                 event: 'validation_trust_monitor.failed',
                 auditable: $monitor,

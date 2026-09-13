@@ -99,6 +99,7 @@ final class CommunityContributionResource extends Resource
         foreach ($cases as $case) {
             if ($case instanceof BackedEnum) {
                 $options[(string) $case->value] = str((string) $case->value)->replace('_', ' ')->title()->toString();
+
                 continue;
             }
 

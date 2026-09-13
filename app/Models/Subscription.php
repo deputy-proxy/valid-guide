@@ -93,8 +93,6 @@ final class Subscription extends Model
             $immutable = [
                 'organization_id',
                 'subscription_plan_id',
-                'provider',
-                'provider_subscription_id',
                 'plan_code_snapshot',
                 'plan_name_snapshot',
                 'price_minor_snapshot',

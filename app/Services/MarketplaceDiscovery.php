@@ -28,13 +28,13 @@ final class MarketplaceDiscovery
             ->with('auditorProfile.expertPublicProfile')
             ->where('status', MarketplaceServiceStatus::Published->value)
             ->whereHas('auditorProfile', function (Builder $builder): void {
-                $builder->where('status', AuditorProfileStatus::Approved->value);
-            })
-            ->whereHas('auditorProfile.expertBoardMembership', function (Builder $builder): void {
-                $builder->where('status', ExpertBoardMembershipStatus::Approved->value);
-            })
-            ->whereHas('auditorProfile.expertPublicProfile', function (Builder $builder): void {
-                $builder->where('status', ExpertPublicProfileStatus::Published->value);
+                $builder->where('status', AuditorProfileStatus::Approved->value)
+                    ->whereHas('expertBoardMembership', function (Builder $builder): void {
+                        $builder->where('status', ExpertBoardMembershipStatus::Approved->value);
+                    })
+                    ->whereHas('expertPublicProfile', function (Builder $builder): void {
+                        $builder->where('status', ExpertPublicProfileStatus::Published->value);
+                    });
             });
 
         $query = $query !== null ? trim($query) : null;
@@ -68,13 +68,13 @@ final class MarketplaceDiscovery
             ->where('slug', $slug)
             ->where('status', MarketplaceServiceStatus::Published->value)
             ->whereHas('auditorProfile', function (Builder $builder): void {
-                $builder->where('status', AuditorProfileStatus::Approved->value);
-            })
-            ->whereHas('auditorProfile.expertBoardMembership', function (Builder $builder): void {
-                $builder->where('status', ExpertBoardMembershipStatus::Approved->value);
-            })
-            ->whereHas('auditorProfile.expertPublicProfile', function (Builder $builder): void {
-                $builder->where('status', ExpertPublicProfileStatus::Published->value);
+                $builder->where('status', AuditorProfileStatus::Approved->value)
+                    ->whereHas('expertBoardMembership', function (Builder $builder): void {
+                        $builder->where('status', ExpertBoardMembershipStatus::Approved->value);
+                    })
+                    ->whereHas('expertPublicProfile', function (Builder $builder): void {
+                        $builder->where('status', ExpertPublicProfileStatus::Published->value);
+                    });
             })
             ->first();
     }

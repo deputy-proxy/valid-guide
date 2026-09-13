@@ -12,7 +12,8 @@ class MarketplaceTransactionPolicy
 {
     public function view(User $user, MarketplaceTransaction $transaction): bool
     {
-        return $transaction->buyer_id === $user->getKey()
+        return $user->isPlatformAdmin()
+            || $transaction->buyer_id === $user->getKey()
             || $transaction->auditorProfile()->where('auditor_id', $user->getKey())->exists()
             || ($transaction->organization_id !== null && $transaction->organization()->whereHas('users', function (Builder $builder) use ($user): void {
                 $builder->whereKey($user->getKey());

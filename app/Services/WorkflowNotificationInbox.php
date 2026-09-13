@@ -109,7 +109,7 @@ final class WorkflowNotificationInbox
         };
     }
 
-    /** @param array<string, mixed> $context */
+    /** @param array<string, mixed>  $context */
     private function existingWorkflowIsStale(NotificationEventType $eventType, array $context): bool
     {
         return match ($eventType) {
@@ -126,7 +126,7 @@ final class WorkflowNotificationInbox
         };
     }
 
-    /** @param array<string, mixed> $context */
+    /** @param array<string, mixed>  $context */
     private function validationStatusIsStale(array $context, string $expected): bool
     {
         $id = $context['validation_id'] ?? null;
@@ -140,8 +140,8 @@ final class WorkflowNotificationInbox
     }
 
     /**
-     * @param array<string, mixed> $context
-     * @param list<string>        $expected
+     * @param array<string, mixed>  $context
+     * @param list<string>  $expected
      */
     private function monitorStatusIsStale(array $context, array $expected): bool
     {
@@ -165,7 +165,7 @@ final class WorkflowNotificationInbox
         return false;
     }
 
-    /** @param array<string, mixed> $context */
+    /** @param array<string, mixed>  $context */
     private function subscriptionStatusIsStale(array $context, string $expected): bool
     {
         $id = $context['subscription_id'] ?? null;
@@ -178,7 +178,7 @@ final class WorkflowNotificationInbox
         return $subscription === null || $subscription->status->value !== $expected;
     }
 
-    /** @param array<string, mixed> $context */
+    /** @param array<string, mixed>  $context */
     private function assignmentIsStale(array $context): bool
     {
         $id = $context['assignment_id'] ?? null;
@@ -191,7 +191,7 @@ final class WorkflowNotificationInbox
         return $assignment === null || $assignment->status !== 'offered';
     }
 
-    /** @param array<string, mixed> $context */
+    /** @param array<string, mixed>  $context */
     private function auditorEvaluationIsStale(array $context): bool
     {
         $id = $context['auditor_evaluation_id'] ?? null;
@@ -204,7 +204,7 @@ final class WorkflowNotificationInbox
         return $evaluation === null || $evaluation->status !== 'submitted';
     }
 
-    /** @param array<string, mixed> $context */
+    /** @param array<string, mixed>  $context */
     private function reportIsStale(array $context): bool
     {
         $id = $context['report_id'] ?? null;
@@ -217,7 +217,7 @@ final class WorkflowNotificationInbox
         return $report === null || $report->delivered_at === null;
     }
 
-    /** @param array<string, mixed> $context */
+    /** @param array<string, mixed>  $context */
     private function clarificationIsStale(array $context, string $expectedStatus): bool
     {
         $id = $context['clarification_id'] ?? null;
@@ -230,7 +230,7 @@ final class WorkflowNotificationInbox
         return $request === null || $request->status->value !== $expectedStatus;
     }
 
-    /** @param array<string, mixed> $context */
+    /** @param array<string, mixed>  $context */
     private function disputeIsStale(array $context, bool $resolved = false): bool
     {
         $id = $context['dispute_id'] ?? null;
@@ -250,7 +250,7 @@ final class WorkflowNotificationInbox
         return in_array($dispute->status->value, ['submitted', 'under_review'], true) === false;
     }
 
-    /** @param array<string, mixed> $context */
+    /** @param array<string, mixed>  $context */
     private function reviewerIsStale(array $context): bool
     {
         $id = $context['dispute_reviewer_id'] ?? null;
@@ -263,7 +263,7 @@ final class WorkflowNotificationInbox
         return $reviewer === null || $reviewer->status !== 'assigned';
     }
 
-    /** @param array<string, mixed> $context */
+    /** @param array<string, mixed>  $context */
     private function improvementOpportunityIsStale(array $context, bool $completed): bool
     {
         $id = $context['improvement_opportunity_id'] ?? null;

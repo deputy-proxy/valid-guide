@@ -24,6 +24,7 @@ class PublicDirectory
         ?ProductType $productType = null,
         ?string $subjectArea = null,
         ?string $language = null,
+        bool $invalidFilter = false,
     ): LengthAwarePaginator {
         $builder = PublicDirectoryEntry::query()
             ->where('directory_visible', true)
@@ -32,6 +33,10 @@ class PublicDirectory
         $query = $query !== null ? trim($query) : null;
         $subjectArea = $subjectArea !== null ? trim($subjectArea) : null;
         $language = $language !== null ? trim($language) : null;
+
+        if ($invalidFilter) {
+            $builder->whereRaw('0 = 1');
+        }
 
         if ($query !== null && $query !== '') {
             $builder->where(function (Builder $builder) use ($query): void {

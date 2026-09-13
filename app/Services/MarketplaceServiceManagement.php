@@ -78,6 +78,7 @@ final class MarketplaceServiceManagement
         $this->eligibleProfile($actor);
 
         return DB::transaction(function () use ($actor, $service): MarketplaceService {
+            /** @var MarketplaceService $service */
             $service = MarketplaceService::query()->lockForUpdate()->findOrFail($service->getKey());
 
             if ($service->status !== MarketplaceServiceStatus::Draft) {
@@ -110,6 +111,7 @@ final class MarketplaceServiceManagement
         Gate::forUser($actor)->authorize('pause', $service);
 
         return DB::transaction(function () use ($actor, $service): MarketplaceService {
+            /** @var MarketplaceService $service */
             $service = MarketplaceService::query()->lockForUpdate()->findOrFail($service->getKey());
 
             if ($service->status !== MarketplaceServiceStatus::Published) {
@@ -128,6 +130,7 @@ final class MarketplaceServiceManagement
         Gate::forUser($actor)->authorize('archive', $service);
 
         return DB::transaction(function () use ($actor, $service): MarketplaceService {
+            /** @var MarketplaceService $service */
             $service = MarketplaceService::query()->lockForUpdate()->findOrFail($service->getKey());
 
             if ($service->status === MarketplaceServiceStatus::Archived) {

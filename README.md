@@ -27,7 +27,7 @@ Valid.guide is not:
 
 Creators pay for an evaluation, never for a positive result. Payment must never influence the evaluation outcome.
 
-The application currently focuses on the validation domain and its supporting operational workflows. Marketplace, community, subscription, monitoring and broader discovery capabilities are roadmap items rather than assumptions about the current implementation.
+The application currently includes the validation domain and its supporting operational workflows, together with the completed Expert, marketplace and community capabilities from Phase 4. Guides, Opportunities & Matching are complete. Subscription, monitoring and the broader public product remain roadmap capabilities for Phase 5.
 
 ---
 
@@ -160,7 +160,7 @@ Commercial state is intentionally separate from evaluation outcome.
 - Audit Log
 - Public Directory projection
 
-The public directory and broader marketplace/community capabilities are not yet a complete dedicated product capability.
+The Expert Board, expert discovery, community and marketplace capabilities are implemented as governed Phase 4 capabilities. The broader public directory, subscription and monitoring product remains part of Phase 5.
 
 ---
 
@@ -326,7 +326,8 @@ A public verification record contains, where applicable:
 - Public verification renders from persisted public snapshot data.
 - Creator corrections enter controlled clarification workflows rather than mutating published history directly.
 - Validated products may be exposed through public verification and directory surfaces where applicable.
-- The broader public directory, discovery, subscription and monitoring product is not yet a complete dedicated capability.
+- Expert discovery, community and marketplace public surfaces are governed by their Phase 4 disclosure rules.
+- The broader public directory, subscription and monitoring product is not yet a complete dedicated capability.
 
 ---
 
@@ -400,7 +401,7 @@ Turn the approved architecture into a secure, persistent Laravel domain foundati
 - Phase 1 invariant audit completed.
 - Pint/lint, PHPStan and the complete test suite pass in CI.
 
-Phase 1 completion was formally audited through issue **#33**.
+Phase 1 completion is documented by the Phase 1 invariant audit and implementation history; the former issue reference **#33** is no longer authoritative because #33 is now the Phase 4.6 marketplace-governance issue.
 
 ---
 
@@ -449,7 +450,7 @@ Build the actual evaluation engine and the structured work produced from an eval
 
 ## Phase 3 — Guides, Opportunities & Matching
 
-**Status: In progress**
+**Status: Complete**
 
 ### Objective
 
@@ -475,13 +476,13 @@ Expand Valid.guide beyond validation results into actionable guidance and discov
 - Appropriate UI and authorization boundaries are implemented.
 - Pint/lint, PHPStan and the complete test suite are green in CI.
 
-Existing findings, reports and recommendations are foundations for this phase, but they do not by themselves constitute the complete Guides, Opportunities & Matching product.
+Phase 3 was formally closed by the Phase 3.6 integration, accessibility and regression audit in issue **#14**. The audit covers the complete findings/report → guidance → opportunities → matching → discovery → recommendation lifecycle.
 
 ---
 
 ## Phase 4 — Experts, Marketplace & Community
 
-**Status: Partially implemented; dedicated marketplace/community scope remains**
+**Status: Complete**
 
 ### Objective
 
@@ -506,7 +507,7 @@ Build the broader expert ecosystem around Valid.guide: Auditor Board growth, exp
 - Appropriate public and internal UI are implemented.
 - Pint/lint, PHPStan and the complete test suite are green in CI.
 
-Existing Auditor onboarding, eligibility, COI, assignment and operational workflows are foundations for this phase, not evidence that the marketplace/community phase is complete.
+Phase 4 was formally closed by the Phase 4.7 integration audit in issue **#34**. Issues **#28–#33** implemented the Expert Board, profiles/discovery, opportunities, community, marketplace and marketplace-governance slices that the final audit integrated and verified.
 
 ---
 
@@ -584,9 +585,9 @@ The current repository should be understood against the original roadmap as foll
 | **Phase 0 — Product & Architecture** | **Complete** | Product, architecture, domain, methodology, trust, commerce and historical-integrity foundations are established. |
 | **Phase 1 — Application Foundation & Domain Implementation** | **Complete** | Domain persistence, tenancy, authorization, lifecycle controls, methodology, trust persistence and invariant regression coverage are implemented and audited. |
 | **Phase 2 — Evaluator & Action Plan** | **Complete** | Former technical Phase 2 and Phase 3 work covers most of the evaluation engine and operational workflow. The implementation has been reconciled back to the original product phase rather than replacing its numbering. |
-| **Phase 3 — Guides, Opportunities & Matching** | **In progress** | Findings, reports and existing recommendations provide groundwork, but the broader guidance, opportunities and matching product is not yet a distinct implemented capability. |
-| **Phase 4 — Experts, Marketplace & Community** | **Partially implemented** | Auditor infrastructure exists; marketplace, community and broader expert ecosystem capabilities remain. |
-| **Phase 5 — Monitor, Subscription & Public Product** | **Partially implemented** | Public verification, notifications and action queues exist; monitoring, subscriptions and the complete public product remain. |
+| **Phase 3 — Guides, Opportunities & Matching** | **Complete** | Issue #14 closed the Phase 3.6 integration, accessibility and regression audit across guidance, opportunities, matching, discovery and recommendations. |
+| **Phase 4 — Experts, Marketplace & Community** | **Complete** | Issues #28–#34 completed and audited the Expert Board, profiles, opportunities, community, marketplace and independence-governance lifecycle. |
+| **Phase 5 — Monitor, Subscription & Public Product** | **Partially implemented** | Public verification, notifications and action queues exist; monitoring, subscriptions, the broader public directory and the complete public product remain. |
 | **Phase 6 — Optimization & Scale** | **Not started** | Reserved for post-core-product optimization and operational scale. |
 
 ### Reconciliation Rules
@@ -605,9 +606,9 @@ The current repository should be understood against the original roadmap as foll
 
 The technical implementation history remains visible because it explains how the original roadmap has been executed.
 
-### Phase 1 Completion — Issue #33
+### Phase 1 Completion — Invariant Audit
 
-Issue **#33** served as the final Phase 1 specification-to-code invariant audit. The audit matrix and executable regression coverage verify lifecycle, methodology, assessment, decision, voting, staffing, Auditor eligibility/conflict, reporting, refunds, compensation, public verification and authorization boundaries.
+The Phase 1 specification-to-code invariant audit established and verified lifecycle, methodology, assessment, decision, voting, staffing, Auditor eligibility/conflict, reporting, refunds, compensation, public verification and authorization boundaries. The former issue reference **#33** has been removed because that issue now belongs to Phase 4.6.
 
 ### Former Technical Phase 2 Completion — Issue #50
 
@@ -620,6 +621,14 @@ Issue **#57** implemented the public verification experience on top of the persi
 ### Auditor / Governance Implementation — Issues #92–#100
 
 Issues **#92–#100** established and audited the main Auditor, Creator post-evaluation and Platform Administrator workflow surfaces. Issue **#100** is the completion gate for that technical Phase 3 grouping and records the regression matrix that must remain true while those surfaces evolve.
+
+### Phase 3 Completion — Issue #14
+
+Issue **#14** closed the Phase 3.6 integration, accessibility and regression audit covering structured guidance, improvement opportunities, matching, public discovery and explainable recommendations.
+
+### Phase 4 Completion — Issues #28–#34
+
+Issues **#28–#34** completed the Expert Board, public expertise discovery, expert opportunities, community participation, marketplace, marketplace governance and final Phase 4 integration audit.
 
 ### Implementation History Rules
 
@@ -641,6 +650,7 @@ The following documents are authoritative or implementation-significant:
 - `docs/phase-2-invariant-audit.md` — Phase 2 domain/invariant audit.
 - `docs/phase-2-ui-regression-audit.md` — Phase 2 UI regression and accessibility audit.
 - `docs/phase-3-integration-audit.md` — technical Phase 3 integration and regression completion gate.
+- `docs/phase-4-integration-audit.md` — Phase 4.7 Expert, marketplace and community integration audit.
 - `docs/issue-31-public-verification-snapshot.md` — public verification snapshot architecture and historical trust representation.
 - `docs/auditor-workspace-conventions.md` — Auditor workspace implementation conventions.
 - `docs/ui-conventions.md` — internal UI conventions.
@@ -761,7 +771,7 @@ Authorization coverage verifies role boundaries, organization tenancy, platform 
 
 ## Regression Tests
 
-Phase-specific regression audits are maintained in `docs/phase-1-invariant-audit.md`, `docs/phase-2-invariant-audit.md`, `docs/phase-2-ui-regression-audit.md` and `docs/phase-3-integration-audit.md`.
+Phase-specific regression audits are maintained in `docs/phase-1-invariant-audit.md`, `docs/phase-2-invariant-audit.md`, `docs/phase-2-ui-regression-audit.md`, `docs/phase-3-integration-audit.md` and `docs/phase-4-integration-audit.md`.
 
 ## CI
 
@@ -1108,35 +1118,33 @@ Historical implementation decisions remain documented rather than silently remov
 
 # Current Direction
 
-The repository has completed the product-definition and application-foundation work and has implemented substantial evaluator, Auditor, governance, report, Validation and public-verification capabilities.
+The repository has completed the product-definition and application-foundation work and has implemented the evaluator, Auditor, governance, report, Validation, public-verification, Guides, Opportunities & Matching, Expert, marketplace and community capabilities described by Phases 0–4.
 
-The current product roadmap returns to the original product sequence rather than creating another parallel phase numbering system.
+The current product roadmap continues with the original product sequence. Phase 5 is now the active roadmap phase rather than creating another parallel phase numbering system.
 
 ### Immediate Objective
 
-The next major original product capability is **Phase 3 — Guides, Opportunities & Matching**.
+The next major original product capability is **Phase 5 — Monitor, Subscription & Public Product**.
 
-This phase should build actionable guidance, improvement opportunities, matching and discovery on top of the existing Evaluation, Finding, Report and Validation foundations.
+This phase should build monitoring of Validation/trust state, subscription products, the broader public directory and discovery experience, public website surfaces and ongoing lifecycle communication on top of the existing Evaluation, Validation, public verification, Expert, marketplace and community foundations.
 
 ### Current Dependencies
 
 - Preserve the existing Evaluation and Validation historical-integrity model.
-- Reuse authoritative Findings, Reports and Validation data rather than creating competing sources of truth.
+- Reuse authoritative Findings, Reports, Validation and public snapshot data rather than creating competing sources of truth.
 - Maintain server-side authorization and tenant isolation.
-- Preserve Auditor independence and prevent recommendation/discovery incentives from influencing validation outcomes.
+- Preserve Auditor and Expert independence and prevent commercial or community incentives from influencing validation outcomes.
 - Keep technical issue numbering subordinate to the original product roadmap.
 
 ### Explicitly Deferred
 
-- Full expert marketplace/community capabilities from Phase 4.
-- Full monitoring/subscription/public-product capabilities from Phase 5.
 - Production-scale optimization, analytics, observability and automation from Phase 6.
 - Dedicated public API and external webhook platform.
 - Dedicated production monitoring/alerting and disaster-recovery documentation.
 
 ### Next Product Milestone
 
-Deliver a dedicated **Guides, Opportunities & Matching** capability that turns validation results into structured, actionable value for creators and useful discovery/matching information for buyers and learners, while preserving the independence and historical integrity of the core Validation system.
+Deliver the first complete **Monitor, Subscription & Public Product** capability, extending the existing verification and discovery foundations into ongoing trust-state monitoring, subscriptions, public directory/product experiences and lifecycle communication while preserving the independence and historical integrity of the core Validation system.
 
 ---
 
@@ -1164,6 +1172,7 @@ Product, domain and architecture decisions should be treated as project-level de
 - `docs/phase-2-invariant-audit.md` — Phase 2 domain/invariant audit.
 - `docs/phase-2-ui-regression-audit.md` — Phase 2 UI regression/accessibility audit.
 - `docs/phase-3-integration-audit.md` — technical Phase 3 integration/regression audit.
+- `docs/phase-4-integration-audit.md` — Phase 4.7 Expert, marketplace and community integration audit.
 - `docs/issue-31-public-verification-snapshot.md` — public verification snapshot specification.
 - `docs/auditor-workspace-conventions.md` — Auditor workspace conventions.
 - `docs/ui-conventions.md` — internal UI conventions.

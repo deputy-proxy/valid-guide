@@ -79,14 +79,14 @@ final class CommunityReportResource extends Resource
     }
 
     /**
-     * @param array<int, BackedEnum> $cases
+     * @param  array<int, BackedEnum> $cases
      * @return array<string, string>
      */
     private static function enumOptions(array $cases): array
     {
         $options = [];
         foreach ($cases as $case) {
-            if (! $case instanceof BackedEnum) {
+            if (! ($case instanceof BackedEnum)) {
                 throw new \LogicException('Community report status cases must be backed enums.');
             }
             $options[(string) $case->value] = str((string) $case->value)->replace('_', ' ')->title()->toString();

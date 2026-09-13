@@ -25,7 +25,7 @@ class CreatorMarketplaceController extends Controller
             ->latest('id')
             ->get();
 
-        return view('creator.marketplace', ['transactions' => $transactions]);
+        return view('creator.marketplace.index', ['transactions' => $transactions]);
     }
 
     public function purchase(Request $request, MarketplaceService $service, MarketplaceTransactionService $transactions): RedirectResponse

@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 use App\Enums\AuditorProfileStatus;
 use App\Enums\ExpertBoardMembershipStatus;
-use App\Enums\ExpertPublicProfileStatus;
 use App\Enums\ExpertiseArea;
+use App\Enums\ExpertPublicProfileStatus;
 use App\Enums\MarketplaceServiceStatus;
 use App\Enums\MarketplaceTransactionStatus;
 use App\Enums\PlatformRole;
@@ -16,8 +16,10 @@ use App\Models\MarketplaceService;
 use App\Models\MarketplaceTransaction;
 use App\Models\User;
 use App\Services\DomainStateTransitionException;
+use App\Services\MarketplaceDiscovery;
 use App\Services\MarketplaceServiceManagement;
 use App\Services\MarketplaceTransactionService;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
 
 function marketplaceExpert(bool $eligible = true): User
@@ -109,7 +111,7 @@ it('discovers only published eligible services without commercial ranking signal
     $firstService = marketplaceService($first, true, 'A service');
     $secondService = marketplaceService($second, true, 'B service');
 
-    $results = app(\App\Services\MarketplaceDiscovery::class)->search();
+    $results = app(MarketplaceDiscovery::class)->search();
 
     expect($results->pluck('id')->all())->toBe([$firstService->id, $secondService->id]);
 });
@@ -164,9 +166,9 @@ it('enforces buyer and provider transaction authorization', function () {
     $transaction = app(MarketplaceTransactionService::class)->create($buyer, $service);
 
     expect(fn () => app(MarketplaceTransactionService::class)->markPaid($transaction, $otherBuyer))
-        ->toThrow(\Illuminate\Auth\Access\AuthorizationException::class)
+        ->toThrow(AuthorizationException::class)
         ->and(fn () => app(MarketplaceTransactionService::class)->markPaid($transaction, $otherExpert))
-        ->toThrow(\Illuminate\Auth\Access\AuthorizationException::class);
+        ->toThrow(AuthorizationException::class);
 });
 
 it('does not couple marketplace transactions to validation state', function () {

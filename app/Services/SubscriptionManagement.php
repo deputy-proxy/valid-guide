@@ -13,7 +13,6 @@ use App\Models\Subscription;
 use App\Models\SubscriptionBillingRecord;
 use App\Models\SubscriptionPlan;
 use App\Models\User;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;

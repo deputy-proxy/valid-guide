@@ -130,3 +130,5 @@ Phase 5 establishes the public product as a set of governed projections and work
 - Subscriptions and billing remain commercial state and cannot influence Validation outcomes or public prominence.
 - Public website content explains the product and routes visitors to authoritative public trust surfaces.
 - Phase 6 owns production-scale optimization, calibration, observability, analytics, reliability and security hardening.
+
+The audit is complete only after the implementation pull request's authoritative CI workflow is green.

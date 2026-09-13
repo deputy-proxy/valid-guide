@@ -12,13 +12,13 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
- * @property int $marketplace_service_id
- * @property int $auditor_profile_id
- * @property int $buyer_id
- * @property int|null $organization_id
+ * @property int                        $marketplace_service_id
+ * @property int                        $auditor_profile_id
+ * @property int                        $buyer_id
+ * @property int|null                   $organization_id
  * @property MarketplaceTransactionStatus $status
- * @property int $amount_minor
- * @property string $currency
+ * @property int                        $amount_minor
+ * @property string                     $currency
  */
 class MarketplaceTransaction extends Model
 {

@@ -25,7 +25,7 @@ final class SubscriptionManagement
 
         return DB::transaction(function () use ($actor, $organization, $plan): Subscription {
             $this->assertBillingMembership($actor, $organization);
-            $plan = SubscriptionPlan::query()->with('entitlements')->lockForUpdate()->findOrFail($plan->getKey());
+            $plan = SubscriptionPlan::query()->with('entitlements')->lockForUpdate()->whereKey($plan->getKey())->firstOrFail();
 
             if ($plan->status !== SubscriptionPlanStatus::Active) {
                 throw new DomainStateTransitionException('Only active subscription plans can be purchased.');
@@ -273,7 +273,7 @@ final class SubscriptionManagement
 
     private function locked(Subscription $subscription): Subscription
     {
-        return Subscription::query()->lockForUpdate()->findOrFail($subscription->getKey());
+        return Subscription::query()->lockForUpdate()->whereKey($subscription->getKey())->firstOrFail();
     }
 
     /** @param list<SubscriptionStatus> $from */

@@ -7,9 +7,9 @@ namespace App\Services;
 use App\Enums\AuditorProfileStatus;
 use App\Enums\ExpertBoardMembershipStatus;
 use App\Enums\ExpertPublicProfileStatus;
+use App\Enums\ExpertiseArea;
 use App\Enums\MarketplaceServiceStatus;
 use App\Enums\ProductType;
-use App\Enums\ExpertiseArea;
 use App\Models\AuditorProfile;
 use App\Models\MarketplaceService;
 use App\Models\User;
@@ -24,6 +24,8 @@ final class MarketplaceServiceManagement
     /** @phpstan-param array<string, mixed> $attributes */
     public function create(User $actor, array $attributes): MarketplaceService
     {
+        Gate::forUser($actor)->authorize('create', MarketplaceService::class);
+
         $validated = Validator::make($attributes, $this->rules())->validate();
         $profile = $this->eligibleProfile($actor);
 
@@ -128,7 +130,7 @@ final class MarketplaceServiceManagement
         return DB::transaction(function () use ($actor, $service): MarketplaceService {
             $service = MarketplaceService::query()->lockForUpdate()->findOrFail($service->getKey());
 
-            if (in_array($service->status, [MarketplaceServiceStatus::Archived], true)) {
+            if ($service->status === MarketplaceServiceStatus::Archived) {
                 throw new DomainStateTransitionException('The marketplace service is already archived.');
             }
 
@@ -139,7 +141,6 @@ final class MarketplaceServiceManagement
         });
     }
 
-    /** @return AuditorProfile */
     private function eligibleProfile(User $actor): AuditorProfile
     {
         $profile = AuditorProfile::query()

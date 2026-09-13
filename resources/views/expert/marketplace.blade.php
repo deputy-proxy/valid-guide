@@ -1,4 +1,4 @@
-<x-layouts.app :title="'Marketplace services'">
+<x-layouts::app :title="'Marketplace services'">
     <div class="mx-auto max-w-6xl space-y-8 p-6">
         <div>
             <p class="text-sm font-medium text-zinc-600 dark:text-zinc-400">Expert marketplace</p>
@@ -105,4 +105,4 @@
             @endif
         </section>
     </div>
-</x-layouts.app>
+</x-layouts::app>

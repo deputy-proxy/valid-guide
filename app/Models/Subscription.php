@@ -6,11 +6,13 @@ namespace App\Models;
 
 use App\Enums\SubscriptionStatus;
 use App\Services\DomainStateTransitionException;
+use Database\Factories\SubscriptionFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Carbon;
 
 /**
  * @property int $id
@@ -26,16 +28,16 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property string $billing_interval_snapshot
  * @property int $billing_interval_count_snapshot
  * @property array<int, array<string, mixed>> $entitlements_snapshot
- * @property \Illuminate\Support\Carbon|null $started_at
- * @property \Illuminate\Support\Carbon|null $current_period_start
- * @property \Illuminate\Support\Carbon|null $current_period_end
+ * @property Carbon|null $started_at
+ * @property Carbon|null $current_period_start
+ * @property Carbon|null $current_period_end
  * @property bool $cancel_at_period_end
- * @property \Illuminate\Support\Carbon|null $cancelled_at
+ * @property Carbon|null $cancelled_at
  * @property string|null $cancellation_reason
- * @property \Illuminate\Support\Carbon|null $failed_at
- * @property \Illuminate\Support\Carbon|null $recovered_at
- * @property \Illuminate\Support\Carbon|null $refunded_at
- * @property \Illuminate\Support\Carbon|null $expires_at
+ * @property Carbon|null $failed_at
+ * @property Carbon|null $recovered_at
+ * @property Carbon|null $refunded_at
+ * @property Carbon|null $expires_at
  */
 #[Fillable([
     'organization_id',
@@ -63,7 +65,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 ])]
 final class Subscription extends Model
 {
-    /** @use HasFactory<\Database\Factories\SubscriptionFactory> */
+    /** @use HasFactory<SubscriptionFactory> */
     use HasFactory;
 
     protected function casts(): array
@@ -87,7 +89,7 @@ final class Subscription extends Model
 
     protected static function booted(): void
     {
-        static::updating(function (self $subscription): void {
+        self::updating(function (self $subscription): void {
             $immutable = [
                 'organization_id',
                 'subscription_plan_id',

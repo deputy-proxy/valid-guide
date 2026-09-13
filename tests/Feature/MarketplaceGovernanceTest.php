@@ -19,6 +19,7 @@ use App\Services\AuditorAssignmentCreation;
 use App\Services\DomainStateTransitionException;
 use App\Services\MarketplaceDiscovery;
 use App\Services\MarketplaceServiceManagement;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 
@@ -138,7 +139,7 @@ it('blocks Auditor assignment after a marketplace relationship with the product 
         2,
         15000,
         'EUR',
-        now()->addDays(3),
+        Carbon::now()->addDays(3),
     ))->toThrow(DomainStateTransitionException::class, 'marketplace commercial relationship');
 
     $audit = AuditLog::query()
@@ -187,7 +188,7 @@ it('allows assignment when the marketplace relationship belongs to another organ
         2,
         15000,
         'EUR',
-        now()->addDays(3),
+        Carbon::now()->addDays(3),
     );
 
     expect($assignment->auditor_id)->toBe($auditor->id);

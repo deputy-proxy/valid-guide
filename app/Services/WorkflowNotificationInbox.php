@@ -68,7 +68,7 @@ final class WorkflowNotificationInbox
 
     private function isStale(?NotificationEventType $eventType, mixed $context): bool
     {
-        if (!is_array($context)) {
+        if (! is_array($context)) {
             return true;
         }
 
@@ -130,7 +130,7 @@ final class WorkflowNotificationInbox
     private function validationStatusIsStale(array $context, string $expected): bool
     {
         $id = $context['validation_id'] ?? null;
-        if (!is_int($id) && !ctype_digit((string) $id)) {
+        if (! is_int($id) && ! ctype_digit((string) $id)) {
             return true;
         }
 
@@ -146,12 +146,12 @@ final class WorkflowNotificationInbox
     private function monitorStatusIsStale(array $context, array $expected): bool
     {
         $id = $context['validation_trust_monitor_id'] ?? null;
-        if (!is_int($id) && !ctype_digit((string) $id)) {
+        if (! is_int($id) && ! ctype_digit((string) $id)) {
             return true;
         }
 
         $monitor = ValidationTrustMonitor::query()->find((int) $id);
-        if ($monitor === null || !in_array($monitor->status->value, $expected, true)) {
+        if ($monitor === null || ! in_array($monitor->status->value, $expected, true)) {
             return true;
         }
 
@@ -169,7 +169,7 @@ final class WorkflowNotificationInbox
     private function subscriptionStatusIsStale(array $context, string $expected): bool
     {
         $id = $context['subscription_id'] ?? null;
-        if (!is_int($id) && !ctype_digit((string) $id)) {
+        if (! is_int($id) && ! ctype_digit((string) $id)) {
             return true;
         }
 
@@ -182,7 +182,7 @@ final class WorkflowNotificationInbox
     private function assignmentIsStale(array $context): bool
     {
         $id = $context['assignment_id'] ?? null;
-        if (!is_int($id) && !ctype_digit((string) $id)) {
+        if (! is_int($id) && ! ctype_digit((string) $id)) {
             return true;
         }
 
@@ -195,7 +195,7 @@ final class WorkflowNotificationInbox
     private function auditorEvaluationIsStale(array $context): bool
     {
         $id = $context['auditor_evaluation_id'] ?? null;
-        if (!is_int($id) && !ctype_digit((string) $id)) {
+        if (! is_int($id) && ! ctype_digit((string) $id)) {
             return true;
         }
 
@@ -208,7 +208,7 @@ final class WorkflowNotificationInbox
     private function reportIsStale(array $context): bool
     {
         $id = $context['report_id'] ?? null;
-        if (!is_int($id) && !ctype_digit((string) $id)) {
+        if (! is_int($id) && ! ctype_digit((string) $id)) {
             return true;
         }
 
@@ -221,7 +221,7 @@ final class WorkflowNotificationInbox
     private function clarificationIsStale(array $context, string $expectedStatus): bool
     {
         $id = $context['clarification_id'] ?? null;
-        if (!is_int($id) && !ctype_digit((string) $id)) {
+        if (! is_int($id) && ! ctype_digit((string) $id)) {
             return true;
         }
 
@@ -234,7 +234,7 @@ final class WorkflowNotificationInbox
     private function disputeIsStale(array $context, bool $resolved = false): bool
     {
         $id = $context['dispute_id'] ?? null;
-        if (!is_int($id) && !ctype_digit((string) $id)) {
+        if (! is_int($id) && ! ctype_digit((string) $id)) {
             return true;
         }
 
@@ -247,14 +247,14 @@ final class WorkflowNotificationInbox
             return $dispute->status->value !== 'resolved';
         }
 
-        return !in_array($dispute->status->value, ['submitted', 'under_review'], true);
+        return ! in_array($dispute->status->value, ['submitted', 'under_review'], true);
     }
 
     /** @param array<string, mixed> $context */
     private function reviewerIsStale(array $context): bool
     {
         $id = $context['dispute_reviewer_id'] ?? null;
-        if (!is_int($id) && !ctype_digit((string) $id)) {
+        if (! is_int($id) && ! ctype_digit((string) $id)) {
             return true;
         }
 
@@ -267,7 +267,7 @@ final class WorkflowNotificationInbox
     private function improvementOpportunityIsStale(array $context, bool $completed): bool
     {
         $id = $context['improvement_opportunity_id'] ?? null;
-        if (!is_int($id) && !ctype_digit((string) $id)) {
+        if (! is_int($id) && ! ctype_digit((string) $id)) {
             return true;
         }
 
@@ -280,6 +280,6 @@ final class WorkflowNotificationInbox
             return $opportunity->status !== ImprovementOpportunityStatus::Completed;
         }
 
-        return !in_array($opportunity->status, [ImprovementOpportunityStatus::Open, ImprovementOpportunityStatus::InProgress], true);
+        return ! in_array($opportunity->status, [ImprovementOpportunityStatus::Open, ImprovementOpportunityStatus::InProgress], true);
     }
 }

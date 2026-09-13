@@ -20,6 +20,7 @@ final class MarketplaceTransactionService
         Gate::forUser($buyer)->authorize('purchase', $service);
 
         return DB::transaction(function () use ($buyer, $service, $organizationId): MarketplaceTransaction {
+            /** @var MarketplaceService $service */
             $service = MarketplaceService::query()->lockForUpdate()->findOrFail($service->getKey());
 
             if ($service->status !== MarketplaceServiceStatus::Published) {
@@ -112,11 +113,14 @@ final class MarketplaceTransactionService
         ], 'marketplace_transaction.refunded');
     }
 
-    /** @param list<MarketplaceTransactionStatus> $allowedFrom */
-    /** @param array<string, mixed> $updates */
+    /**
+     * @param list<MarketplaceTransactionStatus> $allowedFrom
+     * @param array<string, mixed> $updates
+     */
     private function transition(MarketplaceTransaction $transaction, User $actor, MarketplaceTransactionStatus $to, array $allowedFrom, array $updates, string $event): MarketplaceTransaction
     {
         return DB::transaction(function () use ($transaction, $actor, $to, $allowedFrom, $updates, $event): MarketplaceTransaction {
+            /** @var MarketplaceTransaction $transaction */
             $transaction = MarketplaceTransaction::query()->lockForUpdate()->findOrFail($transaction->getKey());
             $from = $transaction->status;
 

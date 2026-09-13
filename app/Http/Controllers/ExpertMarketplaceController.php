@@ -8,6 +8,7 @@ use App\Models\MarketplaceService;
 use App\Models\MarketplaceTransaction;
 use App\Services\MarketplaceServiceManagement;
 use App\Services\MarketplaceTransactionService;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -17,12 +18,16 @@ class ExpertMarketplaceController extends Controller
     public function index(Request $request): View
     {
         $services = MarketplaceService::query()
-            ->whereHas('auditorProfile', fn ($query) => $query->where('auditor_id', $request->user()->getKey()))
+            ->whereHas('auditorProfile', function (Builder $builder) use ($request): void {
+                $builder->where('auditor_id', $request->user()->getKey());
+            })
             ->latest('id')
             ->get();
         $transactions = MarketplaceTransaction::query()
             ->with(['marketplaceService', 'buyer'])
-            ->whereHas('auditorProfile', fn ($query) => $query->where('auditor_id', $request->user()->getKey()))
+            ->whereHas('auditorProfile', function (Builder $builder) use ($request): void {
+                $builder->where('auditor_id', $request->user()->getKey());
+            })
             ->latest('id')
             ->get();
 

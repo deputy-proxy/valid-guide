@@ -29,7 +29,7 @@ it('requires authentication to request a marketplace service', function () {
 
 it('renders the authenticated expert and creator marketplace pages', function () {
     $expert = marketplaceExpert();
-    $expert->update(['email_verified_at' => now()]);
+    $expert->forceFill(['email_verified_at' => now()])->save();
     $buyer = User::factory()->create(['email_verified_at' => now()]);
 
     $this->actingAs($expert)

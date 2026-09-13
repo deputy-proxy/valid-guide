@@ -13,7 +13,7 @@
                     </div>
                     <p class="text-xl font-semibold text-zinc-950 dark:text-white">{{ number_format($service->price_minor / 100, 2) }} {{ $service->currency }}</p>
                 </div>
-                <div class="mt-8 border-t border-zinc-200 pt-8 dark:border-zinc-800">
+                <div class="mt-8 border-t border-zinc-200 pt-8">
                     <p class="whitespace-pre-line text-base leading-7 text-zinc-700 dark:text-zinc-300">{{ $service->description }}</p>
                 </div>
                 @if ($service->auditorProfile?->expertPublicProfile)
@@ -22,9 +22,17 @@
                         <p class="mt-1 text-base font-semibold text-zinc-950 dark:text-white">{{ $service->auditorProfile->expertPublicProfile->display_name }}</p>
                     </div>
                 @endif
+                @auth
+                    <form method="POST" action="{{ route('creator.marketplace.purchase', $service) }}" class="mt-8">
+                        @csrf
+                        <button type="submit" class="w-full rounded-lg bg-zinc-950 px-4 py-3 text-sm font-medium text-white dark:bg-white dark:text-zinc-950">Request this service</button>
+                    </form>
+                @else
+                    <p class="mt-8 rounded-xl border border-zinc-200 p-5 text-sm text-zinc-600 dark:border-zinc-800 dark:text-zinc-400">Sign in to request this service.</p>
+                @endauth
                 <div class="mt-8 rounded-xl border border-zinc-200 p-5 dark:border-zinc-800">
                     <p class="text-sm font-medium text-zinc-950 dark:text-white">Independent marketplace</p>
-                    <p class="mt-1 text-sm leading-6 text-zinc-600 dark:text-zinc-400">Purchasing or completing a marketplace service does not influence Validation status, scoring, Auditor assignment, recommendations, or public trust records.</p>
+                    <p class="mt-1 text-sm leading-6 text-zinc-600 dark:text-zinc-400">Marketplace activity does not influence Validation status, scoring, Auditor assignment, recommendations, or public trust records.</p>
                 </div>
             </div>
         </div>

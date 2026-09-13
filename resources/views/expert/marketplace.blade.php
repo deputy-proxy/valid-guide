@@ -77,5 +77,32 @@
                 </div>
             @endif
         </section>
+
+        <section aria-labelledby="transactions-heading">
+            <h2 id="transactions-heading" class="text-lg font-semibold text-zinc-950 dark:text-white">Engagements</h2>
+            @if ($transactions->isEmpty())
+                <div class="mt-4 rounded-2xl border border-zinc-200 p-6 text-sm text-zinc-600 dark:border-zinc-800 dark:text-zinc-400">No marketplace engagements yet.</div>
+            @else
+                <div class="mt-4 space-y-4">
+                    @foreach ($transactions as $transaction)
+                        <article class="rounded-2xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
+                            <div class="flex flex-wrap items-start justify-between gap-4">
+                                <div>
+                                    <h3 class="font-semibold text-zinc-950 dark:text-white">{{ $transaction->marketplaceService->title }}</h3>
+                                    <p class="mt-1 text-sm text-zinc-600 dark:text-zinc-400">{{ str($transaction->status->value)->replace('_', ' ')->title() }} · Buyer: {{ $transaction->buyer->name }}</p>
+                                </div>
+                                <div class="flex gap-2">
+                                    @if ($transaction->status === \App\Enums\MarketplaceTransactionStatus::Paid)
+                                        <form method="POST" action="{{ route('expert.marketplace.transactions.start', $transaction) }}">@csrf<button class="rounded-lg bg-zinc-950 px-3 py-2 text-sm text-white dark:bg-white dark:text-zinc-950">Start</button></form>
+                                    @elseif ($transaction->status === \App\Enums\MarketplaceTransactionStatus::InProgress)
+                                        <form method="POST" action="{{ route('expert.marketplace.transactions.complete', $transaction) }}">@csrf<button class="rounded-lg bg-zinc-950 px-3 py-2 text-sm text-white dark:bg-white dark:text-zinc-950">Complete</button></form>
+                                    @endif
+                                </div>
+                            </div>
+                        </article>
+                    @endforeach
+                </div>
+            @endif
+        </section>
     </div>
 </x-layouts.app>

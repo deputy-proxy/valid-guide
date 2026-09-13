@@ -32,12 +32,12 @@ final class CreateSubscription extends CreateRecord
         $user = Auth::user();
         abort_unless($user instanceof User, 403);
         $organization = app(OrganizationContext::class)->current($user);
-        $plan = SubscriptionPlan::query()->findOrFail($data['subscription_plan_id']);
+        $plan = SubscriptionPlan::query()->whereKey((int) $data['subscription_plan_id'])->firstOrFail();
 
         return app(SubscriptionManagement::class)->create($user, $organization, $plan);
     }
 
-    protected function getCreatedNotificationTitle(): ?string
+    protected function getCreatedNotificationTitle(): string
     {
         return 'Subscription created and awaiting payment';
     }

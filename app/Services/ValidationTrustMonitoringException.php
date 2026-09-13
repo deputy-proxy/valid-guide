@@ -6,6 +6,4 @@ namespace App\Services;
 
 use RuntimeException;
 
-class ValidationTrustMonitoringException extends RuntimeException
-{
-}
+class ValidationTrustMonitoringException extends RuntimeException {}

@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 use App\Enums\OrganizationRole;
-use App\Enums\PlatformRole;
 use App\Enums\ValidationStatus;
 use App\Enums\ValidationTrustMonitorCadence;
 use App\Enums\ValidationTrustMonitorEventType;
@@ -11,6 +10,8 @@ use App\Enums\ValidationTrustMonitorStatus;
 use App\Models\User;
 use App\Services\ValidationStateTransition;
 use App\Services\ValidationTrustMonitoring;
+use App\Services\ValidationTrustMonitoringException;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
 
 function trustMonitorCreator($validation): array
@@ -114,7 +115,7 @@ it('enforces tenant boundaries for monitor configuration', function () {
     ]);
 
     expect(fn () => app(ValidationTrustMonitoring::class)->configure($validation, $otherUser))
-        ->toThrow(\Illuminate\Auth\Access\AuthorizationException::class)
+        ->toThrow(AuthorizationException::class)
         ->and($organization->id)->not->toBe($otherOrganizationId);
 });
 
@@ -166,5 +167,5 @@ it('does not allow terminal validations to be monitored', function () {
     );
 
     expect(fn () => app(ValidationTrustMonitoring::class)->configure($validation->refresh(), $creator))
-        ->toThrow(\App\Services\ValidationTrustMonitoringException::class);
+        ->toThrow(ValidationTrustMonitoringException::class);
 });

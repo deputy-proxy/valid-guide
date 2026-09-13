@@ -84,7 +84,12 @@ final class CommunityReportResource extends Resource
      */
     private static function enumOptions(array $cases): array
     {
-        return collect($cases)->mapWithKeys(fn (BackedEnum $case): array => [(string) $case->value => str((string) $case->value)->replace('_', ' ')->title()->toString()])->all();
+        $options = [];
+        foreach ($cases as $case) {
+            $options[(string) $case->value] = str((string) $case->value)->replace('_', ' ')->title()->toString();
+        }
+
+        return $options;
     }
 
     private static function run(callable $callback, string $success): void

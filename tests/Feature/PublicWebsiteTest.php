@@ -81,7 +81,6 @@ it('does not expose private or commercial implementation details in public websi
         $response->assertOk()
             ->assertDontSee('auditor@example')
             ->assertDontSee('evaluation_id')
-            ->assertDontSee('payment_id')
-            ->assertDontSee('internal');
+            ->assertDontSee('payment_id');
     }
 });

@@ -34,11 +34,7 @@ final class SubscriptionManagement
 
             $existing = Subscription::query()
                 ->where('organization_id', $organization->getKey())
-                ->whereIn('status', [
-                    SubscriptionStatus::Pending,
-                    SubscriptionStatus::Active,
-                    SubscriptionStatus::PaymentFailed,
-                ])
+                ->whereIn('status', [SubscriptionStatus::Pending, SubscriptionStatus::Active, SubscriptionStatus::PaymentFailed])
                 ->lockForUpdate()
                 ->exists();
 
@@ -65,17 +61,7 @@ final class SubscriptionManagement
             ]);
 
             $this->createBillingRecord($subscription, 1, SubscriptionBillingStatus::Pending, null);
-            AuditLogger::record(
-                event: 'subscription.created',
-                auditable: $subscription,
-                after: [
-                    'status' => SubscriptionStatus::Pending->value,
-                    'plan_code' => $subscription->plan_code_snapshot,
-                    'price_minor' => $subscription->price_minor_snapshot,
-                    'currency' => $subscription->currency_snapshot,
-                ],
-                actor: $actor,
-            );
+            AuditLogger::record(event: 'subscription.created', auditable: $subscription, after: ['status' => SubscriptionStatus::Pending->value, 'plan_code' => $subscription->plan_code_snapshot, 'price_minor' => $subscription->price_minor_snapshot, 'currency' => $subscription->currency_snapshot], actor: $actor);
 
             return $subscription->refresh();
         });
@@ -91,24 +77,10 @@ final class SubscriptionManagement
 
             $now = Carbon::now();
             $end = $this->periodEnd($now, $subscription);
-            $subscription->forceFill([
-                'status' => SubscriptionStatus::Active,
-                'provider' => $provider,
-                'provider_subscription_id' => $providerSubscriptionId,
-                'started_at' => $now,
-                'current_period_start' => $now,
-                'current_period_end' => $end,
-                'failed_at' => null,
-            ])->save();
+            $subscription->forceFill(['status' => SubscriptionStatus::Active, 'provider' => $provider, 'provider_subscription_id' => $providerSubscriptionId, 'started_at' => $now, 'current_period_start' => $now, 'current_period_end' => $end, 'failed_at' => null])->save();
 
             $billing = $subscription->billingRecords()->lockForUpdate()->latest('sequence')->firstOrFail();
-            $billing->forceFill([
-                'status' => SubscriptionBillingStatus::Paid,
-                'provider' => $provider,
-                'provider_payment_id' => $providerSubscriptionId,
-                'paid_at' => $now,
-            ])->save();
-
+            $billing->forceFill(['status' => SubscriptionBillingStatus::Paid, 'provider' => $provider, 'provider_payment_id' => $providerSubscriptionId, 'paid_at' => $now])->save();
             AuditLogger::record(event: 'subscription.activated', auditable: $subscription, before: ['status' => SubscriptionStatus::Pending->value], after: ['status' => SubscriptionStatus::Active->value], actor: $actor);
 
             return $subscription->refresh();
@@ -122,17 +94,11 @@ final class SubscriptionManagement
         return DB::transaction(function () use ($subscription, $actor): Subscription {
             $subscription = $this->locked($subscription);
             $this->assertTransition($subscription, [SubscriptionStatus::Active], SubscriptionStatus::Active);
-
             $previousEnd = $subscription->current_period_end ?? Carbon::now();
             $start = $previousEnd->isFuture() ? $previousEnd : Carbon::now();
             $end = $this->periodEnd($start, $subscription);
             $sequence = ((int) $subscription->billingRecords()->lockForUpdate()->max('sequence')) + 1;
-
-            $subscription->forceFill([
-                'current_period_start' => $start,
-                'current_period_end' => $end,
-            ])->save();
-
+            $subscription->forceFill(['current_period_start' => $start, 'current_period_end' => $end])->save();
             $this->createBillingRecord($subscription, $sequence, SubscriptionBillingStatus::Paid, $start);
             AuditLogger::record(event: 'subscription.renewed', auditable: $subscription, after: ['status' => SubscriptionStatus::Active->value, 'period_end' => $end->toIso8601String(), 'billing_sequence' => $sequence], actor: $actor);
 
@@ -147,20 +113,10 @@ final class SubscriptionManagement
         return DB::transaction(function () use ($subscription, $actor, $reason): Subscription {
             $subscription = $this->locked($subscription);
             $this->assertTransition($subscription, [SubscriptionStatus::Pending, SubscriptionStatus::Active], SubscriptionStatus::PaymentFailed);
-
             $billing = $subscription->billingRecords()->lockForUpdate()->latest('sequence')->firstOrFail();
-            $billing->forceFill([
-                'status' => SubscriptionBillingStatus::Failed,
-                'failed_at' => now(),
-                'failure_reason' => $reason,
-            ])->save();
-
+            $billing->forceFill(['status' => SubscriptionBillingStatus::Failed, 'failed_at' => now(), 'failure_reason' => $reason])->save();
             $from = $subscription->status;
-            $subscription->forceFill([
-                'status' => SubscriptionStatus::PaymentFailed,
-                'failed_at' => now(),
-                'cancel_at_period_end' => false,
-            ])->save();
+            $subscription->forceFill(['status' => SubscriptionStatus::PaymentFailed, 'failed_at' => now(), 'cancel_at_period_end' => false])->save();
             AuditLogger::record(event: 'subscription.payment_failed', auditable: $subscription, before: ['status' => $from->value], after: ['status' => SubscriptionStatus::PaymentFailed->value, 'reason' => $reason], actor: $actor);
 
             return $subscription->refresh();
@@ -174,20 +130,11 @@ final class SubscriptionManagement
         return DB::transaction(function () use ($subscription, $actor): Subscription {
             $subscription = $this->locked($subscription);
             $this->assertTransition($subscription, [SubscriptionStatus::PaymentFailed], SubscriptionStatus::Active);
-
             $now = Carbon::now();
             $start = $subscription->current_period_end?->isFuture() ? $subscription->current_period_end : $now;
             $end = $this->periodEnd($start, $subscription);
             $sequence = ((int) $subscription->billingRecords()->lockForUpdate()->max('sequence')) + 1;
-
-            $subscription->forceFill([
-                'status' => SubscriptionStatus::Active,
-                'recovered_at' => $now,
-                'current_period_start' => $start,
-                'current_period_end' => $end,
-                'failed_at' => null,
-            ])->save();
-
+            $subscription->forceFill(['status' => SubscriptionStatus::Active, 'recovered_at' => $now, 'current_period_start' => $start, 'current_period_end' => $end, 'failed_at' => null])->save();
             $this->createBillingRecord($subscription, $sequence, SubscriptionBillingStatus::Paid, $start);
             AuditLogger::record(event: 'subscription.recovered', auditable: $subscription, before: ['status' => SubscriptionStatus::PaymentFailed->value], after: ['status' => SubscriptionStatus::Active->value], actor: $actor);
 
@@ -202,19 +149,10 @@ final class SubscriptionManagement
         return DB::transaction(function () use ($subscription, $actor, $reason): Subscription {
             $subscription = $this->locked($subscription);
             $this->assertTransition($subscription, [SubscriptionStatus::Active, SubscriptionStatus::PaymentFailed], SubscriptionStatus::Refunded);
-
             $billing = $subscription->billingRecords()->lockForUpdate()->latest('sequence')->firstOrFail();
-            $billing->forceFill([
-                'status' => SubscriptionBillingStatus::Refunded,
-                'refunded_at' => now(),
-                'refund_reason' => $reason,
-            ])->save();
-
+            $billing->forceFill(['status' => SubscriptionBillingStatus::Refunded, 'refunded_at' => now(), 'refund_reason' => $reason])->save();
             $from = $subscription->status;
-            $subscription->forceFill([
-                'status' => SubscriptionStatus::Refunded,
-                'refunded_at' => now(),
-            ])->save();
+            $subscription->forceFill(['status' => SubscriptionStatus::Refunded, 'refunded_at' => now()])->save();
             AuditLogger::record(event: 'subscription.refunded', auditable: $subscription, before: ['status' => $from->value], after: ['status' => SubscriptionStatus::Refunded->value, 'reason' => $reason], actor: $actor);
 
             return $subscription->refresh();
@@ -228,23 +166,12 @@ final class SubscriptionManagement
         return DB::transaction(function () use ($subscription, $actor, $reason): Subscription {
             $subscription = $this->locked($subscription);
             $this->assertTransition($subscription, [SubscriptionStatus::Pending, SubscriptionStatus::Active, SubscriptionStatus::PaymentFailed], SubscriptionStatus::Cancelled);
-
             $from = $subscription->status;
-            $subscription->forceFill([
-                'status' => SubscriptionStatus::Cancelled,
-                'cancelled_at' => now(),
-                'cancellation_reason' => $reason,
-                'cancel_at_period_end' => false,
-            ])->save();
-
+            $subscription->forceFill(['status' => SubscriptionStatus::Cancelled, 'cancelled_at' => now(), 'cancellation_reason' => $reason, 'cancel_at_period_end' => false])->save();
             $billing = $subscription->billingRecords()->lockForUpdate()->latest('sequence')->first();
             if ($billing !== null && $billing->status === SubscriptionBillingStatus::Pending) {
-                $billing->forceFill([
-                    'status' => SubscriptionBillingStatus::Cancelled,
-                    'cancelled_at' => now(),
-                ])->save();
+                $billing->forceFill(['status' => SubscriptionBillingStatus::Cancelled, 'cancelled_at' => now()])->save();
             }
-
             AuditLogger::record(event: 'subscription.cancelled', auditable: $subscription, before: ['status' => $from->value], after: ['status' => SubscriptionStatus::Cancelled->value, 'reason' => $reason], actor: $actor);
 
             return $subscription->refresh();
@@ -258,14 +185,9 @@ final class SubscriptionManagement
         return DB::transaction(function () use ($subscription, $actor): Subscription {
             $subscription = $this->locked($subscription);
             $this->assertTransition($subscription, [SubscriptionStatus::Active, SubscriptionStatus::PaymentFailed], SubscriptionStatus::Expired);
-
             $from = $subscription->status;
             $expiresAt = $subscription->current_period_end ?? Carbon::now();
-            $subscription->forceFill([
-                'status' => SubscriptionStatus::Expired,
-                'expires_at' => $expiresAt,
-            ])->save();
-
+            $subscription->forceFill(['status' => SubscriptionStatus::Expired, 'expires_at' => $expiresAt])->save();
             AuditLogger::record(event: 'subscription.expired', auditable: $subscription, before: ['status' => $from->value], after: ['status' => SubscriptionStatus::Expired->value], actor: $actor);
 
             return $subscription->refresh();
@@ -291,12 +213,7 @@ final class SubscriptionManagement
             return;
         }
 
-        $allowed = [
-            OrganizationRole::Owner->value,
-            OrganizationRole::Admin->value,
-            OrganizationRole::Billing->value,
-        ];
-
+        $allowed = [OrganizationRole::Owner->value, OrganizationRole::Admin->value, OrganizationRole::Billing->value];
         if ($organization->users()->whereKey($actor->getKey())->wherePivotIn('role', $allowed)->exists() === false) {
             throw new DomainStateTransitionException('The user is not authorized to manage billing for this organization.');
         }
@@ -312,7 +229,7 @@ final class SubscriptionManagement
         };
     }
 
-    private function createBillingRecord(Subscription $subscription, int $sequence, SubscriptionBillingStatus $status, ?Carbon $paidAt): SubscriptionBillingRecord
+    private function createBillingRecord(Subscription $subscription, int $sequence, SubscriptionBillingStatus $status, ?CarbonInterface $paidAt): SubscriptionBillingRecord
     {
         $periodStart = $subscription->current_period_start ?? Carbon::now();
         $periodEnd = $subscription->current_period_end ?? $this->periodEnd($periodStart, $subscription);

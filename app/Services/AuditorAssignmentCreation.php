@@ -120,6 +120,21 @@ class AuditorAssignmentCreation
             );
 
             throw $exception;
+        } catch (MarketplaceCommercialConflictException $exception) {
+            AuditLogger::record(
+                event: 'auditor_assignment.marketplace_conflict_detected',
+                auditable: $exception->evaluation,
+                after: [
+                    'auditor_id' => $exception->auditor->id,
+                    'conflict' => 'marketplace_commercial_relationship',
+                ],
+                metadata: [
+                    'determined_by' => $exception->determinedBy->id,
+                ],
+                actor: $exception->determinedBy,
+            );
+
+            throw $exception;
         }
     }
 
@@ -178,6 +193,8 @@ class AuditorAssignmentCreation
 
             throw new PriorProductParticipationException($evaluation, $auditor, $determinedBy);
         }
+
+        app(MarketplaceIndependence::class)->assertAuditorClear($evaluation, $auditor, $determinedBy ?? $auditor);
     }
 
     private function hasPriorProductParticipation(Evaluation $evaluation, User $auditor): bool

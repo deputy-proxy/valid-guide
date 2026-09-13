@@ -92,4 +92,10 @@ class Validation extends Model
     {
         return $this->hasOne(PublicVerificationRecord::class);
     }
+
+    /** @return HasOne<ValidationTrustMonitor, $this> */
+    public function trustMonitor(): HasOne
+    {
+        return $this->hasOne(ValidationTrustMonitor::class);
+    }
 }

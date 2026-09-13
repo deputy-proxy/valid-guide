@@ -30,6 +30,9 @@ class PublicDirectoryController extends Controller
         $audience = $audienceValue !== '' ? ProductAudience::tryFrom($audienceValue) : null;
         $goal = $goalValue !== '' ? ProductGoal::tryFrom($goalValue) : null;
         $productType = $productTypeValue !== '' ? ProductType::tryFrom($productTypeValue) : null;
+        $invalidFilter = ($audienceValue !== '' && $audience === null)
+            || ($goalValue !== '' && $goal === null)
+            || ($productTypeValue !== '' && $productType === null);
         $subject = $subjectArea !== '' ? $subjectArea : null;
         $selectedLanguage = $language !== '' ? $language : null;
 
@@ -41,6 +44,7 @@ class PublicDirectoryController extends Controller
                 productType: $productType,
                 subjectArea: $subject,
                 language: $selectedLanguage,
+                invalidFilter: $invalidFilter,
             ),
             'recommendations' => $this->recommendations->recommend(
                 audience: $audience,
@@ -49,6 +53,7 @@ class PublicDirectoryController extends Controller
                 subjectArea: $subject,
                 language: $selectedLanguage,
                 query: $query !== '' ? $query : null,
+                invalidFilter: $invalidFilter,
             ),
             'query' => $query,
             'audience' => $audienceValue,
@@ -56,6 +61,7 @@ class PublicDirectoryController extends Controller
             'productType' => $productTypeValue,
             'subjectArea' => $subjectArea,
             'language' => $language,
+            'invalidFilter' => $invalidFilter,
             'audiences' => ProductAudience::cases(),
             'goals' => ProductGoal::cases(),
             'productTypes' => ProductType::cases(),

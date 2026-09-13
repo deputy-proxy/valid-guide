@@ -31,7 +31,7 @@
 
                     <div>
                         <label for="directory-goal" class="block text-sm font-medium text-zinc-950 dark:text-white">Use case</label>
-                        <select id="directory-goal" name="goal" class="mt-2 block w-full rounded-lg border border-zinc-300 bg-white px-3 py-2.5 text-sm text-zinc-950 shadow-sm focus:border-zinc-950 focus:ring-2 focus:ring-zinc-950 dark:border-zinc-700 dark:bg-zinc-950 dark:text-white dark:focus:border-white dark:focus:ring-white">
+                        <select id="directory-goal" name="goal" class="mt-2 block w-full rounded-lg border border-zinc-300 bg-white px-3 py-2.5 text-sm text-zinc-950 shadow-sm focus:border-zinc-950 focus:ring-2 focus:ring-zinc-950 dark:border-zinc-700 dark:bg-zinc-950 dark:text-white dark:focus:ring-white">
                             <option value="">Any use case</option>
                             @foreach ($goals as $option)
                                 <option value="{{ $option->value }}" @selected($goal === $option->value)>{{ str($option->value)->replace('_', ' ')->title() }}</option>
@@ -41,7 +41,7 @@
 
                     <div>
                         <label for="directory-type" class="block text-sm font-medium text-zinc-950 dark:text-white">Product type</label>
-                        <select id="directory-type" name="product_type" class="mt-2 block w-full rounded-lg border border-zinc-300 bg-white px-3 py-2.5 text-sm text-zinc-950 shadow-sm focus:border-zinc-950 focus:ring-2 focus:ring-zinc-950 dark:border-zinc-700 dark:bg-zinc-950 dark:text-white dark:focus:border-white dark:focus:ring-white">
+                        <select id="directory-type" name="product_type" class="mt-2 block w-full rounded-lg border border-zinc-300 bg-white px-3 py-2.5 text-sm text-zinc-950 dark:border-zinc-700 dark:bg-zinc-950 dark:text-white dark:focus:ring-white">
                             <option value="">Any type</option>
                             @foreach ($productTypes as $option)
                                 <option value="{{ $option->value }}" @selected($productType === $option->value)>{{ str($option->value)->replace('_', ' ')->title() }}</option>
@@ -51,7 +51,7 @@
 
                     <div>
                         <label for="directory-subject" class="block text-sm font-medium text-zinc-950 dark:text-white">Subject area</label>
-                        <input id="directory-subject" name="subject_area" type="text" value="{{ $subjectArea }}" class="mt-2 block w-full rounded-lg border border-zinc-300 bg-white px-3 py-2.5 text-sm text-zinc-950 shadow-sm focus:border-zinc-950 focus:ring-2 focus:ring-zinc-950 dark:border-zinc-700 dark:bg-zinc-950 dark:text-white dark:focus:border-white dark:focus:ring-white">
+                        <input id="directory-subject" name="subject_area" type="text" value="{{ $subjectArea }}" class="mt-2 block w-full rounded-lg border border-zinc-300 bg-white px-3 py-2.5 text-sm text-zinc-950 shadow-sm focus:border-zinc-950 focus:ring-2 focus:ring-zinc-950 dark:border-zinc-700 dark:bg-zinc-950 dark:text-white dark:focus:ring-white">
                     </div>
 
                     <div>
@@ -66,7 +66,16 @@
                 </div>
             </form>
 
-            @if ($recommendations->isNotEmpty())
+            @if ($invalidFilter)
+                <div class="mt-10">
+                    <x-public.state
+                        title="Invalid directory filter"
+                        message="One or more selected filters are not recognized. Choose a supported filter value or clear the filters and try again."
+                        :action-url="route('public.directory')"
+                        action-label="Clear filters"
+                    />
+                </div>
+            @elseif ($recommendations->isNotEmpty())
                 <section class="mt-10" aria-labelledby="recommendations-heading">
                     <div class="max-w-3xl">
                         <h2 id="recommendations-heading" class="text-xl font-semibold text-zinc-950 dark:text-white">Recommended based on these criteria</h2>
@@ -108,11 +117,11 @@
                     <p class="text-sm text-zinc-600 dark:text-zinc-400">{{ $entries->total() }} results</p>
                 </div>
 
-                @if ($entries->isEmpty())
+                @if ($entries->isEmpty() && ! $invalidFilter)
                     <div class="mt-5">
                         <x-public.state title="No matching products" message="No currently validated products match these discovery criteria. Try removing a filter or broadening your search." :action-url="route('public.directory')" action-label="Clear filters" />
                     </div>
-                @else
+                @elseif (! $invalidFilter)
                     <div class="mt-5 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
                         @foreach ($entries as $entry)
                             <article class="flex h-full flex-col rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/40">

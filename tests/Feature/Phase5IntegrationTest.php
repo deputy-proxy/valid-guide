@@ -102,6 +102,6 @@ it('exercises the phase 5 public trust lifecycle across discovery, verification,
 
     $this->get(route('public.verify.show', ['verificationIdentifier' => $validation->verification_identifier]))
         ->assertOk()
-        ->assertSee('Suspended')
-        ->assertSee('Phase 5 integration suspension.');
+        ->assertSee('Active')
+        ->assertDontSee('Phase 5 integration suspension.');
 });

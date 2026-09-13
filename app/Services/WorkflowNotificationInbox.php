@@ -13,7 +13,10 @@ use App\Models\Dispute;
 use App\Models\DisputeReviewer;
 use App\Models\ImprovementOpportunity;
 use App\Models\Report;
+use App\Models\Subscription;
 use App\Models\User;
+use App\Models\Validation;
+use App\Models\ValidationTrustMonitor;
 use Illuminate\Notifications\DatabaseNotification;
 use Illuminate\Support\Collection;
 
@@ -30,17 +33,17 @@ final class WorkflowNotificationInbox
             ->map(function (DatabaseNotification $notification): array {
                 $data = $notification->data;
                 $eventType = NotificationEventType::tryFrom((string) ($data['event_type'] ?? ''));
-                $eventTypeValue = $eventType === null ? null : strval($eventType->value);
 
                 return [
                     'id' => (string) $notification->getKey(),
                     'category' => (string) ($data['category'] ?? 'system'),
-                    'event_type' => $eventTypeValue,
+                    'event_type' => $eventType?->value,
                     'title' => (string) ($data['title'] ?? 'Notification'),
                     'body' => (string) ($data['body'] ?? ''),
                     'read' => $notification->read(),
                     'created_at' => $notification->created_at?->toIso8601String(),
                     'stale' => $this->isStale($eventType, $data['context'] ?? []),
+                    'action_url' => is_string($data['action_url'] ?? null) ? $data['action_url'] : null,
                 ];
             });
 
@@ -55,7 +58,6 @@ final class WorkflowNotificationInbox
     public function markRead(User $user, string $notificationId): void
     {
         $notification = $user->notifications()->whereKey($notificationId)->firstOrFail();
-
         $notification->markAsRead();
     }
 
@@ -75,20 +77,105 @@ final class WorkflowNotificationInbox
             NotificationEventType::AuditorEvaluationSubmitted => $this->auditorEvaluationIsStale($context),
             NotificationEventType::EvaluationDecisionRecorded,
             NotificationEventType::ValidationIssued,
+            NotificationEventType::ReportDelivered,
+            NotificationEventType::ClarificationSubmitted,
+            NotificationEventType::ClarificationAnswered,
+            NotificationEventType::DisputeSubmitted,
+            NotificationEventType::DisputeReviewerAssigned,
             NotificationEventType::DisputeResolved,
+            NotificationEventType::ImprovementOpportunityCreated,
+            NotificationEventType::ImprovementOpportunityAssigned,
+            NotificationEventType::ImprovementOpportunityCompleted,
             NotificationEventType::ExpertOpportunityPublished,
             NotificationEventType::ExpertOpportunityApplication,
-            NotificationEventType::ExpertOpportunitySelection => false,
+            NotificationEventType::ExpertOpportunitySelection => $this->existingWorkflowIsStale($eventType, $context),
+            NotificationEventType::ValidationReactivated => $this->validationStatusIsStale($context, 'active'),
+            NotificationEventType::ValidationSuspended => $this->validationStatusIsStale($context, 'suspended'),
+            NotificationEventType::ValidationRevoked => $this->validationStatusIsStale($context, 'revoked'),
+            NotificationEventType::ValidationSuperseded => $this->validationStatusIsStale($context, 'superseded'),
+            NotificationEventType::TrustStateChanged => $this->monitorStatusIsStale($context, ['active']),
+            NotificationEventType::TrustMonitoringFailed => $this->monitorStatusIsStale($context, ['failed', 'invalid']),
+            NotificationEventType::TrustMonitoringRecovered => $this->monitorStatusIsStale($context, ['active']),
+            NotificationEventType::TrustMonitoringStale => $this->monitorStatusIsStale($context, ['stale']),
+            NotificationEventType::SubscriptionCreated => $this->subscriptionStatusIsStale($context, 'pending'),
+            NotificationEventType::SubscriptionActivated,
+            NotificationEventType::SubscriptionRenewed,
+            NotificationEventType::SubscriptionRecovered => $this->subscriptionStatusIsStale($context, 'active'),
+            NotificationEventType::SubscriptionPaymentFailed => $this->subscriptionStatusIsStale($context, 'payment_failed'),
+            NotificationEventType::SubscriptionRefunded => $this->subscriptionStatusIsStale($context, 'refunded'),
+            NotificationEventType::SubscriptionCancelled => $this->subscriptionStatusIsStale($context, 'cancelled'),
+            NotificationEventType::SubscriptionExpired => $this->subscriptionStatusIsStale($context, 'expired'),
+            null => true,
+        };
+    }
+
+    /** @param array<string, mixed> $context */
+    private function existingWorkflowIsStale(NotificationEventType $eventType, array $context): bool
+    {
+        return match ($eventType) {
             NotificationEventType::ReportDelivered => $this->reportIsStale($context),
             NotificationEventType::ClarificationSubmitted => $this->clarificationIsStale($context, 'open'),
             NotificationEventType::ClarificationAnswered => $this->clarificationIsStale($context, 'answered'),
             NotificationEventType::DisputeSubmitted => $this->disputeIsStale($context),
             NotificationEventType::DisputeReviewerAssigned => $this->reviewerIsStale($context),
+            NotificationEventType::DisputeResolved => $this->disputeIsStale($context, true),
             NotificationEventType::ImprovementOpportunityCreated,
             NotificationEventType::ImprovementOpportunityAssigned => $this->improvementOpportunityIsStale($context, false),
             NotificationEventType::ImprovementOpportunityCompleted => $this->improvementOpportunityIsStale($context, true),
-            null => true,
+            default => false,
         };
+    }
+
+    /** @param array<string, mixed> $context */
+    private function validationStatusIsStale(array $context, string $expected): bool
+    {
+        $id = $context['validation_id'] ?? null;
+        if (is_int($id) === false && ctype_digit((string) $id) === false) {
+            return true;
+        }
+
+        $validation = Validation::query()->find((int) $id);
+
+        return $validation === null || $validation->status->value !== $expected;
+    }
+
+    /**
+     * @param  array<string, mixed>  $context
+     * @param  list<string>  $expected
+     */
+    private function monitorStatusIsStale(array $context, array $expected): bool
+    {
+        $id = $context['validation_trust_monitor_id'] ?? null;
+        if (is_int($id) === false && ctype_digit((string) $id) === false) {
+            return true;
+        }
+
+        $monitor = ValidationTrustMonitor::query()->find((int) $id);
+        if ($monitor === null || in_array($monitor->status->value, $expected, true) === false) {
+            return true;
+        }
+
+        $eventFingerprint = $context['observed_fingerprint'] ?? $context['failure_fingerprint'] ?? null;
+        if (is_string($eventFingerprint)) {
+            $currentFingerprint = $monitor->observed_fingerprint ?? $monitor->failure_fingerprint;
+
+            return $eventFingerprint !== $currentFingerprint;
+        }
+
+        return false;
+    }
+
+    /** @param array<string, mixed> $context */
+    private function subscriptionStatusIsStale(array $context, string $expected): bool
+    {
+        $id = $context['subscription_id'] ?? null;
+        if (is_int($id) === false && ctype_digit((string) $id) === false) {
+            return true;
+        }
+
+        $subscription = Subscription::query()->find((int) $id);
+
+        return $subscription === null || $subscription->status->value !== $expected;
     }
 
     /** @param array<string, mixed> $context */
@@ -193,9 +280,6 @@ final class WorkflowNotificationInbox
             return $opportunity->status !== ImprovementOpportunityStatus::Completed;
         }
 
-        return ! in_array($opportunity->status, [
-            ImprovementOpportunityStatus::Open,
-            ImprovementOpportunityStatus::InProgress,
-        ], true);
+        return in_array($opportunity->status, [ImprovementOpportunityStatus::Open, ImprovementOpportunityStatus::InProgress], true) === false;
     }
 }

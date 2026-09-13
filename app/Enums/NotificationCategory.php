@@ -13,5 +13,7 @@ enum NotificationCategory: string
     case Report = 'report';
     case Clarification = 'clarification';
     case Dispute = 'dispute';
+    case Trust = 'trust';
+    case Billing = 'billing';
     case System = 'system';
 }

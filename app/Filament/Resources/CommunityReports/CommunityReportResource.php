@@ -78,10 +78,12 @@ final class CommunityReportResource extends Resource
         return ['index' => ListCommunityReports::route('/')];
     }
 
-    /** @return array<string, string> */
+    /**
+     * @param array<int, BackedEnum> $cases
+     * @return array<string, string>
+     */
     private static function enumOptions(array $cases): array
     {
-        /** @var list<BackedEnum> $cases */
         return collect($cases)->mapWithKeys(fn (BackedEnum $case): array => [(string) $case->value => str((string) $case->value)->replace('_', ' ')->title()->toString()])->all();
     }
 

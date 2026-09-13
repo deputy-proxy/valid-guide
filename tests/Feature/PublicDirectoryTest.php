@@ -123,11 +123,8 @@ it('orders equally scored directory entries deterministically', function () {
 });
 
 it('paginates directory results while preserving filters', function () {
-    $validationIdentifiers = [];
-
     for ($index = 0; $index < 13; $index++) {
-        [$validation] = validatedDirectoryFixture();
-        $validationIdentifiers[] = $validation->verification_identifier;
+        validatedDirectoryFixture();
     }
 
     $response = $this->get(route('public.directory', [
@@ -135,12 +132,13 @@ it('paginates directory results while preserving filters', function () {
         'page' => 2,
     ]));
 
-    $response->assertOk()
-        ->assertSee(end($validationIdentifiers));
+    $response->assertOk();
 
     $entries = $response->viewData('entries');
 
     expect($entries->currentPage())->toBe(2)
+        ->and($entries->total())->toBe(13)
+        ->and($entries->count())->toBe(1)
         ->and($entries->url(2))->toContain('audience='.ProductAudience::Professionals->value);
 });
 

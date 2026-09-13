@@ -79,16 +79,7 @@ final class SubscriptionResource extends Resource
             ->filters([
                 SelectFilter::make('status')->options(self::statusOptions()),
             ])
-            ->recordActions([
-                ViewAction::make(),
-                Action::make('cancel')
-                    ->label('Cancel')
-                    ->icon('heroicon-o-x-circle')
-                    ->color('danger')
-                    ->requiresConfirmation()
-                    ->visible(fn (Subscription $record): bool => in_array($record->status, [SubscriptionStatus::Pending, SubscriptionStatus::Active, SubscriptionStatus::PaymentFailed], true))
-                    ->action(fn (Subscription $record) => self::run(fn () => app(SubscriptionManagement::class)->cancel($record, self::authenticatedUser()), 'Subscription cancelled')),
-            ]);
+            ->recordActions(self::recordActions());
     }
 
     public static function getEloquentQuery(): Builder
@@ -122,6 +113,50 @@ final class SubscriptionResource extends Resource
                 $status->value => str($status->value)->replace('_', ' ')->title()->toString(),
             ])
             ->all();
+    }
+
+    /** @return list<Action> */
+    private static function recordActions(): array
+    {
+        return [
+            ViewAction::make(),
+            Action::make('activate')
+                ->visible(fn (Subscription $record): bool => self::isPlatformAdmin() && $record->status === SubscriptionStatus::Pending)
+                ->action(fn (Subscription $record) => self::run(fn () => app(SubscriptionManagement::class)->activate($record, self::authenticatedUser()), 'Subscription activated')),
+            Action::make('renew')
+                ->visible(fn (Subscription $record): bool => self::isPlatformAdmin() && $record->status === SubscriptionStatus::Active)
+                ->action(fn (Subscription $record) => self::run(fn () => app(SubscriptionManagement::class)->renew($record, self::authenticatedUser()), 'Subscription renewed')),
+            Action::make('failPayment')
+                ->visible(fn (Subscription $record): bool => self::isPlatformAdmin() && in_array($record->status, [SubscriptionStatus::Pending, SubscriptionStatus::Active], true))
+                ->requiresConfirmation()
+                ->action(fn (Subscription $record) => self::run(fn () => app(SubscriptionManagement::class)->failPayment($record, self::authenticatedUser(), 'Provider reported a failed billing attempt.'), 'Payment marked as failed')),
+            Action::make('recover')
+                ->visible(fn (Subscription $record): bool => self::isPlatformAdmin() && $record->status === SubscriptionStatus::PaymentFailed)
+                ->action(fn (Subscription $record) => self::run(fn () => app(SubscriptionManagement::class)->recover($record, self::authenticatedUser()), 'Subscription recovered')),
+            Action::make('refund')
+                ->visible(fn (Subscription $record): bool => self::isPlatformAdmin() && in_array($record->status, [SubscriptionStatus::Active, SubscriptionStatus::PaymentFailed], true))
+                ->color('danger')
+                ->requiresConfirmation()
+                ->action(fn (Subscription $record) => self::run(fn () => app(SubscriptionManagement::class)->refund($record, self::authenticatedUser(), 'Refund issued by platform administration.'), 'Subscription refunded')),
+            Action::make('expire')
+                ->visible(fn (Subscription $record): bool => self::isPlatformAdmin() && in_array($record->status, [SubscriptionStatus::Active, SubscriptionStatus::PaymentFailed], true))
+                ->color('warning')
+                ->action(fn (Subscription $record) => self::run(fn () => app(SubscriptionManagement::class)->expire($record, self::authenticatedUser()), 'Subscription expired')),
+            Action::make('cancel')
+                ->label('Cancel')
+                ->icon('heroicon-o-x-circle')
+                ->color('danger')
+                ->requiresConfirmation()
+                ->visible(fn (Subscription $record): bool => in_array($record->status, [SubscriptionStatus::Pending, SubscriptionStatus::Active, SubscriptionStatus::PaymentFailed], true))
+                ->action(fn (Subscription $record) => self::run(fn () => app(SubscriptionManagement::class)->cancel($record, self::authenticatedUser()), 'Subscription cancelled')),
+        ];
+    }
+
+    private static function isPlatformAdmin(): bool
+    {
+        $user = Auth::user();
+
+        return $user instanceof User && $user->isPlatformAdmin();
     }
 
     private static function latestBillingStatus(Subscription $record): string

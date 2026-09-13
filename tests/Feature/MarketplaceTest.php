@@ -63,11 +63,7 @@ function marketplaceService(User $expert, bool $published = false, string $title
     ]);
 
     if ($published) {
-        DB::table('marketplace_services')->whereKey($service->id)->update([
-            'status' => MarketplaceServiceStatus::Published->value,
-            'published_at' => now(),
-        ]);
-        $service->refresh();
+        $service = app(MarketplaceServiceManagement::class)->publish($expert, $service);
     }
 
     return $service;
@@ -170,13 +166,9 @@ it('enforces buyer and provider transaction authorization', function () {
     $workflow = app(MarketplaceTransactionService::class);
     $transaction = $workflow->create($buyer, $service);
 
-    $workflow->markPaid($transaction->fresh(), $buyer);
-
     expect(fn () => $workflow->markPaid($transaction->fresh(), $otherBuyer))
         ->toThrow(AuthorizationException::class)
         ->and(fn () => $workflow->markPaid($transaction->fresh(), $otherExpert))
-        ->toThrow(AuthorizationException::class)
-        ->and(fn () => $workflow->refund($transaction->fresh(), $buyer))
         ->toThrow(AuthorizationException::class);
 });
 

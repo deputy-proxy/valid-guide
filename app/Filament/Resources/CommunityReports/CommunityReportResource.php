@@ -15,6 +15,7 @@ use Filament\Actions\Action;
 use Filament\Forms\Components\Textarea;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
+use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
@@ -32,6 +33,14 @@ final class CommunityReportResource extends Resource
     public static function canAccess(): bool
     {
         return self::user()->isPlatformAdmin();
+    }
+
+    public static function form(Schema $schema): Schema
+    {
+        return $schema->components([
+            Textarea::make('details')->disabled()->rows(5),
+            Textarea::make('resolution_note')->disabled()->rows(4),
+        ]);
     }
 
     public static function table(Table $table): Table

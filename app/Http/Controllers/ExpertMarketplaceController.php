@@ -35,7 +35,7 @@ class ExpertMarketplaceController extends Controller
             ->latest('id')
             ->get();
 
-        return view('expert.marketplace.index', ['services' => $services, 'transactions' => $transactions]);
+        return view('expert.marketplace', ['services' => $services, 'transactions' => $transactions]);
     }
 
     public function store(Request $request, MarketplaceServiceManagement $management): RedirectResponse

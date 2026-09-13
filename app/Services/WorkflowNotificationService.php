@@ -77,7 +77,7 @@ final class WorkflowNotificationService
         }
 
         [$eventType, $title, $body] = $definition;
-        $this->sendToOrganization($organization, NotificationCategory::Trust, $eventType, $title, $body, ['validation_id' => $validation->getKey(), 'evaluation_id' => $validation->evaluation_id, 'status' => $validation->status->value]);
+        $this->sendToOrganization($organization, NotificationCategory::Trust, $eventType, $title, $body, ['validation_id' => $validation->getKey(), 'evaluation_id' => $validation->evaluation_id, 'status' => $validation->status->value, 'updated_at' => $validation->updated_at?->toIso8601String()]);
     }
 
     public function reportDelivered(Report $report): void
@@ -174,7 +174,7 @@ final class WorkflowNotificationService
         }
 
         [$title, $body] = $definition;
-        $this->sendToOrganization($subscription->organization, NotificationCategory::Billing, $eventType, $title, $body, ['subscription_id' => $subscription->getKey(), 'organization_id' => $subscription->organization_id, 'status' => $subscription->status->value]);
+        $this->sendToOrganization($subscription->organization, NotificationCategory::Billing, $eventType, $title, $body, ['subscription_id' => $subscription->getKey(), 'organization_id' => $subscription->organization_id, 'status' => $subscription->status->value, 'updated_at' => $subscription->updated_at?->toIso8601String()]);
     }
 
     /** @param array<string, int|string|null> $context */
@@ -247,6 +247,14 @@ final class WorkflowNotificationService
             return;
         }
 
-        $this->sendToOrganization($organization, NotificationCategory::Trust, $eventType, $title, $body, ['validation_trust_monitor_id' => $monitor->getKey(), 'validation_id' => $monitor->validation_id, 'organization_id' => $monitor->organization_id, 'status' => $monitor->status->value]);
+        $this->sendToOrganization($organization, NotificationCategory::Trust, $eventType, $title, $body, [
+            'validation_trust_monitor_id' => $monitor->getKey(),
+            'validation_id' => $monitor->validation_id,
+            'organization_id' => $monitor->organization_id,
+            'status' => $monitor->status->value,
+            'observed_fingerprint' => $monitor->observed_fingerprint,
+            'failure_fingerprint' => $monitor->failure_fingerprint,
+            'last_checked_at' => $monitor->last_checked_at?->toIso8601String(),
+        ]);
     }
 }

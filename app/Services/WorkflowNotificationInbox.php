@@ -147,8 +147,18 @@ final class WorkflowNotificationInbox
         }
 
         $monitor = ValidationTrustMonitor::query()->find((int) $id);
+        if ($monitor === null || ! in_array($monitor->status->value, $expected, true)) {
+            return true;
+        }
 
-        return $monitor === null || ! in_array($monitor->status->value, $expected, true);
+        $eventFingerprint = $context['observed_fingerprint'] ?? $context['failure_fingerprint'] ?? null;
+        if (is_string($eventFingerprint)) {
+            $currentFingerprint = $monitor->observed_fingerprint ?? $monitor->failure_fingerprint;
+
+            return $eventFingerprint !== $currentFingerprint;
+        }
+
+        return false;
     }
 
     /** @param array<string, mixed> $context */

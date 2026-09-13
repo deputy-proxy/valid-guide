@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 use App\Enums\AuditorProfileStatus;
 use App\Enums\ExpertBoardMembershipStatus;
+use App\Enums\ExpertiseArea;
 use App\Enums\ExpertPublicProfileStatus;
 use App\Enums\MarketplaceServiceStatus;
-use App\Enums\ExpertiseArea;
 use App\Models\AuditorProfile;
 use App\Models\ExpertBoardMembership;
 use App\Models\ExpertPublicProfile;
@@ -41,7 +41,7 @@ function marketplaceUiExpert(): User
 
 function marketplaceUiService(User $expert, bool $published, string $title): MarketplaceService
 {
-    $service = MarketplaceService::create([
+    return MarketplaceService::create([
         'auditor_profile_id' => $expert->auditorProfile->id,
         'title' => $title,
         'slug' => 'ui-service-'.uniqid(),
@@ -53,8 +53,6 @@ function marketplaceUiService(User $expert, bool $published, string $title): Mar
         'status' => $published ? MarketplaceServiceStatus::Published : MarketplaceServiceStatus::Draft,
         'published_at' => $published ? now() : null,
     ]);
-
-    return $service;
 }
 
 it('renders the public marketplace and excludes unavailable services', function () {

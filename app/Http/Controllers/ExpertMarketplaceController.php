@@ -6,6 +6,7 @@ namespace App\Http\Controllers;
 
 use App\Models\MarketplaceService;
 use App\Models\MarketplaceTransaction;
+use App\Models\User;
 use App\Services\MarketplaceServiceManagement;
 use App\Services\MarketplaceTransactionService;
 use Illuminate\Database\Eloquent\Builder;
@@ -17,16 +18,19 @@ class ExpertMarketplaceController extends Controller
 {
     public function index(Request $request): View
     {
+        abort_unless($request->user() instanceof User, 401);
+        $user = $request->user();
+
         $services = MarketplaceService::query()
-            ->whereHas('auditorProfile', function (Builder $builder) use ($request): void {
-                $builder->where('auditor_id', $request->user()->getKey());
+            ->whereHas('auditorProfile', function (Builder $builder) use ($user): void {
+                $builder->where('auditor_id', $user->getKey());
             })
             ->latest('id')
             ->get();
         $transactions = MarketplaceTransaction::query()
             ->with(['marketplaceService', 'buyer'])
-            ->whereHas('auditorProfile', function (Builder $builder) use ($request): void {
-                $builder->where('auditor_id', $request->user()->getKey());
+            ->whereHas('auditorProfile', function (Builder $builder) use ($user): void {
+                $builder->where('auditor_id', $user->getKey());
             })
             ->latest('id')
             ->get();
@@ -36,6 +40,7 @@ class ExpertMarketplaceController extends Controller
 
     public function store(Request $request, MarketplaceServiceManagement $management): RedirectResponse
     {
+        abort_unless($request->user() instanceof User, 401);
         $management->create($request->user(), $request->all());
 
         return to_route('expert.marketplace')->with('status', 'Marketplace service saved as a draft.');
@@ -43,6 +48,7 @@ class ExpertMarketplaceController extends Controller
 
     public function publish(MarketplaceService $service, MarketplaceServiceManagement $management, Request $request): RedirectResponse
     {
+        abort_unless($request->user() instanceof User, 401);
         $management->publish($request->user(), $service);
 
         return to_route('expert.marketplace')->with('status', 'Marketplace service published.');
@@ -50,6 +56,7 @@ class ExpertMarketplaceController extends Controller
 
     public function pause(MarketplaceService $service, MarketplaceServiceManagement $management, Request $request): RedirectResponse
     {
+        abort_unless($request->user() instanceof User, 401);
         $management->pause($request->user(), $service);
 
         return to_route('expert.marketplace')->with('status', 'Marketplace service paused.');
@@ -57,6 +64,7 @@ class ExpertMarketplaceController extends Controller
 
     public function archive(MarketplaceService $service, MarketplaceServiceManagement $management, Request $request): RedirectResponse
     {
+        abort_unless($request->user() instanceof User, 401);
         $management->archive($request->user(), $service);
 
         return to_route('expert.marketplace')->with('status', 'Marketplace service archived.');
@@ -64,6 +72,7 @@ class ExpertMarketplaceController extends Controller
 
     public function startTransaction(MarketplaceTransaction $transaction, MarketplaceTransactionService $transactions, Request $request): RedirectResponse
     {
+        abort_unless($request->user() instanceof User, 401);
         $transactions->start($transaction, $request->user());
 
         return to_route('expert.marketplace')->with('status', 'Marketplace engagement started.');
@@ -71,6 +80,7 @@ class ExpertMarketplaceController extends Controller
 
     public function completeTransaction(MarketplaceTransaction $transaction, MarketplaceTransactionService $transactions, Request $request): RedirectResponse
     {
+        abort_unless($request->user() instanceof User, 401);
         $transactions->complete($transaction, $request->user());
 
         return to_route('expert.marketplace')->with('status', 'Marketplace engagement completed.');

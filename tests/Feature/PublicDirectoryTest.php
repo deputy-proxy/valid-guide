@@ -136,8 +136,12 @@ it('paginates directory results while preserving filters', function () {
     ]));
 
     $response->assertOk()
-        ->assertSee(end($validationIdentifiers))
-        ->assertSee('audience='.ProductAudience::Professionals->value, false);
+        ->assertSee(end($validationIdentifiers));
+
+    $entries = $response->viewData('entries');
+
+    expect($entries->currentPage())->toBe(2)
+        ->and($entries->getOptions()['query']['audience'])->toBe(ProductAudience::Professionals->value);
 });
 
 it('does not present suspended validation as currently validated in the directory', function () {

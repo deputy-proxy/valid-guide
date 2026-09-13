@@ -43,8 +43,6 @@ class MarketplaceTransactionPolicy
 
     public function refund(User $user, MarketplaceTransaction $transaction): bool
     {
-        return $transaction->buyer_id === $user->getKey()
-            || $transaction->auditorProfile()->where('auditor_id', $user->getKey())->exists()
-            || $user->isPlatformAdmin();
+        return $user->isPlatformAdmin();
     }
 }

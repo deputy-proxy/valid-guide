@@ -13,12 +13,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
- * @property int                      $auditor_profile_id
+ * @property int $auditor_profile_id
  * @property MarketplaceServiceStatus $status
- * @property list<string>|null        $expertise_areas
- * @property list<string>|null        $product_types
- * @property int                      $price_minor
- * @property string                   $currency
+ * @property list<string>|null $expertise_areas
+ * @property list<string>|null $product_types
+ * @property int $price_minor
+ * @property string $currency
  */
 class MarketplaceService extends Model
 {

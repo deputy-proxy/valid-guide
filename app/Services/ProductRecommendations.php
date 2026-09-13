@@ -9,10 +9,13 @@ use App\Enums\ProductGoal;
 use App\Enums\ProductType;
 use App\Enums\ValidationStatus;
 use App\Models\PublicDirectoryEntry;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 
 class ProductRecommendations
 {
+    private const CANDIDATE_LIMIT = 50;
+
     /**
      * @return Collection<int, ProductRecommendation>
      */
@@ -24,7 +27,12 @@ class ProductRecommendations
         ?string $language = null,
         ?string $query = null,
         int $limit = 3,
+        bool $invalidFilter = false,
     ): Collection {
+        if ($invalidFilter || $limit <= 0) {
+            return collect();
+        }
+
         $query = $query !== null ? trim($query) : null;
         $subjectArea = $subjectArea !== null ? trim($subjectArea) : null;
         $language = $language !== null ? trim($language) : null;
@@ -34,9 +42,56 @@ class ProductRecommendations
             || $subjectArea !== null && $subjectArea !== ''
             || $language !== null && $language !== '';
 
-        $entries = PublicDirectoryEntry::query()
+        $builder = PublicDirectoryEntry::query()
             ->where('directory_visible', true)
-            ->where('validation_status', ValidationStatus::Active->value)
+            ->where('validation_status', ValidationStatus::Active->value);
+
+        if ($query !== null && $query !== '') {
+            $builder->where(function (Builder $builder) use ($query): void {
+                $builder->where('title', 'like', '%'.$query.'%')
+                    ->orWhere('creator_name', 'like', '%'.$query.'%')
+                    ->orWhere('subject_area', 'like', '%'.$query.'%');
+            });
+        }
+
+        if ($hasMatchingCriteria) {
+            $builder->where(function (Builder $builder) use ($audience, $goal, $productType, $subjectArea, $language): void {
+                $hasPreviousCondition = false;
+
+                if ($audience !== null) {
+                    $builder->whereJsonContains('matching_audiences', $audience->value);
+                    $hasPreviousCondition = true;
+                }
+
+                if ($goal !== null) {
+                    $method = $hasPreviousCondition ? 'orWhereJsonContains' : 'whereJsonContains';
+                    $builder->{$method}('matching_goals', $goal->value);
+                    $hasPreviousCondition = true;
+                }
+
+                if ($productType !== null) {
+                    $method = $hasPreviousCondition ? 'orWhere' : 'where';
+                    $builder->{$method}('product_type', $productType->value);
+                    $hasPreviousCondition = true;
+                }
+
+                if ($subjectArea !== null && $subjectArea !== '') {
+                    $method = $hasPreviousCondition ? 'orWhereRaw' : 'whereRaw';
+                    $builder->{$method}('lower(subject_area) = ?', [mb_strtolower($subjectArea)]);
+                    $hasPreviousCondition = true;
+                }
+
+                if ($language !== null && $language !== '') {
+                    $method = $hasPreviousCondition ? 'orWhereRaw' : 'whereRaw';
+                    $builder->{$method}('lower(language) = ?', [mb_strtolower($language)]);
+                }
+            });
+        }
+
+        $entries = $builder
+            ->orderBy('title')
+            ->orderBy('verification_identifier')
+            ->limit(self::CANDIDATE_LIMIT)
             ->get();
 
         return $entries
@@ -64,7 +119,7 @@ class ProductRecommendations
                     ? $title
                     : strcasecmp($left->verificationIdentifier, $right->verificationIdentifier);
             })
-            ->take(max(0, $limit))
+            ->take($limit)
             ->values();
     }
 
@@ -82,7 +137,7 @@ class ProductRecommendations
         /** @var list<string> $reasons */
         $reasons = [];
 
-        if ($query !== null && $query !== '') {
+        if ($query !== null && $query !== '' && $this->matchesSearch($entry, $query)) {
             $score++;
             $reasons[] = 'Matches your search.';
         }
@@ -112,7 +167,7 @@ class ProductRecommendations
             $reasons[] = sprintf('Matches language: %s.', $entry->language);
         }
 
-        if ($hasMatchingCriteria && $score === 0) {
+        if (($hasMatchingCriteria || $query !== null && $query !== '') && $score === 0) {
             return null;
         }
 
@@ -130,6 +185,15 @@ class ProductRecommendations
             score: $score,
             reasons: $reasons,
         );
+    }
+
+    private function matchesSearch(PublicDirectoryEntry $entry, string $query): bool
+    {
+        $needle = mb_strtolower($query);
+
+        return str_contains(mb_strtolower((string) $entry->title), $needle)
+            || str_contains(mb_strtolower((string) $entry->creator_name), $needle)
+            || str_contains(mb_strtolower((string) $entry->subject_area), $needle);
     }
 
     /** @param array<int|string, mixed>|null $values */

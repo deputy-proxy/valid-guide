@@ -29,7 +29,8 @@ it('requires authentication to request a marketplace service', function () {
 
 it('renders the authenticated expert and creator marketplace pages', function () {
     $expert = marketplaceExpert();
-    $buyer = User::factory()->create();
+    $expert->update(['email_verified_at' => now()]);
+    $buyer = User::factory()->create(['email_verified_at' => now()]);
 
     $this->actingAs($expert)
         ->get(route('expert.marketplace'))

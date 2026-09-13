@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace App\Filament\Resources\Subscriptions\Pages;
 
 use App\Filament\Resources\Subscriptions\SubscriptionResource;
+use App\Models\User;
 use Filament\Actions;
 use Filament\Resources\Pages\ListRecords;
 use Illuminate\Support\Facades\Auth;
-use App\Models\User;
 
 final class ListSubscriptions extends ListRecords
 {

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Enums\SubscriptionPlanStatus;
+use Database\Factories\SubscriptionPlanFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -33,7 +34,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 ])]
 final class SubscriptionPlan extends Model
 {
-    /** @use HasFactory<\Database\Factories\SubscriptionPlanFactory> */
+    /** @use HasFactory<SubscriptionPlanFactory> */
     use HasFactory;
 
     protected function casts(): array

@@ -76,4 +76,10 @@ class AuditorProfile extends Model
     {
         return $this->hasMany(ExpertOpportunityParticipation::class);
     }
+
+    /** @return HasMany<CommunityContribution, $this> */
+    public function communityContributions(): HasMany
+    {
+        return $this->hasMany(CommunityContribution::class);
+    }
 }

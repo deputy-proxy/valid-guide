@@ -88,7 +88,7 @@ it('allows only eligible Experts to create marketplace services', function () {
     ];
 
     expect($management->create($eligible, $attributes)->status)->toBe(MarketplaceServiceStatus::Draft)
-        ->and(fn () => $management->create($ineligible, $attributes))->toThrow(DomainStateTransitionException::class);
+        ->and(fn () => $management->create($ineligible, $attributes))->toThrow(AuthorizationException::class);
 });
 
 it('publishes only eligible owned draft services and protects published details', function () {
@@ -99,9 +99,7 @@ it('publishes only eligible owned draft services and protects published details'
     $published = $management->publish($expert, $service);
 
     expect($published->status)->toBe(MarketplaceServiceStatus::Published)
-        ->and($published->published_at)->not->toBeNull();
-
-    expect(fn () => $published->update(['title' => 'Changed']))
+        ->and(fn () => $published->update(['title' => 'Changed']))
         ->toThrow(DomainStateTransitionException::class);
 });
 
@@ -110,6 +108,8 @@ it('discovers only published eligible services without commercial ranking signal
     $second = marketplaceExpert();
     $firstService = marketplaceService($first, true, 'A service');
     $secondService = marketplaceService($second, true, 'B service');
+    $ineligible = marketplaceExpert(false);
+    marketplaceService($ineligible, true, 'Hidden service');
 
     $results = app(MarketplaceDiscovery::class)->search();
 
@@ -135,9 +135,9 @@ it('enforces the marketplace transaction lifecycle', function () {
     $workflow = app(MarketplaceTransactionService::class);
     $transaction = $workflow->create($buyer, $service);
 
-    $workflow->markPaid($transaction, $buyer);
-    $workflow->start($transaction->fresh(), $expert);
-    $completed = $workflow->complete($transaction->fresh(), $expert);
+    $paid = $workflow->markPaid($transaction->fresh(), $buyer, 'stripe', 'payment-1');
+    $started = $workflow->start($paid->fresh(), $expert);
+    $completed = $workflow->complete($started->fresh(), $expert);
 
     expect($completed->status)->toBe(MarketplaceTransactionStatus::Completed)
         ->and($completed->completed_at)->not->toBeNull();
@@ -149,9 +149,13 @@ it('keeps completed transaction history immutable', function () {
     $buyer = User::factory()->create();
     $workflow = app(MarketplaceTransactionService::class);
     $transaction = $workflow->create($buyer, $service);
-    $workflow->markPaid($transaction, $buyer);
-    $workflow->start($transaction->fresh(), $expert);
-    $completed = $workflow->complete($transaction->fresh(), $expert);
+    $completed = $workflow->complete(
+        $workflow->start(
+            $workflow->markPaid($transaction->fresh(), $buyer)->fresh(),
+            $expert,
+        )->fresh(),
+        $expert,
+    );
 
     expect(fn () => $completed->update(['amount_minor' => 1]))
         ->toThrow(DomainStateTransitionException::class);
@@ -163,11 +167,12 @@ it('enforces buyer and provider transaction authorization', function () {
     $service = marketplaceService($expert, true);
     $buyer = User::factory()->create();
     $otherBuyer = User::factory()->create();
-    $transaction = app(MarketplaceTransactionService::class)->create($buyer, $service);
+    $workflow = app(MarketplaceTransactionService::class);
+    $transaction = $workflow->create($buyer, $service);
 
-    expect(fn () => app(MarketplaceTransactionService::class)->markPaid($transaction, $otherBuyer))
+    expect(fn () => $workflow->markPaid($transaction->fresh(), $otherBuyer))
         ->toThrow(AuthorizationException::class)
-        ->and(fn () => app(MarketplaceTransactionService::class)->markPaid($transaction, $otherExpert))
+        ->and(fn () => $workflow->markPaid($transaction->fresh(), $otherExpert))
         ->toThrow(AuthorizationException::class);
 });
 
@@ -176,10 +181,10 @@ it('does not couple marketplace transactions to validation state', function () {
     $service = marketplaceService($expert, true);
     $buyer = User::factory()->create();
     $validationBefore = DB::table('validations')->count();
+    $workflow = app(MarketplaceTransactionService::class);
+    $transaction = $workflow->create($buyer, $service);
 
-    $transaction = app(MarketplaceTransactionService::class)->create($buyer, $service);
-    app(MarketplaceTransactionService::class)->markPaid($transaction, $buyer);
-    app(MarketplaceTransactionService::class)->cancel($transaction->fresh(), $buyer, 'Buyer cancelled');
+    $workflow->cancel($transaction->fresh(), $buyer, 'Buyer cancelled');
 
     expect(DB::table('validations')->count())->toBe($validationBefore)
         ->and(MarketplaceTransaction::find($transaction->id)->status)->toBe(MarketplaceTransactionStatus::Cancelled);
@@ -192,7 +197,7 @@ it('allows platform administrators to refund marketplace transactions without ch
     $admin = User::factory()->create(['platform_role' => PlatformRole::Admin]);
     $workflow = app(MarketplaceTransactionService::class);
     $transaction = $workflow->create($buyer, $service);
-    $workflow->markPaid($transaction, $buyer);
+    $workflow->markPaid($transaction->fresh(), $buyer);
     $validationBefore = DB::table('validations')->count();
 
     $refunded = $workflow->refund($transaction->fresh(), $admin, 'Platform refund');

@@ -71,9 +71,6 @@ jobs:
                       '### Next Product Milestone\n\nDeliver the first complete **Optimization & Scale** capability, extending the now-complete product foundation with measured calibration, quality, performance, reliability, observability, security and operational improvements while preserving the independence and historical integrity of the core Validation system.'
                   ),
               ],
-              Path('.github/AI_DEVELOPMENT_RULES.md'): [
-                  ('.github/workflows/test.yml', '.github/workflows/tests.yml'),
-              ],
           }
 
           for path, pairs in replacements.items():
@@ -86,12 +83,10 @@ jobs:
               path.write_text(text)
       - name: Remove temporary workflow and commit
         shell: bash
-        env:
-          GH_TOKEN: ${{ github.token }}
         run: |
           git rm .github/workflows/phase-5-doc-update.yml
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add README.md .github/AI_DEVELOPMENT_RULES.md
+          git add README.md
           git commit -m "docs: complete phase 5 documentation"
           git push

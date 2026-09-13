@@ -228,9 +228,11 @@ class ValidationTrustMonitoring
                 return ['changed' => $changed, 'failed' => false, 'recovered' => $recoverable, 'skipped' => false];
             } catch (ValidationTrustMonitoringException $exception) {
                 $this->markInvalid($monitor, $exception->getMessage(), $now);
+
                 return ['changed' => false, 'failed' => true, 'recovered' => false, 'skipped' => false];
             } catch (Throwable $exception) {
                 $this->markFailed($monitor, $exception, $now);
+
                 return ['changed' => false, 'failed' => true, 'recovered' => false, 'skipped' => false];
             }
         });

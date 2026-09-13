@@ -138,7 +138,10 @@ final class WorkflowNotificationInbox
         return $validation === null || $validation->status->value !== $expected;
     }
 
-    /** @param array<string, mixed> $context */
+    /**
+     * @param array<string, mixed> $context
+     * @param list<string> $expected
+     */
     private function monitorStatusIsStale(array $context, array $expected): bool
     {
         $id = $context['validation_trust_monitor_id'] ?? null;

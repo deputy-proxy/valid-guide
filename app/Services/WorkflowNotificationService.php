@@ -254,7 +254,7 @@ final class WorkflowNotificationService
             'status' => $monitor->status->value,
             'observed_fingerprint' => $monitor->observed_fingerprint,
             'failure_fingerprint' => $monitor->failure_fingerprint,
-            'last_checked_at' => $monitor->last_checked_at?->toIso8601String(),
+            'last_checked_at' => $monitor->last_checked_at,
         ]);
     }
 }

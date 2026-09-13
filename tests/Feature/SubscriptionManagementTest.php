@@ -13,13 +13,15 @@ use App\Models\SubscriptionPlanEntitlement;
 use App\Models\User;
 use App\Services\DomainStateTransitionException;
 use App\Services\SubscriptionManagement;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 
 uses(RefreshDatabase::class);
 
 function subscriptionOrganization(string $name = 'Subscription Test'): array
 {
-    $organizationId = \Illuminate\Support\Facades\DB::table('organizations')->insertGetId([
+    $organizationId = DB::table('organizations')->insertGetId([
         'name' => $name,
         'slug' => strtolower(str_replace(' ', '-', $name)).'-'.uniqid(),
         'status' => 'active',
@@ -79,7 +81,7 @@ it('blocks creation for non-billing members and inactive plans', function () {
     $service = app(SubscriptionManagement::class);
 
     expect(fn () => $service->create($editor, $organization, $draft))
-        ->toThrow(\Illuminate\Auth\Access\AuthorizationException::class);
+        ->toThrow(AuthorizationException::class);
 
     expect(fn () => $service->create($billingUser, $organization, $draft))
         ->toThrow(DomainStateTransitionException::class, 'Only active subscription plans can be purchased.');
@@ -99,7 +101,7 @@ it('enforces organization isolation and allows billing users to see only their o
         ->toBe([$second->id]);
 
     expect(fn () => app(SubscriptionManagement::class)->cancel($second, $user))
-        ->toThrow(\Illuminate\Auth\Access\AuthorizationException::class);
+        ->toThrow(AuthorizationException::class);
 });
 
 it('supports activation, renewal, failed payment recovery and refund transitions', function () {

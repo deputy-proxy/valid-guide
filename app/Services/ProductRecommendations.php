@@ -64,26 +64,41 @@ class ProductRecommendations
                 }
 
                 if ($goal !== null) {
-                    $method = $hasPreviousCondition ? 'orWhereJsonContains' : 'whereJsonContains';
-                    $builder->{$method}('matching_goals', $goal->value);
+                    if ($hasPreviousCondition) {
+                        $builder->orWhereJsonContains('matching_goals', $goal->value);
+                    } else {
+                        $builder->whereJsonContains('matching_goals', $goal->value);
+                    }
+
                     $hasPreviousCondition = true;
                 }
 
                 if ($productType !== null) {
-                    $method = $hasPreviousCondition ? 'orWhere' : 'where';
-                    $builder->{$method}('product_type', $productType->value);
+                    if ($hasPreviousCondition) {
+                        $builder->orWhere('product_type', $productType->value);
+                    } else {
+                        $builder->where('product_type', $productType->value);
+                    }
+
                     $hasPreviousCondition = true;
                 }
 
                 if ($subjectArea !== null && $subjectArea !== '') {
-                    $method = $hasPreviousCondition ? 'orWhereRaw' : 'whereRaw';
-                    $builder->{$method}('lower(subject_area) = ?', [mb_strtolower($subjectArea)]);
+                    if ($hasPreviousCondition) {
+                        $builder->orWhereRaw('lower(subject_area) = ?', [mb_strtolower($subjectArea)]);
+                    } else {
+                        $builder->whereRaw('lower(subject_area) = ?', [mb_strtolower($subjectArea)]);
+                    }
+
                     $hasPreviousCondition = true;
                 }
 
                 if ($language !== null && $language !== '') {
-                    $method = $hasPreviousCondition ? 'orWhereRaw' : 'whereRaw';
-                    $builder->{$method}('lower(language) = ?', [mb_strtolower($language)]);
+                    if ($hasPreviousCondition) {
+                        $builder->orWhereRaw('lower(language) = ?', [mb_strtolower($language)]);
+                    } else {
+                        $builder->whereRaw('lower(language) = ?', [mb_strtolower($language)]);
+                    }
                 }
             });
         }

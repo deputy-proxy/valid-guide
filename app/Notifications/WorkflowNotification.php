@@ -22,6 +22,7 @@ final class WorkflowNotification extends Notification implements ShouldQueue
         public readonly string $title,
         public readonly string $body,
         public readonly array $context = [],
+        public readonly ?string $actionUrl = null,
     ) {
         $this->afterCommit();
     }
@@ -41,6 +42,7 @@ final class WorkflowNotification extends Notification implements ShouldQueue
             'title' => $this->title,
             'body' => $this->body,
             'context' => $this->context,
+            'action_url' => $this->actionUrl,
         ];
     }
 

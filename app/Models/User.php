@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Enums\NotificationCategory;
 use App\Enums\PlatformRole;
 use Database\Factories\UserFactory;
 use Filament\Models\Contracts\FilamentUser;
@@ -29,6 +30,7 @@ use Laravel\Fortify\TwoFactorAuthenticatable;
  * @property Carbon|null $email_verified_at
  * @property string $password
  * @property PlatformRole|null $platform_role
+ * @property array<string, bool>|null $notification_preferences
  * @property string|null $two_factor_secret
  * @property string|null $two_factor_recovery_codes
  * @property Carbon|null $two_factor_confirmed_at
@@ -49,6 +51,7 @@ class User extends Authenticatable implements FilamentUser, PasskeyUser
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'platform_role' => PlatformRole::class,
+            'notification_preferences' => 'array',
         ];
     }
 
@@ -74,6 +77,19 @@ class User extends Authenticatable implements FilamentUser, PasskeyUser
     public function isPlatformAdmin(): bool
     {
         return $this->platform_role === PlatformRole::Admin;
+    }
+
+    public function canReceiveNotification(NotificationCategory $category): bool
+    {
+        return ($this->notification_preferences ?? [])[$category->value] ?? true;
+    }
+
+    public function setNotificationPreference(NotificationCategory $category, bool $enabled): void
+    {
+        $preferences = $this->notification_preferences ?? [];
+        $preferences[$category->value] = $enabled;
+        $this->notification_preferences = $preferences;
+        $this->save();
     }
 
     public function canAccessPanel(Panel $panel): bool

@@ -47,6 +47,11 @@
                         <div>
                             <p class="font-medium text-zinc-900">{{ $notification['title'] }}</p>
                             <p class="mt-1 text-sm text-zinc-600">{{ $notification['body'] }}</p>
+                            @if ($notification['action_url'])
+                                <a href="{{ $notification['action_url'] }}" wire:navigate class="mt-2 inline-block text-sm font-medium text-zinc-900 underline">
+                                    View details
+                                </a>
+                            @endif
                             @if ($notification['stale'])
                                 <p class="mt-2 text-xs font-medium text-amber-700">This notification is stale. The underlying workflow state has changed.</p>
                             @endif

@@ -9,6 +9,7 @@ use App\Enums\ProductType;
 use App\Enums\ValidationStatus;
 use App\Models\PublicDirectoryEntry;
 use App\Models\User;
+use App\Services\ProductRecommendations;
 use App\Services\ProductSuitability;
 use App\Services\PublicVerificationPublication;
 use App\Services\ValidationIssuance;
@@ -66,6 +67,59 @@ it('searches and filters directory results using deterministic public metadata',
     $this->get(route('public.directory', ['audience' => ProductAudience::Beginners->value]))
         ->assertOk()
         ->assertDontSee($validation->verification_identifier);
+});
+
+it('renders an explicit state and no results for invalid enum filters', function () {
+    [$validation] = validatedDirectoryFixture();
+
+    $this->get(route('public.directory', ['audience' => 'not-a-supported-audience']))
+        ->assertOk()
+        ->assertSee('Invalid directory filter')
+        ->assertSee('Choose a supported filter value')
+        ->assertDontSee($validation->verification_identifier);
+});
+
+it('does not recommend an unrelated product for a search query', function () {
+    [$validation] = validatedDirectoryFixture();
+
+    $recommendations = app(ProductRecommendations::class)->recommend(query: 'query-that-cannot-match-anything');
+
+    expect($recommendations)->toBeEmpty();
+
+    $this->get(route('public.directory', ['q' => 'query-that-cannot-match-anything']))
+        ->assertOk()
+        ->assertDontSee($validation->verification_identifier)
+        ->assertSee('No matching products');
+});
+
+it('limits recommendations to the requested result count', function () {
+    validatedDirectoryFixture();
+    validatedDirectoryFixture();
+    validatedDirectoryFixture();
+    validatedDirectoryFixture();
+
+    $recommendations = app(ProductRecommendations::class)->recommend(limit: 2);
+
+    expect($recommendations)->toHaveCount(2);
+});
+
+it('orders equally scored directory entries deterministically', function () {
+    [$firstValidation] = validatedDirectoryFixture();
+    [$secondValidation] = validatedDirectoryFixture();
+
+    PublicDirectoryEntry::query()
+        ->where('verification_identifier', $firstValidation->verification_identifier)
+        ->update(['title' => 'Same Directory Title']);
+    PublicDirectoryEntry::query()
+        ->where('verification_identifier', $secondValidation->verification_identifier)
+        ->update(['title' => 'Same Directory Title']);
+
+    $expectedOrder = [$firstValidation->verification_identifier, $secondValidation->verification_identifier];
+    sort($expectedOrder);
+
+    $response = $this->get(route('public.directory'));
+
+    $response->assertOk()->assertSeeInOrder($expectedOrder);
 });
 
 it('does not present suspended validation as currently validated in the directory', function () {

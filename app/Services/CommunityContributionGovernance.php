@@ -85,17 +85,18 @@ final class CommunityContributionGovernance
         }
 
         return DB::transaction(function () use ($contribution, $actor): CommunityContribution {
-            $contribution = CommunityContribution::query()->lockForUpdate()->findOrFail($contribution->getKey());
-            $contribution->forceFill([
+            /** @var CommunityContribution $locked */
+            $locked = CommunityContribution::query()->lockForUpdate()->findOrFail($contribution->getKey());
+            $locked->forceFill([
                 'status' => CommunityContributionStatus::Published,
                 'moderation_reason' => null,
                 'moderated_by' => $actor->getKey(),
                 'moderated_at' => now(),
                 'published_at' => now(),
             ])->save();
-            AuditLogger::record(event: 'community_contribution.published', auditable: $contribution, actor: $actor);
+            AuditLogger::record(event: 'community_contribution.published', auditable: $locked, actor: $actor);
 
-            return $contribution->refresh();
+            return $locked->refresh();
         });
     }
 

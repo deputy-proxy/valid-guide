@@ -45,21 +45,30 @@ function marketplaceExpert(bool $eligible = true): User
     return $user;
 }
 
-function marketplaceService(User $expert, string $status = 'draft'): MarketplaceService
+function marketplaceService(User $expert, bool $published = false, string $title = 'Expert service'): MarketplaceService
 {
     $profile = $expert->auditorProfile;
-
-    return MarketplaceService::create([
+    $service = MarketplaceService::create([
         'auditor_profile_id' => $profile->id,
-        'title' => 'Expert service',
+        'title' => $title,
         'slug' => 'service-'.uniqid(),
         'description' => 'A governed Expert service.',
         'expertise_areas' => [ExpertiseArea::Assessment->value],
         'product_types' => ['course'],
         'price_minor' => 10000,
         'currency' => 'EUR',
-        'status' => $status,
+        'status' => MarketplaceServiceStatus::Draft,
     ]);
+
+    if ($published) {
+        DB::table('marketplace_services')->whereKey($service->id)->update([
+            'status' => MarketplaceServiceStatus::Published->value,
+            'published_at' => now(),
+        ]);
+        $service->refresh();
+    }
+
+    return $service;
 }
 
 it('allows only eligible Experts to create marketplace services', function () {
@@ -97,10 +106,8 @@ it('publishes only eligible owned draft services and protects published details'
 it('discovers only published eligible services without commercial ranking signals', function () {
     $first = marketplaceExpert();
     $second = marketplaceExpert();
-    $firstService = marketplaceService($first, 'published');
-    $secondService = marketplaceService($second, 'published');
-    $firstService->update(['title' => 'A service']);
-    $secondService->update(['title' => 'B service']);
+    $firstService = marketplaceService($first, true, 'A service');
+    $secondService = marketplaceService($second, true, 'B service');
 
     $results = app(\App\Services\MarketplaceDiscovery::class)->search();
 
@@ -109,7 +116,7 @@ it('discovers only published eligible services without commercial ranking signal
 
 it('creates transactions with a frozen commercial snapshot', function () {
     $expert = marketplaceExpert();
-    $service = marketplaceService($expert, 'published');
+    $service = marketplaceService($expert, true);
     $buyer = User::factory()->create();
 
     $transaction = app(MarketplaceTransactionService::class)->create($buyer, $service);
@@ -121,7 +128,7 @@ it('creates transactions with a frozen commercial snapshot', function () {
 
 it('enforces the marketplace transaction lifecycle', function () {
     $expert = marketplaceExpert();
-    $service = marketplaceService($expert, 'published');
+    $service = marketplaceService($expert, true);
     $buyer = User::factory()->create();
     $workflow = app(MarketplaceTransactionService::class);
     $transaction = $workflow->create($buyer, $service);
@@ -136,7 +143,7 @@ it('enforces the marketplace transaction lifecycle', function () {
 
 it('keeps completed transaction history immutable', function () {
     $expert = marketplaceExpert();
-    $service = marketplaceService($expert, 'published');
+    $service = marketplaceService($expert, true);
     $buyer = User::factory()->create();
     $workflow = app(MarketplaceTransactionService::class);
     $transaction = $workflow->create($buyer, $service);
@@ -151,7 +158,7 @@ it('keeps completed transaction history immutable', function () {
 it('enforces buyer and provider transaction authorization', function () {
     $expert = marketplaceExpert();
     $otherExpert = marketplaceExpert();
-    $service = marketplaceService($expert, 'published');
+    $service = marketplaceService($expert, true);
     $buyer = User::factory()->create();
     $otherBuyer = User::factory()->create();
     $transaction = app(MarketplaceTransactionService::class)->create($buyer, $service);
@@ -164,7 +171,7 @@ it('enforces buyer and provider transaction authorization', function () {
 
 it('does not couple marketplace transactions to validation state', function () {
     $expert = marketplaceExpert();
-    $service = marketplaceService($expert, 'published');
+    $service = marketplaceService($expert, true);
     $buyer = User::factory()->create();
     $validationBefore = DB::table('validations')->count();
 
@@ -178,7 +185,7 @@ it('does not couple marketplace transactions to validation state', function () {
 
 it('allows platform administrators to refund marketplace transactions without changing validation records', function () {
     $expert = marketplaceExpert();
-    $service = marketplaceService($expert, 'published');
+    $service = marketplaceService($expert, true);
     $buyer = User::factory()->create();
     $admin = User::factory()->create(['platform_role' => PlatformRole::Admin]);
     $workflow = app(MarketplaceTransactionService::class);

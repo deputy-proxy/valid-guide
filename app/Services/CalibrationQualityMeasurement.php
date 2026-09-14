@@ -79,18 +79,24 @@ final class CalibrationQualityMeasurement
             foreach ($evaluation->auditorEvaluations as $auditorEvaluation) {
                 $lockedAuditorEvaluations++;
                 $evidenceSufficiency = $auditorEvaluation->getRawOriginal('evidence_sufficiency');
-                if ($evidenceSufficiency === EvidenceSufficiency::Sufficient->value) {
+                $evidenceAssessment = is_string($evidenceSufficiency)
+                    ? EvidenceSufficiency::tryFrom($evidenceSufficiency)
+                    : null;
+                if ($evidenceAssessment === EvidenceSufficiency::Sufficient) {
                     // Valid sufficient observation.
-                } elseif (is_string($evidenceSufficiency)) {
+                } elseif ($evidenceAssessment !== null) {
                     $insufficientEvidence++;
                 } else {
                     $anomalousResults++;
                 }
 
                 $coherence = $auditorEvaluation->getRawOriginal('audience_promise_coherence');
-                if ($coherence === AudiencePromiseCoherence::Coherent->value) {
+                $coherenceAssessment = is_string($coherence)
+                    ? AudiencePromiseCoherence::tryFrom($coherence)
+                    : null;
+                if ($coherenceAssessment === AudiencePromiseCoherence::Coherent) {
                     $coherentAuditorEvaluations++;
-                } elseif (is_string($coherence)) {
+                } elseif ($coherenceAssessment !== null) {
                     // Valid incoherent observation.
                 } else {
                     $anomalousResults++;

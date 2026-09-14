@@ -87,6 +87,8 @@ test('calibration aggregates completed evaluations per standard version without 
     completedCalibrationEvaluation($version, $request, $release, 2, [80, 70]);
     completedCalibrationEvaluation($version, $request, $release, 3, [null, 80]);
 
+    $evaluationCount = Evaluation::count();
+    $criterionResultCount = CriterionResult::count();
     $metrics = app(CalibrationQualityMeasurement::class)->forStandardVersion($version);
 
     expect($metrics['completed_evaluations'])->toBe(3)
@@ -100,7 +102,36 @@ test('calibration aggregates completed evaluations per standard version without 
         ->and($metrics['recurring_disagreements'])->toHaveCount(1)
         ->and($metrics['recurring_disagreements'][0]['disagreements'])->toBe(2)
         ->and($metrics['status'])->toBe('sufficient')
+        ->and(Evaluation::count())->toBe($evaluationCount)
+        ->and(CriterionResult::count())->toBe($criterionResultCount)
         ->and(json_encode($metrics))->not->toContain('Calibration test rationale');
+});
+
+test('calibration distinguishes methodology versions and does not mix their samples', function () {
+    [$firstAuditorEvaluation] = auditorEvaluationFixture();
+    $firstVersion = $firstAuditorEvaluation->evaluation->standardVersion;
+    $firstRequest = $firstAuditorEvaluation->evaluation->request;
+    $firstRelease = $firstAuditorEvaluation->evaluation->productRelease;
+    $firstAuditorEvaluation->evaluation->delete();
+    completedCalibrationEvaluation($firstVersion, $firstRequest, $firstRelease, 1, [80, 80]);
+    completedCalibrationEvaluation($firstVersion, $firstRequest, $firstRelease, 2, [80, 80]);
+    completedCalibrationEvaluation($firstVersion, $firstRequest, $firstRelease, 3, [80, 80]);
+
+    [$secondAuditorEvaluation] = auditorEvaluationFixture();
+    $secondVersion = $secondAuditorEvaluation->evaluation->standardVersion;
+    $secondRequest = $secondAuditorEvaluation->evaluation->request;
+    $secondRelease = $secondAuditorEvaluation->evaluation->productRelease;
+    $secondAuditorEvaluation->evaluation->delete();
+    completedCalibrationEvaluation($secondVersion, $secondRequest, $secondRelease, 1, [70, 70]);
+
+    $firstMetrics = app(CalibrationQualityMeasurement::class)->forStandardVersion($firstVersion);
+    $secondMetrics = app(CalibrationQualityMeasurement::class)->forStandardVersion($secondVersion);
+
+    expect($firstVersion->id)->not->toBe($secondVersion->id)
+        ->and($firstMetrics['completed_evaluations'])->toBe(3)
+        ->and($secondMetrics['completed_evaluations'])->toBe(1)
+        ->and($firstMetrics['status'])->toBe('sufficient')
+        ->and($secondMetrics['status'])->toBe('insufficient_data');
 });
 
 test('calibration returns insufficient data and flags anomalies instead of manufacturing rates', function () {
@@ -142,4 +173,12 @@ test('only platform administrators can access and record calibration reviews', f
 
     expect(fn () => app(CalibrationQualityMeasurement::class)->recordReview($version, $organizationUser))
         ->toThrow(AuthorizationException::class);
+});
+
+test('calibration page is denied to non-admin users at the HTTP boundary', function () {
+    $organizationUser = User::factory()->create();
+
+    $this->actingAs($organizationUser)
+        ->get('/admin/calibration')
+        ->assertForbidden();
 });

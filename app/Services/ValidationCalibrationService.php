@@ -21,19 +21,19 @@ final class ValidationCalibrationService
 
     /**
      * @return list<array{
-     *     standard_version_id:int,
-     *     standard_version:string,
-     *     evaluations_completed:int,
-     *     auditor_evaluations:int,
-     *     insufficient_evidence_rate:float|null,
-     *     audience_coherence_rate:float|null,
-     *     criterion_agreement_rate:float|null,
-     *     score_mean:float|null,
-     *     score_variance:float|null,
-     *     validated_rate:float|null,
-     *     decision_outcomes:array<string,int>,
-     *     recurring_disagreements:list<array{criterion:string,disagreement_count:int,sample_size:int,rate:float|null}>,
-     *     review_flags:list<string>,
+     *     standard_version_id: int,
+     *     standard_version: string,
+     *     evaluations_completed: int,
+     *     auditor_evaluations: int,
+     *     insufficient_evidence_rate: float|null,
+     *     audience_coherence_rate: float|null,
+     *     criterion_agreement_rate: float|null,
+     *     score_mean: float|null,
+     *     score_variance: float|null,
+     *     validated_rate: float|null,
+     *     decision_outcomes: array<string, int>,
+     *     recurring_disagreements: list<array{criterion: string, disagreement_count: int, sample_size: int, rate: float|null}>,
+     *     review_flags: list<string>,
      * }>
      */
     public function report(): array
@@ -86,19 +86,19 @@ final class ValidationCalibrationService
     /**
      * @param Collection<int, Evaluation> $evaluations
      * @return array{
-     *     standard_version_id:int,
-     *     standard_version:string,
-     *     evaluations_completed:int,
-     *     auditor_evaluations:int,
-     *     insufficient_evidence_rate:float|null,
-     *     audience_coherence_rate:float|null,
-     *     criterion_agreement_rate:float|null,
-     *     score_mean:float|null,
-     *     score_variance:float|null,
-     *     validated_rate:float|null,
-     *     decision_outcomes:array<string,int>,
-     *     recurring_disagreements:list<array{criterion:string,disagreement_count:int,sample_size:int,rate:float|null}>,
-     *     review_flags:list<string>,
+     *     standard_version_id: int,
+     *     standard_version: string,
+     *     evaluations_completed: int,
+     *     auditor_evaluations: int,
+     *     insufficient_evidence_rate: float|null,
+     *     audience_coherence_rate: float|null,
+     *     criterion_agreement_rate: float|null,
+     *     score_mean: float|null,
+     *     score_variance: float|null,
+     *     validated_rate: float|null,
+     *     decision_outcomes: array<string, int>,
+     *     recurring_disagreements: list<array{criterion: string, disagreement_count: int, sample_size: int, rate: float|null}>,
+     *     review_flags: list<string>,
      * }
      */
     private function buildStandardReport(Collection $evaluations): array
@@ -133,7 +133,7 @@ final class ValidationCalibrationService
 
         /** @var list<float> $agreementUnits */
         $agreementUnits = [];
-        /** @var array<string,array{disagreement_count:int,sample_size:int}> $disagreements */
+        /** @var array<string, array{disagreement_count: int, sample_size: int}> $disagreements */
         $disagreements = [];
 
         foreach ($evaluations as $currentEvaluation) {
@@ -173,7 +173,7 @@ final class ValidationCalibrationService
             }
         }
 
-        /** @var array<string,int> $decisionOutcomes */
+        /** @var array<string, int> $decisionOutcomes */
         $decisionOutcomes = [];
         foreach ($evaluations as $currentEvaluation) {
             $decision = (string) ($currentEvaluation->decision ?? 'unresolved');

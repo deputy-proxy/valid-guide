@@ -7,7 +7,7 @@
             <div class="grid gap-4 md:grid-cols-3">
                 <div class="rounded-xl border border-gray-200 p-4 dark:border-white/10">
                     <div class="text-xs font-medium uppercase tracking-wide text-gray-500">Minimum sample</div>
-                    <div class="mt-1 text-lg font-semibold">3 completed evaluations</div>
+                    <div class="mt-1 text-lg font-semibold">5 completed evaluations</div>
                 </div>
                 <div class="rounded-xl border border-gray-200 p-4 dark:border-white/10">
                     <div class="text-xs font-medium uppercase tracking-wide text-gray-500">Historical records</div>
@@ -38,22 +38,40 @@
                         <div>
                             <div class="text-xs font-medium uppercase tracking-wide text-gray-500">Insufficient evidence</div>
                             <div class="mt-1 text-lg font-semibold">
-                                {{ $measurement['insufficient_evidence'] }}
-                                @if ($measurement['insufficient_evidence_rate'] !== null)
-                                    <span class="text-sm font-normal">({{ $measurement['insufficient_evidence_rate'] }}%)</span>
-                                @endif
+                                {{ $measurement['insufficient_evidence_rate'] !== null ? $measurement['insufficient_evidence_rate'].'%' : 'Insufficient data' }}
                             </div>
                         </div>
                         <div>
-                            <div class="text-xs font-medium uppercase tracking-wide text-gray-500">Auditor agreement</div>
+                            <div class="text-xs font-medium uppercase tracking-wide text-gray-500">Audience/promise coherence</div>
                             <div class="mt-1 text-lg font-semibold">
-                                {{ $measurement['agreement_rate'] !== null ? $measurement['agreement_rate'].'%' : 'Insufficient data' }}
+                                {{ $measurement['audience_promise_coherence_rate'] !== null ? $measurement['audience_promise_coherence_rate'].'%' : 'Insufficient data' }}
                             </div>
-                            <div class="text-xs text-gray-500">{{ $measurement['comparable_criterion_groups'] }} comparable criterion groups</div>
                         </div>
                         <div>
-                            <div class="text-xs font-medium uppercase tracking-wide text-gray-500">Score variance</div>
-                            <div class="mt-1 text-lg font-semibold">{{ $measurement['score_variance'] !== null ? $measurement['score_variance'] : 'Insufficient data' }}</div>
+                            <div class="text-xs font-medium uppercase tracking-wide text-gray-500">Criterion agreement</div>
+                            <div class="mt-1 text-lg font-semibold">
+                                {{ $measurement['criterion_agreement_rate'] !== null ? $measurement['criterion_agreement_rate'].'%' : 'Insufficient data' }}
+                            </div>
+                            <div class="text-xs text-gray-500">{{ $measurement['comparable_criterion_groups'] }} comparable groups</div>
+                        </div>
+                    </div>
+
+                    <div class="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                        <div>
+                            <div class="text-xs font-medium uppercase tracking-wide text-gray-500">Overall score mean</div>
+                            <div class="mt-1 text-lg font-semibold">{{ $measurement['overall_score_mean'] !== null ? $measurement['overall_score_mean'] : 'Insufficient data' }}</div>
+                        </div>
+                        <div>
+                            <div class="text-xs font-medium uppercase tracking-wide text-gray-500">Overall score variance</div>
+                            <div class="mt-1 text-lg font-semibold">{{ $measurement['overall_score_variance'] !== null ? $measurement['overall_score_variance'] : 'Insufficient data' }}</div>
+                        </div>
+                        <div>
+                            <div class="text-xs font-medium uppercase tracking-wide text-gray-500">Validated rate</div>
+                            <div class="mt-1 text-lg font-semibold">{{ $measurement['validated_rate'] !== null ? $measurement['validated_rate'].'%' : 'Insufficient data' }}</div>
+                        </div>
+                        <div>
+                            <div class="text-xs font-medium uppercase tracking-wide text-gray-500">Locked Auditor evaluations</div>
+                            <div class="mt-1 text-lg font-semibold">{{ $measurement['locked_auditor_evaluations'] }}</div>
                         </div>
                     </div>
 
@@ -95,7 +113,7 @@
                                 <table class="w-full text-left text-sm">
                                     <thead>
                                         <tr class="border-b border-gray-200 dark:border-white/10">
-                                            <th class="px-2 py-2 font-medium">Criterion</th>
+                                            <th class="px-2 py-2 font-medium">Criterion code</th>
                                             <th class="px-2 py-2 font-medium">Evaluations</th>
                                             <th class="px-2 py-2 font-medium">Disagreements</th>
                                             <th class="px-2 py-2 font-medium">Rate</th>

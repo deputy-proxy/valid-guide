@@ -7,9 +7,11 @@ namespace App\Services;
 use App\Models\AuditLog;
 use App\Models\User;
 use Carbon\CarbonImmutable;
+use DateTimeInterface;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Notifications\DatabaseNotification;
 use Illuminate\Support\Collection;
+use InvalidArgumentException;
 
 final class OperationalMetrics
 {
@@ -57,7 +59,7 @@ final class OperationalMetrics
         }
 
         if ($to->lessThanOrEqualTo($from)) {
-            throw new \InvalidArgumentException('The metric end time must be after the start time.');
+            throw new InvalidArgumentException('The metric end time must be after the start time.');
         }
 
         return $this->aggregate($from, $to, $organizationId);
@@ -205,7 +207,7 @@ final class OperationalMetrics
             ]);
 
             $createdAt = $log->getAttribute('created_at');
-            if (! $createdAt instanceof \DateTimeInterface) {
+            if (! $createdAt instanceof DateTimeInterface) {
                 $outOfOrderEvents++;
 
                 continue;

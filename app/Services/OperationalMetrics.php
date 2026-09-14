@@ -107,6 +107,7 @@ final class OperationalMetrics
             'auditable_id',
         ]);
 
+        /** @var array<string, int> $eventsByType */
         $eventsByType = [];
         $failureEvents = 0;
         $retryEvents = 0;
@@ -120,8 +121,11 @@ final class OperationalMetrics
         $publicDiscoveryEvents = 0;
         $duplicateEvents = 0;
         $outOfOrderEvents = 0;
+        /** @var array<string, true> $seenSignatures */
         $seenSignatures = [];
+        /** @var array<string, list<CarbonImmutable>> $lifecycleStarts */
         $lifecycleStarts = [];
+        /** @var array<string, list<float>> $lifecycleDurations */
         $lifecycleDurations = [];
 
         foreach ($logs as $log) {
@@ -184,8 +188,8 @@ final class OperationalMetrics
                 continue;
             }
 
-            $base = $matches[1];
-            $state = $matches[2];
+            $base = (string) $matches[1];
+            $state = (string) $matches[2];
             $key = implode('|', [
                 $base,
                 (string) $log->getAttribute('auditable_type'),

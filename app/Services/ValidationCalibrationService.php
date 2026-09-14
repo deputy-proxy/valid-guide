@@ -19,9 +19,6 @@ final class ValidationCalibrationService
 
     private const DISAGREEMENT_REVIEW_THRESHOLD = 0.25;
 
-    /**
-     * @return list<array<string,mixed>>
-     */
     public function report(): array
     {
         $evaluations = Evaluation::query()
@@ -35,7 +32,6 @@ final class ValidationCalibrationService
             ])
             ->get();
 
-        /** @var Collection<int, Collection<int, Evaluation>> $byStandard */
         $byStandard = $evaluations->groupBy('standard_version_id');
 
         return $byStandard
@@ -69,10 +65,6 @@ final class ValidationCalibrationService
         );
     }
 
-    /**
-     * @param  Collection<int, Evaluation> $evaluations
-     * @return array<string,mixed>
-     */
     private function buildStandardReport(Collection $evaluations): array
     {
         $evaluation = $evaluations->first();
@@ -85,11 +77,9 @@ final class ValidationCalibrationService
             throw new DomainStateTransitionException('Calibration requires a persisted methodology Standard Version.');
         }
 
-        /** @var Collection<int, AuditorEvaluation> $auditorEvaluations */
         $auditorEvaluations = $evaluations->flatMap(
             fn (Evaluation $currentEvaluation): Collection => $currentEvaluation->auditorEvaluations,
         );
-        /** @var Collection<int, float> $scores */
         $scores = $evaluations
             ->pluck('overall_score')
             ->filter(fn ($score): bool => $score !== null)
@@ -103,24 +93,22 @@ final class ValidationCalibrationService
             fn (AuditorEvaluation $auditorEvaluation): bool => $auditorEvaluation->audience_promise_coherence?->value === 'coherent',
         )->count();
 
-        /** @var list<float> $agreementUnits */
         $agreementUnits = [];
-        /** @var array<string,array<string,int>> $disagreements */
         $disagreements = [];
 
         foreach ($evaluations as $currentEvaluation) {
-            /** @var Collection<int, Collection<int, CriterionResult>> $criterionGroups */
             $criterionGroups = $currentEvaluation->auditorEvaluations
                 ->flatMap(fn (AuditorEvaluation $auditorEvaluation): Collection => $auditorEvaluation->criterionResults)
                 ->groupBy('criterion_id');
 
             foreach ($criterionGroups as $criterionResults) {
-                if ($criterionResults->count() < 2) {
+                if ($criterionResults instanceof Collection === false || $criterionResults->count() < 2) {
                     continue;
                 }
 
                 $assessments = $criterionResults
                     ->pluck('assessment')
+                    ->filter(fn ($assessment): bool => $assessment instanceof CriterionAssessment)
                     ->map(fn (CriterionAssessment $assessment): string => $assessment->value)
                     ->values();
 
@@ -145,7 +133,6 @@ final class ValidationCalibrationService
             }
         }
 
-        /** @var array<string,int> $decisionOutcomes */
         $decisionOutcomes = [];
         foreach ($evaluations as $currentEvaluation) {
             $decision = (string) ($currentEvaluation->decision ?? 'unresolved');
@@ -221,9 +208,6 @@ final class ValidationCalibrationService
         ];
     }
 
-    /**
-     * @param list<float> $values
-     */
     private function variance(array $values): float
     {
         $mean = array_sum($values) / count($values);

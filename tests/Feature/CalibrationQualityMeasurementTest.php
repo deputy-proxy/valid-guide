@@ -21,7 +21,7 @@ use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
 
 /**
- * @param array<int,float|null> $scores
+ * @param  array<int, float|null>  $scores
  */
 function completedCalibrationEvaluation(
     StandardVersion $version,

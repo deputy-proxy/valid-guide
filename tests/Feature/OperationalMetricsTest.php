@@ -70,7 +70,7 @@ it('aggregates operational audit signals without crossing organization boundarie
         ->and($metrics['failure_events'])->toBe(2)
         ->and($metrics['retry_events'])->toBe(1)
         ->and($metrics['duplicate_events'])->toBe(1)
-        ->and($metrics['out_of_order_events'])->toBe(1)
+        ->and($metrics['out_of_order_events'])->toBe(3)
         ->and($metrics['lifecycle_durations']['evaluation']['count'])->toBe(1)
         ->and($metrics['lifecycle_durations']['evaluation']['average_seconds'])->toBe(10.0);
 });

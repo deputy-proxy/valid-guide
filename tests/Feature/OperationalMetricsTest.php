@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Enums\PlatformRole;
+use App\Filament\Pages\OperationalMetricsPage;
 use App\Models\AuditLog;
 use App\Models\User;
 use App\Notifications\WorkflowNotification;
@@ -111,6 +112,7 @@ it('aggregates persisted notification outcomes without exposing notification pay
     ]);
     $read->save();
 
+    $auditCount = AuditLog::query()->count();
     $metrics = app(OperationalMetrics::class)->forUser(
         $admin,
         CarbonImmutable::parse('2026-09-01 00:00:00'),
@@ -121,8 +123,10 @@ it('aggregates persisted notification outcomes without exposing notification pay
         ->and($metrics['notification_unread'])->toBe(1)
         ->and($metrics['notification_failure_events'])->toBe(1)
         ->and($metrics['notification_recovery_events'])->toBe(1)
+        ->and($metrics['action_queue_visible_items'])->toBe(0)
         ->and($metrics)->not->toHaveKey('title')
-        ->and($metrics)->not->toHaveKey('body');
+        ->and($metrics)->not->toHaveKey('body')
+        ->and(AuditLog::query()->count())->toBe($auditCount);
 });
 
 it('returns an empty metric set for an empty interval', function (): void {
@@ -140,6 +144,34 @@ it('returns an empty metric set for an empty interval', function (): void {
         ->and($metrics['lifecycle_durations'])->toBe([])
         ->and($metrics['duplicate_events'])->toBe(0)
         ->and($metrics['out_of_order_events'])->toBe(0);
+});
+
+it('uses an inclusive start and exclusive end time boundary', function (): void {
+    $admin = User::factory()->create()->forceFill(['platform_role' => PlatformRole::Admin]);
+    $admin->save();
+
+    $from = CarbonImmutable::parse('2026-09-01 00:00:00');
+    $to = CarbonImmutable::parse('2026-09-02 00:00:00');
+
+    AuditLog::create(['event' => 'boundary.in', 'created_at' => $from]);
+    AuditLog::create(['event' => 'boundary.out', 'created_at' => $to]);
+
+    $metrics = app(OperationalMetrics::class)->forUser($admin, $from, $to);
+
+    expect($metrics['total_events'])->toBe(1)
+        ->and($metrics['events_by_type'])->toBe(['boundary.in' => 1]);
+});
+
+it('restricts the reporting page to platform administrators', function (): void {
+    $user = User::factory()->create();
+    $admin = User::factory()->create()->forceFill(['platform_role' => PlatformRole::Admin]);
+    $admin->save();
+
+    $this->actingAs($user);
+    expect(OperationalMetricsPage::canAccess())->toBeFalse();
+
+    $this->actingAs($admin);
+    expect(OperationalMetricsPage::canAccess())->toBeTrue();
 });
 
 it('requires a tenant scope for non-platform administrators', function (): void {

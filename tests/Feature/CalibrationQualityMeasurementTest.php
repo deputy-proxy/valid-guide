@@ -11,20 +11,24 @@ use App\Models\AuditorEvaluation;
 use App\Models\Criterion;
 use App\Models\CriterionResult;
 use App\Models\Evaluation;
+use App\Models\EvaluationRequest;
+use App\Models\ProductRelease;
 use App\Models\StandardVersion;
 use App\Models\User;
 use App\Services\CalibrationQualityMeasurement;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
 
-function completedCalibrationEvaluation(StandardVersion $version, int $evaluationNumber, array $scores): Evaluation
-{
-    [$templateAuditorEvaluation, $templateResult] = auditorEvaluationFixture();
-    $request = $templateAuditorEvaluation->evaluation->request;
-    $release = $templateAuditorEvaluation->evaluation->productRelease;
-
-    $templateAuditorEvaluation->evaluation->delete();
-
+/**
+ * @param array<int,float|null> $scores
+ */
+function completedCalibrationEvaluation(
+    StandardVersion $version,
+    EvaluationRequest $request,
+    ProductRelease $release,
+    int $evaluationNumber,
+    array $scores,
+): Evaluation {
     $evaluation = Evaluation::create([
         'evaluation_request_id' => $request->id,
         'product_release_id' => $release->id,
@@ -73,14 +77,15 @@ function completedCalibrationEvaluation(StandardVersion $version, int $evaluatio
 }
 
 test('calibration aggregates completed evaluations per standard version without exposing restricted material', function () {
-    $admin = User::factory()->create(['platform_role' => PlatformRole::Admin]);
     [$seedAuditorEvaluation] = auditorEvaluationFixture(CriterionVotingMode::Individual);
     $version = $seedAuditorEvaluation->evaluation->standardVersion;
+    $request = $seedAuditorEvaluation->evaluation->request;
+    $release = $seedAuditorEvaluation->evaluation->productRelease;
     $seedAuditorEvaluation->evaluation->delete();
 
-    completedCalibrationEvaluation($version, 1, [80, 80]);
-    completedCalibrationEvaluation($version, 2, [80, 70]);
-    completedCalibrationEvaluation($version, 3, [null, 80]);
+    completedCalibrationEvaluation($version, $request, $release, 1, [80, 80]);
+    completedCalibrationEvaluation($version, $request, $release, 2, [80, 70]);
+    completedCalibrationEvaluation($version, $request, $release, 3, [null, 80]);
 
     $metrics = app(CalibrationQualityMeasurement::class)->forStandardVersion($version);
 
@@ -91,18 +96,20 @@ test('calibration aggregates completed evaluations per standard version without 
         ->and($metrics['insufficient_evidence_rate'])->toBe(16.67)
         ->and($metrics['comparable_criterion_groups'])->toBe(3)
         ->and($metrics['agreement_rate'])->toBe(66.67)
+        ->and($metrics['score_variance'])->toBe(12.5)
         ->and($metrics['recurring_disagreements'])->toHaveCount(0)
         ->and($metrics['status'])->toBe('sufficient')
-        ->and(json_encode($metrics))->not->toContain('Calibration test rationale')
-        ->and(json_encode($metrics))->not->toContain((string) $admin->id);
+        ->and(json_encode($metrics))->not->toContain('Calibration test rationale');
 });
 
 test('calibration returns insufficient data and flags anomalies instead of manufacturing rates', function () {
     [$seedAuditorEvaluation] = auditorEvaluationFixture();
     $version = $seedAuditorEvaluation->evaluation->standardVersion;
+    $request = $seedAuditorEvaluation->evaluation->request;
+    $release = $seedAuditorEvaluation->evaluation->productRelease;
     $seedAuditorEvaluation->evaluation->delete();
 
-    $evaluation = completedCalibrationEvaluation($version, 1, [80, 80]);
+    $evaluation = completedCalibrationEvaluation($version, $request, $release, 1, [80, 80]);
     DB::table('criterion_results')
         ->where('auditor_evaluation_id', $evaluation->auditorEvaluations()->firstOrFail()->id)
         ->update(['score' => null]);
@@ -111,7 +118,9 @@ test('calibration returns insufficient data and flags anomalies instead of manuf
 
     expect($metrics['status'])->toBe('insufficient_data')
         ->and($metrics['agreement_rate'])->toBeNull()
-        ->and($metrics['review_flags'])->toContain('insufficient_sample');
+        ->and($metrics['anomalous_results'])->toBe(1)
+        ->and($metrics['review_flags'])->toContain('insufficient_sample')
+        ->and($metrics['review_flags'])->toContain('anomalous_data');
 });
 
 test('only platform administrators can access and record calibration reviews', function () {

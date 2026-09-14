@@ -116,6 +116,15 @@ final class OperationalMetrics
             'auditable_id',
         ]);
 
+        if ($organizationId !== null) {
+            $logs = $logs->filter(function (AuditLog $log) use ($organizationId): bool {
+                $metadata = $log->getAttribute('metadata');
+
+                return is_array($metadata)
+                    && ($metadata['organization_id'] ?? null) === $organizationId;
+            })->values();
+        }
+
         /** @var array<string, int> $eventsByType */
         $eventsByType = [];
         $failureEvents = 0;

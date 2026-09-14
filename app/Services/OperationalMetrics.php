@@ -47,13 +47,13 @@ final class OperationalMetrics
         CarbonImmutable $to,
         ?int $organizationId = null,
     ): array {
-        if (! $user->isPlatformAdmin() && $organizationId === null) {
+        if (!$user->isPlatformAdmin() && $organizationId === null) {
             throw new AuthorizationException('An organization scope is required for non-platform administrators.');
         }
 
         if (
-            ! $user->isPlatformAdmin()
-            && ! $user->organizations()->whereKey($organizationId)->exists()
+            !$user->isPlatformAdmin()
+            && !$user->organizations()->whereKey($organizationId)->exists()
         ) {
             throw new AuthorizationException('The user does not belong to the requested organization.');
         }
@@ -207,7 +207,7 @@ final class OperationalMetrics
             ]);
 
             $createdAt = $log->getAttribute('created_at');
-            if (! $createdAt instanceof DateTimeInterface) {
+            if (!$createdAt instanceof DateTimeInterface) {
                 $outOfOrderEvents++;
 
                 continue;
@@ -227,7 +227,7 @@ final class OperationalMetrics
             }
 
             $startedAt = array_shift($lifecycleStarts[$key]);
-            if (! $startedAt instanceof CarbonImmutable || $createdAt->lessThan($startedAt)) {
+            if (!$startedAt instanceof CarbonImmutable || $createdAt->lessThan($startedAt)) {
                 $outOfOrderEvents++;
 
                 continue;
@@ -278,7 +278,7 @@ final class OperationalMetrics
             ->count();
 
         $actionQueueVisibleItems = $organizationId === null
-            ? app(\App\Services\RoleActionQueue::class)->forPlatformAdmin()->count()
+            ? app(RoleActionQueue::class)->forPlatformAdmin()->count()
             : null;
 
         return [

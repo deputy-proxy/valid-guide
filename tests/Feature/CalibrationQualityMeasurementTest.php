@@ -83,7 +83,7 @@ test('calibration aggregates completed evaluations per standard version without 
     $release = $seedAuditorEvaluation->evaluation->productRelease;
     $seedAuditorEvaluation->evaluation->delete();
 
-    completedCalibrationEvaluation($version, $request, $release, 1, [80, 80]);
+    completedCalibrationEvaluation($version, $request, $release, 1, [80, 70]);
     completedCalibrationEvaluation($version, $request, $release, 2, [80, 70]);
     completedCalibrationEvaluation($version, $request, $release, 3, [null, 80]);
 
@@ -95,9 +95,10 @@ test('calibration aggregates completed evaluations per standard version without 
         ->and($metrics['insufficient_evidence'])->toBe(1)
         ->and($metrics['insufficient_evidence_rate'])->toBe(16.67)
         ->and($metrics['comparable_criterion_groups'])->toBe(3)
-        ->and($metrics['agreement_rate'])->toBe(66.67)
-        ->and($metrics['score_variance'])->toBe(12.5)
-        ->and($metrics['recurring_disagreements'])->toHaveCount(0)
+        ->and($metrics['agreement_rate'])->toBe(33.33)
+        ->and($metrics['score_variance'])->toBe(16.6667)
+        ->and($metrics['recurring_disagreements'])->toHaveCount(1)
+        ->and($metrics['recurring_disagreements'][0]['disagreements'])->toBe(2)
         ->and($metrics['status'])->toBe('sufficient')
         ->and(json_encode($metrics))->not->toContain('Calibration test rationale');
 });

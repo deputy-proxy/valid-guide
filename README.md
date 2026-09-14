@@ -27,7 +27,7 @@ Valid.guide is not:
 
 Creators pay for an evaluation, never for a positive result. Payment must never influence the evaluation outcome.
 
-The application currently includes the validation domain and its supporting operational workflows, together with the completed Expert, marketplace and community capabilities from Phase 4. Guides, Opportunities & Matching are complete. Phase 5 now adds trust-state monitoring, subscription products, public directory and product-detail discovery, public verification, public website surfaces, and lifecycle trust/billing communication.
+The application currently includes the validation domain and its supporting operational workflows, together with the completed Expert, marketplace and community capabilities from Phase 4. Guides, Opportunities & Matching are complete. Phase 5 added trust-state monitoring, subscription products, public directory and product-detail discovery, public verification, public website surfaces, and lifecycle trust/billing communication. Phase 6 now adds the operational quality, measurement, automation, performance, reliability, security and evidence-driven iteration foundations required for sustained operation and scale.
 
 ---
 
@@ -160,7 +160,7 @@ Commercial state is intentionally separate from evaluation outcome.
 - Audit Log
 - Public Directory projection
 
-The Expert Board, expert discovery, community and marketplace capabilities are implemented as governed Phase 4 capabilities. Phase 5 extends those foundations with governed monitoring, subscriptions, public discovery, verification, product-detail and website surfaces, and lifecycle communication.
+The Expert Board, expert discovery, community and marketplace capabilities are implemented as governed Phase 4 capabilities. Phase 5 extends those foundations with governed monitoring, subscriptions, public discovery, verification, product-detail and website surfaces, and lifecycle communication. Phase 6 adds operational quality measurement, controlled automation, performance/reliability foundations, security hardening and evidence-driven iteration without changing the authoritative validation sources of truth.
 
 ---
 
@@ -546,33 +546,39 @@ Phase 5 was formally closed by the Phase 5.7 integration and accessibility audit
 
 ## Phase 6 — Optimization & Scale
 
-**Status: Not started**
+**Status: Complete**
 
 ### Objective
 
-Prepare Valid.guide for sustained operation and scale: calibration, quality measurement, operational optimization, automation, analytics, performance, reliability, observability, security hardening and product iteration based on real-world usage.
+Prepare Valid.guide for sustained operation and scale: calibration, quality measurement, operational optimization, controlled automation, analytics, performance, reliability, observability, security hardening and product iteration based on operational evidence.
 
 ### Scope
 
 - Methodology calibration
 - Quality measurement
 - Operational optimization
-- Automation
-- Analytics
+- Controlled automation
+- Analytics and evidence capture
 - Performance optimization
-- Reliability engineering
-- Observability
-- Security hardening
-- Product iteration based on operational evidence
+- Reliability engineering and stale-work handling
+- Observability foundations
+- Security and privacy hardening
+- Evidence-driven product iteration
 
 ### Completion Criteria
 
-- Production quality and calibration processes are established.
-- Operational metrics and observability are sufficient for reliable operation.
-- Performance and reliability targets are defined and met.
-- Security controls are reviewed and hardened.
-- Automation is introduced only where it preserves domain integrity.
-- Product iteration is driven by measured usage and quality evidence.
+- Production-oriented quality and calibration processes are established within the repository's supported validation boundary.
+- Operational metrics and diagnostic foundations are sufficient to support evidence-driven operation.
+- Performance and reliability safeguards are implemented and covered by regression tests where applicable.
+- Security and privacy controls are reviewed and hardened within the repository boundary.
+- Automation is controlled, auditable and preserves domain integrity.
+- Product iteration can use measured operational evidence without becoming a competing source of truth.
+- The complete Phase 6 issue set has been integrated and audited.
+- CI is green and the phase-completion audit is documented.
+
+Phase 6 was formally closed by issue **#65**. Issues **#58–#64** implemented the optimization, quality measurement, operational, automation, performance, reliability, security and evidence-driven iteration slices, and the Phase 6 completion audit found no remaining repository-scoped implementation gap.
+
+The Phase 6 audit explicitly records production-only or external operational capabilities that remain outside the repository validation boundary, including dedicated infrastructure monitoring/alerting, complete production backup/disaster recovery, real-world traffic capacity proof, external service guarantees and full production penetration-test coverage.
 
 ---
 
@@ -584,11 +590,11 @@ The current repository should be understood against the original roadmap as foll
 | --- | --- | --- |
 | **Phase 0 — Product & Architecture** | **Complete** | Product, architecture, domain, methodology, trust, commerce and historical-integrity foundations are established. |
 | **Phase 1 — Application Foundation & Domain Implementation** | **Complete** | Domain persistence, tenancy, authorization, lifecycle controls, methodology, trust persistence and invariant regression coverage are implemented and audited. |
-| **Phase 2 — Evaluator & Action Plan** | **Complete** | Former technical Phase 2 and Phase 3 work covers most of the evaluation engine and operational workflow. The implementation has been reconciled back to the original product phase rather than replacing its numbering. |
+| **Phase 2 — Evaluator & Action Plan** | **Complete** | Former technical Phase 2 and Phase 3 work covers the evaluation engine and operational workflow and has been reconciled back to the original product phase. |
 | **Phase 3 — Guides, Opportunities & Matching** | **Complete** | Issue #14 closed the Phase 3.6 integration, accessibility and regression audit across guidance, opportunities, matching, discovery and recommendations. |
 | **Phase 4 — Experts, Marketplace & Community** | **Complete** | Issues #28–#34 completed and audited the Expert Board, profiles, opportunities, community, marketplace and independence-governance lifecycle. |
 | **Phase 5 — Monitor, Subscription & Public Product** | **Complete** | Issue #51 closed the integration, accessibility and regression gate across monitoring, subscriptions, public discovery, verification/product, website surfaces and lifecycle communication. |
-| **Phase 6 — Optimization & Scale** | **Not started** | Reserved for post-core-product optimization and operational scale. |
+| **Phase 6 — Optimization & Scale** | **Complete** | Issue #65 closed the final integration audit across issues #58–#64, with no remaining repository-scoped implementation gap identified. |
 
 ### Reconciliation Rules
 
@@ -630,6 +636,10 @@ Issue **#14** closed the Phase 3.6 integration, accessibility and regression aud
 
 Issues **#28–#34** completed the Expert Board, public expertise discovery, expert opportunities, community participation, marketplace, marketplace governance and final Phase 4 integration audit.
 
+### Phase 6 Completion — Issues #58–#65
+
+Issues **#58–#64** completed the Phase 6 implementation slices. Issue **#65** performed the final integration audit and recorded the repository-scoped completion boundary and remaining production-only/external operational limitations in `docs/phase-6-completion-audit.md`.
+
 ### Implementation History Rules
 
 Technical milestones are subordinate to the original product roadmap.
@@ -651,6 +661,7 @@ The following documents are authoritative or implementation-significant:
 - `docs/phase-2-ui-regression-audit.md` — Phase 2 UI regression and accessibility audit.
 - `docs/phase-3-integration-audit.md` — technical Phase 3 integration and regression completion gate.
 - `docs/phase-4-integration-audit.md` — Phase 4.7 Expert, marketplace and community integration audit.
+- `docs/phase-6-completion-audit.md` — final Phase 6 integration, implementation-boundary and completion audit.
 - `docs/issue-31-public-verification-snapshot.md` — public verification snapshot architecture and historical trust representation.
 - `docs/auditor-workspace-conventions.md` — Auditor workspace implementation conventions.
 - `docs/ui-conventions.md` — internal UI conventions.
@@ -771,7 +782,7 @@ Authorization coverage verifies role boundaries, organization tenancy, platform 
 
 ## Regression Tests
 
-Phase-specific regression audits are maintained in `docs/phase-1-invariant-audit.md`, `docs/phase-2-invariant-audit.md`, `docs/phase-2-ui-regression-audit.md`, `docs/phase-3-integration-audit.md` and `docs/phase-4-integration-audit.md`.
+Phase-specific regression audits are maintained in `docs/phase-1-invariant-audit.md`, `docs/phase-2-invariant-audit.md`, `docs/phase-2-ui-regression-audit.md`, `docs/phase-3-integration-audit.md`, `docs/phase-4-integration-audit.md` and `docs/phase-6-completion-audit.md`.
 
 ## CI
 
@@ -801,9 +812,6 @@ Feature coverage explicitly tests forged organization identifiers, cross-tenant 
 
 Sensitive operations include:
 
-- lifecycle transitions;
-- methodology scheduling and freezing;
-- Auditor assignment and conflict determination;
 - evaluation submission and finalization;
 - Evaluation Decision;
 - Validation issuance and state transitions;
@@ -902,7 +910,7 @@ Dedicated queue architecture is **not a distinct current product capability docu
 
 ## Scheduled Tasks
 
-Trust monitoring is scheduled every fifteen minutes and processes due monitor records with explicit cadence semantics. Subscription lifecycle transitions are controlled by the subscription domain service and communicate through the existing audit-driven notification pipeline. Production-scale operational scheduling and monitoring remain Phase 6 concerns.
+Trust monitoring is scheduled every fifteen minutes and processes due monitor records with explicit cadence semantics. Subscription lifecycle transitions are controlled by the subscription domain service and communicate through the existing audit-driven notification pipeline. Phase 6 adds operational safeguards around scheduled work, stale-work detection and controlled automation without changing authoritative domain state through uncontrolled bulk mutation.
 
 ## Failure Handling
 
@@ -918,19 +926,23 @@ Application and audit logging are applicable. The Audit Log is the authoritative
 
 ## Monitoring
 
-Dedicated production monitoring and operational dashboards are **not applicable as a completed product capability in the current repository**. They are part of Phase 6.
+Phase 6 establishes repository-scoped operational health and diagnostic foundations, including safe measurement and visibility into reliability-relevant application behavior. Dedicated infrastructure monitoring and production alerting remain outside the repository validation boundary.
 
 ## Metrics
 
-Dedicated production business and operational analytics are **not applicable as a completed capability in the current repository**. Phase 6 is responsible for establishing the required measurement model.
+Phase 6 introduces measurement foundations for quality, operational behavior, performance and historical/evidence-aware iteration. Metrics are observational and advisory. They must not mutate Evaluation, Decision, Validation or public trust state and must not become a competing source of truth.
 
 ## Alerts
 
-Dedicated production alerting is **not applicable as a completed capability in the current repository**. Alerting requirements should be defined as operational scale increases.
+Application-level diagnostic and stale-work signals are supported where they are part of the repository's controlled workflows. Dedicated production infrastructure alerting remains an operational deployment concern outside the repository boundary.
 
 ## Backups & Recovery
 
-A complete production backup and disaster-recovery specification is **not currently an authoritative product capability in the repository**. It must be established before production-scale operations are treated as complete.
+Phase 6 does not claim complete production backup/disaster-recovery coverage. Dedicated backup retention, restore validation and disaster-recovery procedures remain deployment/infrastructure responsibilities and are explicitly outside the repository-scoped completion claim.
+
+## Operational Boundary
+
+The Phase 6 completion claim is intentionally bounded by what can be validated from the repository and its CI. Production traffic capacity, external provider guarantees, infrastructure-level alerting, full disaster recovery and full production penetration testing require deployment-specific evidence and are not inferred from repository tests.
 
 ---
 
@@ -1118,15 +1130,35 @@ Historical implementation decisions remain documented rather than silently remov
 
 # Current Direction
 
-The repository has completed the product-definition, application-foundation, evaluator, Auditor, governance, report, Validation, public-verification, Guides, Opportunities & Matching, Expert, marketplace, community and Phase 5 public-product capabilities described by Phases 0–5.
+Phases **0–6 are complete**. The repository has completed the product-definition, application-foundation, evaluator, Auditor, governance, report, Validation, public-verification, Guides, Opportunities & Matching, Expert, marketplace, community, Phase 5 public-product and Phase 6 optimization/scale capabilities described by the original roadmap.
 
-The current product roadmap continues with the original product sequence. Phase 5 is complete, and Phase 6 is now the next roadmap phase rather than creating another parallel phase numbering system.
+No later numbered product phase is formally defined. The next work should therefore be treated as operation and iteration on the completed Phase 0–6 foundation rather than inventing a parallel phase numbering system.
 
 ### Immediate Objective
 
-The next major original product capability is **Phase 6 — Optimization & Scale**.
+Operate and iterate on the completed product foundation using measured evidence from the Phase 6 operating model. The focus is to preserve validation integrity while using quality, performance, reliability, security and operational evidence to guide improvements.
 
-Phase 5 has delivered monitoring of Validation/trust state, subscription products, public directory and discovery, public verification/product experiences, public website surfaces and ongoing lifecycle communication on top of the existing Evaluation, Validation, Expert, marketplace and community foundations. Phase 6 should now address calibration, quality measurement, operational optimization, automation, analytics, performance, reliability, observability and security hardening.
+### Phase 6 Operating Model
+
+Phase 6 establishes a closed loop:
+
+```text
+Observe
+   ↓
+Measure
+   ↓
+Interpret
+   ↓
+Prioritize
+   ↓
+Change
+   ↓
+Validate
+   ↓
+Observe again
+```
+
+This loop must preserve the existing Evaluation, Decision, Validation and Public Verification sources of truth. Operational measurements are evidence for decisions, not authorization to mutate trusted historical state directly.
 
 ### Current Dependencies
 
@@ -1135,16 +1167,22 @@ Phase 5 has delivered monitoring of Validation/trust state, subscription product
 - Maintain server-side authorization and tenant isolation.
 - Preserve Auditor and Expert independence and prevent commercial or community incentives from influencing validation outcomes.
 - Keep technical issue numbering subordinate to the original product roadmap.
+- Treat production-only infrastructure evidence separately from repository-scoped validation.
 
-### Explicitly Deferred
+### Explicitly Deferred / External
 
-- Production-scale optimization, analytics, observability and automation from Phase 6.
-- Dedicated public API and external webhook platform.
-- Dedicated production monitoring/alerting and disaster-recovery documentation.
+- Dedicated production infrastructure monitoring and alerting.
+- Complete production backup, restore and disaster-recovery validation.
+- Real-world traffic/capacity proof under production load.
+- External service/provider guarantees.
+- Full production penetration-test coverage.
+- A dedicated public API and external webhook platform.
 
-### Next Product Milestone
+These are explicit operational boundaries, not hidden Phase 6 implementation gaps.
 
-Deliver the first complete **Optimization & Scale** capability, extending the now-complete product foundation with measured calibration, quality, performance, reliability, observability, security and operational improvements while preserving the independence and historical integrity of the core Validation system.
+### Final Phase Milestone
+
+Phase 6 is complete. Issue **#65** is the final integration and completion gate, and `docs/phase-6-completion-audit.md` records the repository-scoped evidence, implementation boundary and remaining production-only limitations.
 
 ---
 
@@ -1173,6 +1211,7 @@ Product, domain and architecture decisions should be treated as project-level de
 - `docs/phase-2-ui-regression-audit.md` — Phase 2 UI regression/accessibility audit.
 - `docs/phase-3-integration-audit.md` — technical Phase 3 integration/regression audit.
 - `docs/phase-4-integration-audit.md` — Phase 4.7 Expert, marketplace and community integration audit.
+- `docs/phase-6-completion-audit.md` — final Phase 6 integration, implementation-boundary and completion audit.
 - `docs/issue-31-public-verification-snapshot.md` — public verification snapshot specification.
 - `docs/auditor-workspace-conventions.md` — Auditor workspace conventions.
 - `docs/ui-conventions.md` — internal UI conventions.

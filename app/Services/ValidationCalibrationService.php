@@ -70,6 +70,7 @@ final class ValidationCalibrationService
 
     /**
      * @phpstan-param Collection<int, Evaluation> $evaluations
+     *
      * @return array<string,mixed>
      */
     private function buildStandardReport(Collection $evaluations): array

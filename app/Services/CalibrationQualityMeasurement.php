@@ -199,10 +199,14 @@ final class CalibrationQualityMeasurement
             $flags[] = 'no_auditor_comparison';
         }
 
+        $status = $anomalousResults > 0
+            ? 'anomalous_data'
+            : ($completedCount >= self::MINIMUM_SAMPLE_SIZE ? 'sufficient' : 'insufficient_data');
+
         return [
             'standard_version_id' => (int) $standardVersion->getKey(),
             'standard_version' => (string) $standardVersion->version,
-            'status' => $completedCount >= self::MINIMUM_SAMPLE_SIZE ? 'sufficient' : 'insufficient_data',
+            'status' => $status,
             'completed_evaluations' => $completedCount,
             'locked_auditor_evaluations' => $lockedAuditorEvaluations,
             'criterion_results' => $criterionResults,

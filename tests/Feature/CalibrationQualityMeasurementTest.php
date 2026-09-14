@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Enums\AudiencePromiseCoherence;
 use App\Enums\CriterionVotingMode;
+use App\Enums\EvaluationStatus;
 use App\Enums\EvidenceSufficiency;
 use App\Enums\PlatformRole;
 use App\Filament\Pages\CalibrationQualityPage;
@@ -31,6 +32,18 @@ function completedCalibrationEvaluation(
     array $scores,
 ): Evaluation {
     $request = $templateRequest->replicate();
+    $request->setRawAttributes(array_merge(
+        $request->getAttributes(),
+        [
+            'submitted_at' => null,
+            'payment_started_at' => null,
+            'paid_at' => null,
+            'evaluation_started_at' => null,
+            'cancelled_at' => null,
+            'refunded_at' => null,
+        ],
+    ));
+    $request->syncOriginal();
     $request->save();
 
     $evaluation = Evaluation::create([
@@ -85,7 +98,9 @@ test('calibration aggregates completed evaluations per standard version without 
     $version = $seedAuditorEvaluation->evaluation->standardVersion;
     $request = $seedAuditorEvaluation->evaluation->request;
     $release = $seedAuditorEvaluation->evaluation->productRelease;
-    $seedAuditorEvaluation->evaluation->delete();
+    DB::table('evaluations')
+        ->whereKey($seedAuditorEvaluation->evaluation->getKey())
+        ->update(['status' => EvaluationStatus::InProgress->value]);
 
     completedCalibrationEvaluation($version, $request, $release, 1, [80, 70]);
     completedCalibrationEvaluation($version, $request, $release, 2, [80, 70]);
@@ -120,7 +135,9 @@ test('calibration distinguishes methodology versions and does not mix their samp
     $firstVersion = $firstAuditorEvaluation->evaluation->standardVersion;
     $firstRequest = $firstAuditorEvaluation->evaluation->request;
     $firstRelease = $firstAuditorEvaluation->evaluation->productRelease;
-    $firstAuditorEvaluation->evaluation->delete();
+    DB::table('evaluations')
+        ->whereKey($firstAuditorEvaluation->evaluation->getKey())
+        ->update(['status' => EvaluationStatus::InProgress->value]);
     for ($evaluationNumber = 1; $evaluationNumber <= 5; $evaluationNumber++) {
         completedCalibrationEvaluation($firstVersion, $firstRequest, $firstRelease, $evaluationNumber, [80, 80]);
     }
@@ -129,7 +146,9 @@ test('calibration distinguishes methodology versions and does not mix their samp
     $secondVersion = $secondAuditorEvaluation->evaluation->standardVersion;
     $secondRequest = $secondAuditorEvaluation->evaluation->request;
     $secondRelease = $secondAuditorEvaluation->evaluation->productRelease;
-    $secondAuditorEvaluation->evaluation->delete();
+    DB::table('evaluations')
+        ->whereKey($secondAuditorEvaluation->evaluation->getKey())
+        ->update(['status' => EvaluationStatus::InProgress->value]);
     completedCalibrationEvaluation($secondVersion, $secondRequest, $secondRelease, 1, [70, 70]);
 
     $firstMetrics = app(CalibrationQualityMeasurement::class)->forStandardVersion($firstVersion);
@@ -147,7 +166,9 @@ test('calibration returns insufficient data and flags anomalies instead of manuf
     $version = $seedAuditorEvaluation->evaluation->standardVersion;
     $request = $seedAuditorEvaluation->evaluation->request;
     $release = $seedAuditorEvaluation->evaluation->productRelease;
-    $seedAuditorEvaluation->evaluation->delete();
+    DB::table('evaluations')
+        ->whereKey($seedAuditorEvaluation->evaluation->getKey())
+        ->update(['status' => EvaluationStatus::InProgress->value]);
 
     $evaluation = completedCalibrationEvaluation($version, $request, $release, 1, [80, 80]);
     DB::table('criterion_results')

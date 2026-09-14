@@ -19,6 +19,9 @@ final class ValidationCalibrationService
 
     private const DISAGREEMENT_REVIEW_THRESHOLD = 0.25;
 
+    /**
+     * @return list<array<string,mixed>>
+     */
     public function report(): array
     {
         $evaluations = Evaluation::query()
@@ -65,6 +68,10 @@ final class ValidationCalibrationService
         );
     }
 
+    /**
+     * @phpstan-param Collection<int, Evaluation> $evaluations
+     * @return array<string,mixed>
+     */
     private function buildStandardReport(Collection $evaluations): array
     {
         $evaluation = $evaluations->first();
@@ -208,6 +215,9 @@ final class ValidationCalibrationService
         ];
     }
 
+    /**
+     * @phpstan-param list<float> $values
+     */
     private function variance(array $values): float
     {
         $mean = array_sum($values) / count($values);

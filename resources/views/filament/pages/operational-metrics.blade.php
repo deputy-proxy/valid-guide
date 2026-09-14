@@ -3,7 +3,7 @@
         <x-filament::section>
             <x-slot name="heading">Operational health</x-slot>
             <x-slot name="description">
-                Aggregate signals derived from persisted audit events for the previous 30 days. Raw evidence, private deliberation, secrets and actor-level activity are excluded.
+                Aggregate signals derived from persisted audit events, database notifications and the existing action queue for the previous 30 days. Raw evidence, private deliberation, secrets and actor-level activity are excluded.
             </x-slot>
 
             <div class="grid gap-4 md:grid-cols-4">
@@ -50,23 +50,40 @@
         <x-filament::section>
             <x-slot name="heading">Operational infrastructure</x-slot>
 
-            <div class="grid gap-4 md:grid-cols-3">
-                @foreach ([
-                    'notification_events' => 'Notifications',
-                    'action_queue_events' => 'Action queue',
-                    'monitoring_events' => 'Monitoring',
-                ] as $key => $label)
-                    <div class="rounded-xl border border-gray-200 p-4 dark:border-gray-700">
-                        <div class="text-sm text-gray-500">{{ $label }}</div>
-                        <div class="mt-1 text-xl font-semibold">{{ number_format($metrics[$key] ?? 0) }}</div>
+            <div class="grid gap-4 md:grid-cols-3 lg:grid-cols-5">
+                <div class="rounded-xl border border-gray-200 p-4 dark:border-gray-700">
+                    <div class="text-sm text-gray-500">Notifications</div>
+                    <div class="mt-1 text-xl font-semibold">{{ number_format($metrics['notification_events'] ?? 0) }}</div>
+                </div>
+                <div class="rounded-xl border border-gray-200 p-4 dark:border-gray-700">
+                    <div class="text-sm text-gray-500">Unread notifications</div>
+                    <div class="mt-1 text-xl font-semibold">{{ number_format($metrics['notification_unread'] ?? 0) }}</div>
+                </div>
+                <div class="rounded-xl border border-gray-200 p-4 dark:border-gray-700">
+                    <div class="text-sm text-gray-500">Notification failures</div>
+                    <div class="mt-1 text-xl font-semibold">{{ number_format($metrics['notification_failure_events'] ?? 0) }}</div>
+                </div>
+                <div class="rounded-xl border border-gray-200 p-4 dark:border-gray-700">
+                    <div class="text-sm text-gray-500">Notification recoveries</div>
+                    <div class="mt-1 text-xl font-semibold">{{ number_format($metrics['notification_recovery_events'] ?? 0) }}</div>
+                </div>
+                <div class="rounded-xl border border-gray-200 p-4 dark:border-gray-700">
+                    <div class="text-sm text-gray-500">Visible action queue</div>
+                    <div class="mt-1 text-xl font-semibold">
+                        {{ $metrics['action_queue_visible_items'] === null ? 'N/A' : number_format($metrics['action_queue_visible_items']) }}
                     </div>
-                @endforeach
+                </div>
+            </div>
+
+            <div class="mt-4 rounded-xl border border-gray-200 p-4 dark:border-gray-700">
+                <div class="text-sm text-gray-500">Monitoring signals</div>
+                <div class="mt-1 text-xl font-semibold">{{ number_format($metrics['monitoring_events'] ?? 0) }}</div>
             </div>
         </x-filament::section>
 
         <x-filament::section>
             <x-slot name="heading">Lifecycle durations</x-slot>
-            <x-slot name="description">Only explicitly paired <code>started</code>, <code>completed</code> and <code>failed</code> audit events are measured. Missing or out-of-order pairs are flagged instead of being assigned an invented duration.</x-slot>
+            <x-slot name="description">Only explicitly paired <code>started</code>, <code>completed</code> and <code>failed</code> audit events are measured. The application currently records many workflow lifecycles as state transitions rather than paired timing events, so those transitions are reported as throughput but are not assigned invented durations.</x-slot>
 
             @if (($metrics['lifecycle_durations'] ?? []) === [])
                 <p class="text-sm text-gray-500">No deterministic lifecycle duration data is available for this period.</p>

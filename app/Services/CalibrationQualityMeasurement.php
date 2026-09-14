@@ -74,7 +74,7 @@ final class CalibrationQualityMeasurement
                     $criterionNames[$criterionId] = (string) $result->criterion->name;
                     $groupKey = $evaluation->getKey().':'.$criterionId;
 
-                    if (! isset($criterionGroups[$groupKey])) {
+                    if (isset($criterionGroups[$groupKey]) === false) {
                         $criterionGroups[$groupKey] = [
                             'criterion_id' => $criterionId,
                             'assessments' => [],
@@ -82,12 +82,12 @@ final class CalibrationQualityMeasurement
                         ];
                     }
 
-                    if (! $assessment instanceof CriterionAssessment) {
+                    if ($assessment instanceof CriterionAssessment) {
+                        $criterionGroups[$groupKey]['assessments'][] = $assessment->value;
+                    } else {
                         $anomalousResults++;
                         continue;
                     }
-
-                    $criterionGroups[$groupKey]['assessments'][] = $assessment->value;
 
                     if ($assessment === CriterionAssessment::InsufficientEvidence) {
                         $insufficientEvidence++;
@@ -95,10 +95,10 @@ final class CalibrationQualityMeasurement
 
                     if ($assessment->isScored()) {
                         $score = $result->score;
-                        if (! is_numeric($score) || (float) $score < 0 || (float) $score > 100) {
-                            $anomalousResults++;
-                        } else {
+                        if (is_numeric($score) && (float) $score >= 0 && (float) $score <= 100) {
                             $criterionGroups[$groupKey]['scores'][] = (float) $score;
+                        } else {
+                            $anomalousResults++;
                         }
                     }
                 }
@@ -145,7 +145,7 @@ final class CalibrationQualityMeasurement
         $criterionDisagreements = [];
         foreach ($comparableGroups as $group) {
             $criterionId = $group['criterion_id'];
-            if (! isset($criterionDisagreements[$criterionId])) {
+            if (isset($criterionDisagreements[$criterionId]) === false) {
                 $criterionDisagreements[$criterionId] = [
                     'evaluations' => 0,
                     'disagreements' => 0,
@@ -153,7 +153,7 @@ final class CalibrationQualityMeasurement
             }
 
             $criterionDisagreements[$criterionId]['evaluations']++;
-            if (! $group['agreement']) {
+            if ($group['agreement'] === false) {
                 $criterionDisagreements[$criterionId]['disagreements']++;
             }
         }
@@ -216,7 +216,7 @@ final class CalibrationQualityMeasurement
 
     public function recordReview(StandardVersion $standardVersion, User $actor): AuditLog
     {
-        if (! $actor->isPlatformAdmin()) {
+        if ($actor->isPlatformAdmin() === false) {
             throw new AuthorizationException('Only platform administrators may record calibration reviews.');
         }
 

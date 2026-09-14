@@ -69,7 +69,10 @@ final class CalibrationQualityMeasurement
 
                 foreach ($auditorEvaluation->criterionResults as $result) {
                     $criterionResults++;
-                    $assessment = $result->assessment;
+                    $assessmentValue = $result->getRawOriginal('assessment');
+                    $assessment = is_string($assessmentValue)
+                        ? CriterionAssessment::tryFrom($assessmentValue)
+                        : null;
                     $criterionId = (int) $result->criterion_id;
                     $criterionNames[$criterionId] = (string) $result->criterion->name;
                     $groupKey = $evaluation->getKey().':'.$criterionId;
@@ -111,14 +114,13 @@ final class CalibrationQualityMeasurement
         foreach ($criterionGroups as $group) {
             $assessments = array_values(array_unique($group['assessments']));
 
-            if (count($assessments) < 2) {
-
+            if (array_key_exists(1, $assessments) === false) {
                 continue;
             }
 
             $comparableGroups[] = [
                 'criterion_id' => $group['criterion_id'],
-                'agreement' => count($assessments) === 1,
+                'agreement' => count(array_unique($assessments)) === 1,
                 'scores' => $group['scores'],
             ];
         }
@@ -132,8 +134,7 @@ final class CalibrationQualityMeasurement
 
         foreach ($comparableGroups as $group) {
             $scores = $group['scores'];
-            if (count($scores) < 2) {
-
+            if (array_key_exists(1, $scores) === false) {
                 continue;
             }
 

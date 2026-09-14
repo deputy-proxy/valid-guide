@@ -36,6 +36,8 @@ it('aggregates operational audit signals without crossing organization boundarie
     foreach ($events as [$event, $offset, $organizationId]) {
         AuditLog::create([
             'event' => $event,
+            'auditable_type' => User::class,
+            'auditable_id' => $admin->getKey(),
             'metadata' => ['organization_id' => $organizationId],
             'created_at' => $from->addSeconds($offset),
         ]);
@@ -43,6 +45,8 @@ it('aggregates operational audit signals without crossing organization boundarie
 
     AuditLog::create([
         'event' => 'public_verification.published',
+        'auditable_type' => User::class,
+        'auditable_id' => $admin->getKey(),
         'metadata' => [],
         'created_at' => $from->addSeconds(120),
     ]);
@@ -113,8 +117,18 @@ it('uses an inclusive start and exclusive end time boundary', function (): void 
     $from = CarbonImmutable::parse('2026-09-01 00:00:00');
     $to = CarbonImmutable::parse('2026-09-02 00:00:00');
 
-    AuditLog::create(['event' => 'boundary.in', 'created_at' => $from]);
-    AuditLog::create(['event' => 'boundary.out', 'created_at' => $to]);
+    AuditLog::create([
+        'event' => 'boundary.in',
+        'auditable_type' => User::class,
+        'auditable_id' => $admin->getKey(),
+        'created_at' => $from,
+    ]);
+    AuditLog::create([
+        'event' => 'boundary.out',
+        'auditable_type' => User::class,
+        'auditable_id' => $admin->getKey(),
+        'created_at' => $to,
+    ]);
 
     $metrics = app(OperationalMetrics::class)->forUser($admin, $from, $to);
 

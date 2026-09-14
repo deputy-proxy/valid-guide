@@ -227,7 +227,7 @@ final class OperationalMetrics
             }
 
             $startedAt = array_shift($lifecycleStarts[$key]);
-            if (! $startedAt instanceof CarbonImmutable || $createdAt->lessThan($startedAt)) {
+            if ($startedAt === null || $createdAt->lessThan($startedAt)) {
                 $outOfOrderEvents++;
 
                 continue;
@@ -239,6 +239,10 @@ final class OperationalMetrics
         /** @var array<string, array{count:int,average_seconds:float,minimum_seconds:float,maximum_seconds:float}> $durationSummary */
         $durationSummary = [];
         foreach ($lifecycleDurations as $event => $durations) {
+            if ($durations === []) {
+                continue;
+            }
+
             $durationSummary[$event] = [
                 'count' => count($durations),
                 'average_seconds' => round(array_sum($durations) / count($durations), 2),

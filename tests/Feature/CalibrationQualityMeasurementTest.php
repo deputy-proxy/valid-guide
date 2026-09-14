@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 use App\Enums\AudiencePromiseCoherence;
 use App\Enums\CriterionVotingMode;
-use App\Enums\EvidenceSufficiency;
 use App\Enums\EvaluationStatus;
+use App\Enums\EvidenceSufficiency;
 use App\Enums\PlatformRole;
 use App\Filament\Pages\CalibrationQualityPage;
 use App\Models\AuditorAssignment;

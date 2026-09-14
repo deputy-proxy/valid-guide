@@ -79,9 +79,9 @@ final class CalibrationQualityMeasurement
             foreach ($evaluation->auditorEvaluations as $auditorEvaluation) {
                 $lockedAuditorEvaluations++;
                 $evidenceSufficiency = $auditorEvaluation->getRawOriginal('evidence_sufficiency');
-                $evidenceAssessment = is_string($evidenceSufficiency)
-                    ? EvidenceSufficiency::tryFrom($evidenceSufficiency)
-                    : null;
+                $evidenceAssessment = $evidenceSufficiency instanceof EvidenceSufficiency
+                    ? $evidenceSufficiency
+                    : (is_string($evidenceSufficiency) ? EvidenceSufficiency::tryFrom($evidenceSufficiency) : null);
                 if ($evidenceAssessment === EvidenceSufficiency::Sufficient) {
                     // Valid sufficient observation.
                 } elseif ($evidenceAssessment !== null) {
@@ -91,9 +91,9 @@ final class CalibrationQualityMeasurement
                 }
 
                 $coherence = $auditorEvaluation->getRawOriginal('audience_promise_coherence');
-                $coherenceAssessment = is_string($coherence)
-                    ? AudiencePromiseCoherence::tryFrom($coherence)
-                    : null;
+                $coherenceAssessment = $coherence instanceof AudiencePromiseCoherence
+                    ? $coherence
+                    : (is_string($coherence) ? AudiencePromiseCoherence::tryFrom($coherence) : null);
                 if ($coherenceAssessment === AudiencePromiseCoherence::Coherent) {
                     $coherentAuditorEvaluations++;
                 } elseif ($coherenceAssessment !== null) {
@@ -104,15 +104,16 @@ final class CalibrationQualityMeasurement
 
                 foreach ($auditorEvaluation->criterionResults as $result) {
                     $assessmentValue = $result->getRawOriginal('assessment');
-                    $assessment = is_string($assessmentValue)
-                        ? CriterionAssessment::tryFrom($assessmentValue)
-                        : null;
+                    $assessment = $assessmentValue instanceof CriterionAssessment
+                        ? $assessmentValue
+                        : (is_string($assessmentValue) ? CriterionAssessment::tryFrom($assessmentValue) : null);
                     if ($assessment === null) {
                         $anomalousResults++;
 
                         continue;
                     }
 
+                    $normalizedAssessment = $assessment->value;
                     if ($assessment->isScored()) {
                         $score = $result->getAttribute('score');
                         if (! is_numeric($score) || (float) $score < 0 || (float) $score > 100) {
@@ -129,7 +130,7 @@ final class CalibrationQualityMeasurement
                             'assessments' => [],
                         ];
                     }
-                    $criterionGroups[$groupKey]['assessments'][] = $assessmentValue;
+                    $criterionGroups[$groupKey]['assessments'][] = $normalizedAssessment;
                 }
             }
         }

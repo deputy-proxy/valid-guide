@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Enums\EvaluationStatus;
+use App\Models\AuditorEvaluation;
 use App\Models\Evaluation;
 use App\Models\StandardVersion;
 use App\Models\User;
@@ -61,7 +62,13 @@ final class ValidationCalibrationService
             throw new DomainStateTransitionException('Only a platform administrator can record a calibration review.');
         }
 
-        $report = collect($this->report())->firstWhere('standard_version_id', $standardVersion->getKey());
+        $report = null;
+        foreach ($this->report() as $candidate) {
+            if ($candidate['standard_version_id'] === (int) $standardVersion->getKey()) {
+                $report = $candidate;
+                break;
+            }
+        }
 
         AuditLogger::record(
             event: 'validation.calibration_reviewed',
@@ -96,7 +103,11 @@ final class ValidationCalibrationService
     {
         /** @var StandardVersion $standardVersion */
         $standardVersion = $evaluations->firstOrFail()->standardVersion;
-        $auditorEvaluations = $evaluations->flatMap(fn (Evaluation $evaluation): Collection => $evaluation->auditorEvaluations);
+        /** @var Collection<int, AuditorEvaluation> $auditorEvaluations */
+        $auditorEvaluations = $evaluations->flatMap(
+            fn (Evaluation $evaluation): Collection => $evaluation->auditorEvaluations,
+        );
+        /** @var Collection<int, float> $scores */
         $scores = $evaluations
             ->pluck('overall_score')
             ->filter(fn ($score): bool => $score !== null)
@@ -104,22 +115,29 @@ final class ValidationCalibrationService
             ->values();
 
         $insufficientCount = $auditorEvaluations->filter(
-            fn ($auditorEvaluation): bool => $auditorEvaluation->evidence_sufficiency?->value !== 'sufficient',
+            fn (AuditorEvaluation $auditorEvaluation): bool => $auditorEvaluation->evidence_sufficiency?->value !== 'sufficient',
         )->count();
         $coherentCount = $auditorEvaluations->filter(
-            fn ($auditorEvaluation): bool => $auditorEvaluation->audience_promise_coherence?->value === 'coherent',
+            fn (AuditorEvaluation $auditorEvaluation): bool => $auditorEvaluation->audience_promise_coherence?->value === 'coherent',
         )->count();
 
+        /** @var list<float> $agreementUnits */
         $agreementUnits = [];
+        /** @var array<string,array{disagreement_count:int,sample_size:int}> $disagreements */
         $disagreements = [];
 
         foreach ($evaluations as $evaluation) {
+            /** @var Collection<int, Collection<int, \App\Models\CriterionResult>> $criterionGroups */
             $criterionGroups = $evaluation->auditorEvaluations
-                ->flatMap(fn ($auditorEvaluation) => $auditorEvaluation->criterionResults)
+                ->flatMap(fn (AuditorEvaluation $auditorEvaluation): Collection => $auditorEvaluation->criterionResults)
                 ->groupBy('criterion_id');
 
-            foreach ($criterionGroups as $results) {
-                $assessments = $results
+            foreach ($criterionGroups as $criterionResults) {
+                if ($criterionResults->count() < 2) {
+                    continue;
+                }
+
+                $assessments = $criterionResults
                     ->pluck('assessment')
                     ->map(fn ($assessment): string => $assessment->value)
                     ->values();
@@ -129,25 +147,28 @@ final class ValidationCalibrationService
                 }
 
                 $counts = $assessments->countBy();
-                $agreementUnits[] = $counts->max() / $assessments->count();
+                $agreementUnits[] = (int) $counts->max() / $assessments->count();
 
-                $criterion = $results->first()->criterion;
-                if ($criterion !== null && $counts->count() > 1) {
-                    $code = $criterion->code;
-                    $disagreements[$code] = ($disagreements[$code] ?? ['disagreement_count' => 0, 'sample_size' => 0]);
+                $criterion = $criterionResults->first()->criterion;
+                if ($criterion === null) {
+                    continue;
+                }
+
+                $code = $criterion->code;
+                $disagreements[$code] ??= ['disagreement_count' => 0, 'sample_size' => 0];
+                $disagreements[$code]['sample_size']++;
+                if ($counts->count() > 1) {
                     $disagreements[$code]['disagreement_count']++;
-                    $disagreements[$code]['sample_size']++;
-                } elseif ($criterion !== null) {
-                    $code = $criterion->code;
-                    $disagreements[$code] = ($disagreements[$code] ?? ['disagreement_count' => 0, 'sample_size' => 0]);
-                    $disagreements[$code]['sample_size']++;
                 }
             }
         }
 
-        $decisionOutcomes = $evaluations
-            ->countBy(fn (Evaluation $evaluation): string => (string) ($evaluation->decision ?? 'unresolved'))
-            ->all();
+        /** @var array<string,int> $decisionOutcomes */
+        $decisionOutcomes = [];
+        foreach ($evaluations as $evaluation) {
+            $decision = (string) ($evaluation->decision ?? 'unresolved');
+            $decisionOutcomes[$decision] = ($decisionOutcomes[$decision] ?? 0) + 1;
+        }
 
         $sampleSize = $evaluations->count();
         $auditorSampleSize = $auditorEvaluations->count();

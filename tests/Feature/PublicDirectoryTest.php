@@ -11,9 +11,11 @@ use App\Models\PublicDirectoryEntry;
 use App\Models\User;
 use App\Services\ProductRecommendations;
 use App\Services\ProductSuitability;
+use App\Services\PublicDirectory;
 use App\Services\PublicVerificationPublication;
 use App\Services\ValidationIssuance;
 use App\Services\ValidationStateTransition;
+use Illuminate\Support\Facades\DB;
 
 function validatedDirectoryFixture(): array
 {
@@ -187,4 +189,17 @@ it('does not expose internal creator data through the directory projection', fun
         ->assertDontSee($creator->email)
         ->assertDontSee('payment')
         ->assertDontSee('auditor');
+});
+
+it('keeps directory pagination bounded to its count and page queries', function () {
+    validatedDirectoryFixture();
+
+    DB::enableQueryLog();
+
+    app(PublicDirectory::class)->search();
+
+    $queries = DB::getQueryLog();
+    DB::disableQueryLog();
+
+    expect($queries)->toHaveCount(2);
 });

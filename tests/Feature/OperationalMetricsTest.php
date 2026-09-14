@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use App\Enums\NotificationCategory;
+use App\Enums\NotificationEventType;
 use App\Enums\PlatformRole;
 use App\Filament\Pages\OperationalMetricsPage;
 use App\Models\AuditLog;
@@ -11,6 +13,7 @@ use App\Services\OperationalMetrics;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Notifications\DatabaseNotification;
+use Illuminate\Support\Facades\Notification;
 
 it('aggregates operational audit signals without crossing organization boundaries', function (): void {
     $admin = User::factory()->create()->forceFill(['platform_role' => PlatformRole::Admin]);
@@ -45,7 +48,7 @@ it('aggregates operational audit signals without crossing organization boundarie
 
     AuditLog::create([
         'event' => 'public_verification.published',
-        'metadata' => null,
+        'metadata' => [],
         'created_at' => $from->addSeconds(120),
     ]);
 
@@ -58,7 +61,7 @@ it('aggregates operational audit signals without crossing organization boundarie
         ->and($metrics['auditor_events'])->toBe(1)
         ->and($metrics['validation_events'])->toBe(1)
         ->and($metrics['subscription_events'])->toBe(1)
-        ->and($metrics['public_discovery_events'])->toBe(1)
+        ->and($metrics['public_discovery_events'])->toBe(0)
         ->and($metrics['notification_events'])->toBe(0)
         ->and($metrics['notification_unread'])->toBe(0)
         ->and($metrics['notification_failure_events'])->toBe(0)
@@ -77,40 +80,36 @@ it('aggregates persisted notification outcomes without exposing notification pay
     $admin = User::factory()->create()->forceFill(['platform_role' => PlatformRole::Admin]);
     $admin->save();
 
-    $createdAt = CarbonImmutable::parse('2026-09-01 12:00:00');
+    Notification::sendNow($admin, new WorkflowNotification(
+        NotificationCategory::Trust,
+        NotificationEventType::TrustMonitoringFailed,
+        'Private failure title',
+        'Private failure body',
+    ));
+    Notification::sendNow($admin, new WorkflowNotification(
+        NotificationCategory::Billing,
+        NotificationEventType::SubscriptionRecovered,
+        'Private recovery title',
+        'Private recovery body',
+    ));
 
-    $unread = new DatabaseNotification;
-    $unread->forceFill([
-        'id' => '00000000-0000-0000-0000-000000000001',
-        'type' => WorkflowNotification::class,
-        'notifiable_type' => User::class,
-        'notifiable_id' => $admin->getKey(),
-        'data' => [
-            'event_type' => 'trust_monitoring_failed',
-            'title' => 'Private title',
-            'body' => 'Private body',
-        ],
+    $createdAt = CarbonImmutable::parse('2026-09-01 12:00:00');
+    $notifications = DatabaseNotification::query()
+        ->where('notifiable_id', $admin->getKey())
+        ->orderBy('created_at')
+        ->get();
+
+    expect($notifications)->toHaveCount(2);
+
+    $notifications[0]->forceFill([
         'created_at' => $createdAt,
         'updated_at' => $createdAt,
-    ]);
-    $unread->save();
-
-    $read = new DatabaseNotification;
-    $read->forceFill([
-        'id' => '00000000-0000-0000-0000-000000000002',
-        'type' => WorkflowNotification::class,
-        'notifiable_type' => User::class,
-        'notifiable_id' => $admin->getKey(),
-        'data' => [
-            'event_type' => 'subscription_recovered',
-            'title' => 'Private title',
-            'body' => 'Private body',
-        ],
-        'read_at' => $createdAt->addMinute(),
+    ])->save();
+    $notifications[1]->forceFill([
         'created_at' => $createdAt,
         'updated_at' => $createdAt->addMinute(),
-    ]);
-    $read->save();
+        'read_at' => $createdAt->addMinute(),
+    ])->save();
 
     $auditCount = AuditLog::query()->count();
     $metrics = app(OperationalMetrics::class)->forUser(

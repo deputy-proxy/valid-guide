@@ -43,6 +43,20 @@ class ProductRecommendations
             || $language !== null && $language !== '';
 
         $builder = PublicDirectoryEntry::query()
+            ->select([
+                'id',
+                'title',
+                'slug',
+                'creator_name',
+                'product_type',
+                'subject_area',
+                'language',
+                'matching_audiences',
+                'matching_goals',
+                'validation_status',
+                'verification_identifier',
+                'release_identifier',
+            ])
             ->where('directory_visible', true)
             ->where('validation_status', ValidationStatus::Active->value);
 

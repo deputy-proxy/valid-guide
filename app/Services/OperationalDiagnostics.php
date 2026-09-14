@@ -73,7 +73,7 @@ final class OperationalDiagnostics
 
         foreach ($monitors as $monitor) {
             if (
-                $monitor->next_check_at !== null
+                $monitor->next_check_at
                 && ! CarbonImmutable::parse((string) $monitor->next_check_at)->isAfter($now)
             ) {
                 $summary['due']++;

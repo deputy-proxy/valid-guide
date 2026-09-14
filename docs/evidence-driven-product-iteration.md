@@ -35,7 +35,7 @@ When classification is ambiguous, use the more conservative category and require
 
 ## Decision record
 
-Every material change receives a record in `docs/implementation-decisions.md`. At minimum, the record identifies:
+Every material change receives a record in `docs/implementation-decisions.md` or an issue-specific decision file following the repository's existing implementation-decision convention. At minimum, the record identifies:
 
 - the date and issue/change being decided;
 - the evidence and problem statement;

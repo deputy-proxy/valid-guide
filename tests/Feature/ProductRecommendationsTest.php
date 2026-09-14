@@ -145,3 +145,16 @@ it('renders a safe directory state when no validated recommendations exist', fun
         ->assertDontSee('Recommended based on these criteria')
         ->assertSee('No matching products');
 });
+
+it('keeps recommendation lookup bounded to one database query', function () {
+    recommendationFixture([ProductAudience::Professionals->value]);
+
+    DB::enableQueryLog();
+
+    app(ProductRecommendations::class)->recommend(audience: ProductAudience::Professionals);
+
+    $queries = DB::getQueryLog();
+    DB::disableQueryLog();
+
+    expect($queries)->toHaveCount(1);
+});

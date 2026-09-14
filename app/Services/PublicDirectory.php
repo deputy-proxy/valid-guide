@@ -27,6 +27,19 @@ class PublicDirectory
         bool $invalidFilter = false,
     ): LengthAwarePaginator {
         $builder = PublicDirectoryEntry::query()
+            ->select([
+                'id',
+                'verification_identifier',
+                'title',
+                'creator_name',
+                'product_type',
+                'subject_area',
+                'language',
+                'matching_audiences',
+                'matching_goals',
+                'validation_status',
+                'release_identifier',
+            ])
             ->where('directory_visible', true)
             ->where('validation_status', ValidationStatus::Active->value);
 

@@ -104,12 +104,12 @@ final class ValidationCalibrationService
     private function buildStandardReport(Collection $evaluations): array
     {
         $evaluation = $evaluations->first();
-        if (! $evaluation instanceof Evaluation) {
+        if ($evaluation instanceof Evaluation === false) {
             throw new DomainStateTransitionException('Calibration cannot be calculated for an empty methodology population.');
         }
 
         $standardVersion = $evaluation->standardVersion;
-        if (! $standardVersion instanceof StandardVersion) {
+        if ($standardVersion instanceof StandardVersion === false) {
             throw new DomainStateTransitionException('Calibration requires a persisted methodology Standard Version.');
         }
 
@@ -160,7 +160,7 @@ final class ValidationCalibrationService
                 $agreementUnits[] = (int) $counts->max() / $assessments->count();
 
                 $criterionResult = $criterionResults->first();
-                if (! $criterionResult instanceof CriterionResult || $criterionResult->criterion === null) {
+                if ($criterionResult instanceof CriterionResult === false || $criterionResult->criterion === null) {
                     continue;
                 }
 

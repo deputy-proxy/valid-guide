@@ -8,6 +8,7 @@ use App\Models\AuditLog;
 use App\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Notifications\DatabaseNotification;
 use Illuminate\Support\Collection;
 
 final class OperationalMetrics
@@ -25,7 +26,10 @@ final class OperationalMetrics
      *     subscription_events:int,
      *     public_discovery_events:int,
      *     notification_events:int,
-     *     action_queue_events:int,
+     *     notification_unread:int,
+     *     notification_failure_events:int,
+     *     notification_recovery_events:int,
+     *     action_queue_visible_items:int|null,
      *     monitoring_events:int,
      *     failure_events:int,
      *     retry_events:int,
@@ -72,7 +76,10 @@ final class OperationalMetrics
      *     subscription_events:int,
      *     public_discovery_events:int,
      *     notification_events:int,
-     *     action_queue_events:int,
+     *     notification_unread:int,
+     *     notification_failure_events:int,
+     *     notification_recovery_events:int,
+     *     action_queue_visible_items:int|null,
      *     monitoring_events:int,
      *     failure_events:int,
      *     retry_events:int,
@@ -111,8 +118,6 @@ final class OperationalMetrics
         $eventsByType = [];
         $failureEvents = 0;
         $retryEvents = 0;
-        $notificationEvents = 0;
-        $actionQueueEvents = 0;
         $monitoringEvents = 0;
         $evaluationEvents = 0;
         $auditorEvents = 0;
@@ -162,14 +167,9 @@ final class OperationalMetrics
             ) {
                 $publicDiscoveryEvents++;
             }
-            if (str_starts_with($event, 'notification.')) {
-                $notificationEvents++;
-            }
-            if (str_starts_with($event, 'action_queue.')) {
-                $actionQueueEvents++;
-            }
             if (
-                str_starts_with($event, 'monitoring.')
+                str_starts_with($event, 'validation_trust_monitor.')
+                || str_starts_with($event, 'monitoring.')
                 || str_starts_with($event, 'validation.monitor')
             ) {
                 $monitoringEvents++;
@@ -245,6 +245,40 @@ final class OperationalMetrics
             ];
         }
 
+        $notificationQuery = DatabaseNotification::query()
+            ->where('notifiable_type', User::class)
+            ->where('created_at', '>=', $from)
+            ->where('created_at', '<', $to);
+
+        if ($organizationId !== null) {
+            $organizationUserIds = User::query()
+                ->whereHas('organizations', fn ($query) => $query->whereKey($organizationId))
+                ->select('id');
+
+            $notificationQuery->whereIn('notifiable_id', $organizationUserIds);
+        }
+
+        $notificationEvents = $notificationQuery->count();
+        $notificationUnread = (clone $notificationQuery)->whereNull('read_at')->count();
+        $notificationFailureEvents = (clone $notificationQuery)
+            ->where(function ($query): void {
+                $query
+                    ->whereJsonContains('data->event_type', 'trust_monitoring_failed')
+                    ->orWhereJsonContains('data->event_type', 'subscription_payment_failed');
+            })
+            ->count();
+        $notificationRecoveryEvents = (clone $notificationQuery)
+            ->where(function ($query): void {
+                $query
+                    ->whereJsonContains('data->event_type', 'trust_monitoring_recovered')
+                    ->orWhereJsonContains('data->event_type', 'subscription_recovered');
+            })
+            ->count();
+
+        $actionQueueVisibleItems = $organizationId === null
+            ? app(\App\Services\RoleActionQueue::class)->forPlatformAdmin()->count()
+            : null;
+
         return [
             'from' => $from->toIso8601String(),
             'to' => $to->toIso8601String(),
@@ -257,7 +291,10 @@ final class OperationalMetrics
             'subscription_events' => $subscriptionEvents,
             'public_discovery_events' => $publicDiscoveryEvents,
             'notification_events' => $notificationEvents,
-            'action_queue_events' => $actionQueueEvents,
+            'notification_unread' => $notificationUnread,
+            'notification_failure_events' => $notificationFailureEvents,
+            'notification_recovery_events' => $notificationRecoveryEvents,
+            'action_queue_visible_items' => $actionQueueVisibleItems,
             'monitoring_events' => $monitoringEvents,
             'failure_events' => $failureEvents,
             'retry_events' => $retryEvents,

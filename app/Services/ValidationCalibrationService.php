@@ -71,6 +71,7 @@ final class ValidationCalibrationService
 
     /**
      * @param Collection<int, Evaluation> $evaluations
+     *
      * @return array<string,mixed>
      */
     private function buildStandardReport(Collection $evaluations): array

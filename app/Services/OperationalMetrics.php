@@ -227,7 +227,7 @@ final class OperationalMetrics
             }
 
             $startedAt = array_shift($lifecycleStarts[$key]);
-            if ($startedAt === null || $createdAt->lessThan($startedAt)) {
+            if ($createdAt->lessThan($startedAt)) {
                 $outOfOrderEvents++;
 
                 continue;

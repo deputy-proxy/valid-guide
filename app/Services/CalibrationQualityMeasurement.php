@@ -19,21 +19,21 @@ final class CalibrationQualityMeasurement
     /**
      * @return array{
      *     standard_version_id:int,
-     standard_version:string,
-     status:string,
-     completed_evaluations:int,
-     locked_auditor_evaluations:int,
-     criterion_results:int,
-     insufficient_evidence:int,
-     insufficient_evidence_rate:float|null,
-     comparable_criterion_groups:int,
-     agreement_rate:float|null,
-     score_variance:float|null,
-     decision_outcomes:array<string,int>,
-     recurring_disagreements:array<int,array{criterion:string, evaluations:int, disagreements:int, rate:float}>,
-     anomalous_results:int,
-     review_flags:array<int,string>
-     }
+     *     standard_version:string,
+     *     status:string,
+     *     completed_evaluations:int,
+     *     locked_auditor_evaluations:int,
+     *     criterion_results:int,
+     *     insufficient_evidence:int,
+     *     insufficient_evidence_rate:float|null,
+     *     comparable_criterion_groups:int,
+     *     agreement_rate:float|null,
+     *     score_variance:float|null,
+     *     decision_outcomes:array<string,int>,
+     *     recurring_disagreements:array<int,array{criterion:string, evaluations:int, disagreements:int, rate:float}>,
+     *     anomalous_results:int,
+     *     review_flags:array<int,string>
+     *     }
      */
     public function forStandardVersion(StandardVersion $standardVersion): array
     {
@@ -47,8 +47,11 @@ final class CalibrationQualityMeasurement
             ])
             ->get();
 
+        /** @var array<string,array{criterion_id:int,assessments:array<int,string>,scores:array<int,float>}> $criterionGroups */
         $criterionGroups = [];
+        /** @var array<int,string> $criterionNames */
         $criterionNames = [];
+        /** @var array<string,int> $decisionOutcomes */
         $decisionOutcomes = [];
         $criterionResults = 0;
         $insufficientEvidence = 0;
@@ -68,17 +71,29 @@ final class CalibrationQualityMeasurement
                     $criterionResults++;
                     $assessment = $result->assessment;
                     $criterionId = (int) $result->criterion_id;
-                    $criterionNames[$criterionId] = $result->criterion->name;
+                    $criterionNames[$criterionId] = (string) $result->criterion->name;
                     $groupKey = $evaluation->getKey().':'.$criterionId;
 
-                    $criterionGroups[$groupKey]['criterion_id'] = $criterionId;
-                    $criterionGroups[$groupKey]['assessments'][] = $assessment?->value;
+                    if (! isset($criterionGroups[$groupKey])) {
+                        $criterionGroups[$groupKey] = [
+                            'criterion_id' => $criterionId,
+                            'assessments' => [],
+                            'scores' => [],
+                        ];
+                    }
+
+                    if (! $assessment instanceof CriterionAssessment) {
+                        $anomalousResults++;
+                        continue;
+                    }
+
+                    $criterionGroups[$groupKey]['assessments'][] = $assessment->value;
 
                     if ($assessment === CriterionAssessment::InsufficientEvidence) {
                         $insufficientEvidence++;
                     }
 
-                    if ($assessment?->isScored()) {
+                    if ($assessment->isScored()) {
                         $score = $result->score;
                         if (! is_numeric($score) || (float) $score < 0 || (float) $score > 100) {
                             $anomalousResults++;
@@ -90,12 +105,10 @@ final class CalibrationQualityMeasurement
             }
         }
 
+        /** @var array<int,array{criterion_id:int,agreement:bool,scores:array<int,float>}> $comparableGroups */
         $comparableGroups = [];
         foreach ($criterionGroups as $group) {
-            $assessments = array_values(array_unique(array_filter(
-                $group['assessments'] ?? [],
-                static fn (mixed $assessment): bool => is_string($assessment),
-            )));
+            $assessments = array_values(array_unique($group['assessments']));
 
             if (count($assessments) < 2) {
                 continue;
@@ -104,7 +117,7 @@ final class CalibrationQualityMeasurement
             $comparableGroups[] = [
                 'criterion_id' => $group['criterion_id'],
                 'agreement' => count($assessments) === 1,
-                'scores' => $group['scores'] ?? [],
+                'scores' => $group['scores'],
             ];
         }
 
@@ -112,6 +125,7 @@ final class CalibrationQualityMeasurement
             $comparableGroups,
             static fn (array $group): bool => $group['agreement'],
         ));
+        /** @var array<int,float> $scoreVariances */
         $scoreVariances = [];
 
         foreach ($comparableGroups as $group) {
@@ -127,25 +141,34 @@ final class CalibrationQualityMeasurement
             )) / count($scores);
         }
 
+        /** @var array<int,array{evaluations:int,disagreements:int}> $criterionDisagreements */
         $criterionDisagreements = [];
         foreach ($comparableGroups as $group) {
             $criterionId = $group['criterion_id'];
-            $criterionDisagreements[$criterionId]['evaluations'] = ($criterionDisagreements[$criterionId]['evaluations'] ?? 0) + 1;
+            if (! isset($criterionDisagreements[$criterionId])) {
+                $criterionDisagreements[$criterionId] = [
+                    'evaluations' => 0,
+                    'disagreements' => 0,
+                ];
+            }
+
+            $criterionDisagreements[$criterionId]['evaluations']++;
             if (! $group['agreement']) {
-                $criterionDisagreements[$criterionId]['disagreements'] = ($criterionDisagreements[$criterionId]['disagreements'] ?? 0) + 1;
+                $criterionDisagreements[$criterionId]['disagreements']++;
             }
         }
 
+        /** @var array<int,array{criterion:string,evaluations:int,disagreements:int,rate:float}> $recurringDisagreements */
         $recurringDisagreements = [];
         foreach ($criterionDisagreements as $criterionId => $data) {
             $evaluationsCount = $data['evaluations'];
-            $disagreements = $data['disagreements'] ?? 0;
+            $disagreements = $data['disagreements'];
             if ($evaluationsCount < 2 || $disagreements < 2) {
                 continue;
             }
 
             $recurringDisagreements[] = [
-                'criterion' => (string) ($criterionNames[$criterionId] ?? 'Unknown criterion'),
+                'criterion' => $criterionNames[$criterionId] ?? 'Unknown criterion',
                 'evaluations' => $evaluationsCount,
                 'disagreements' => $disagreements,
                 'rate' => round(($disagreements / $evaluationsCount) * 100, 2),

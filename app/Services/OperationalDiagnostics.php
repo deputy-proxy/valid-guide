@@ -72,7 +72,10 @@ final class OperationalDiagnostics
         ];
 
         foreach ($monitors as $monitor) {
-            if ($monitor->next_check_at !== null && ! CarbonImmutable::parse($monitor->next_check_at)->isAfter($now)) {
+            if (
+                $monitor->next_check_at !== null
+                && ! CarbonImmutable::parse((string) $monitor->next_check_at)->isAfter($now)
+            ) {
                 $summary['due']++;
             }
 
@@ -88,7 +91,7 @@ final class OperationalDiagnostics
                 $monitor->status === ValidationTrustMonitorStatus::Active
                 && (
                     $monitor->last_checked_at === null
-                    || CarbonImmutable::parse($monitor->last_checked_at)
+                    || CarbonImmutable::parse((string) $monitor->last_checked_at)
                         ->addMinutes($monitor->cadence->intervalMinutes() * 2)
                         ->isBefore($now)
                 )

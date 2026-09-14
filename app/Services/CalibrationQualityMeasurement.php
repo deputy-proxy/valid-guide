@@ -98,10 +98,20 @@ final class CalibrationQualityMeasurement
 
                 foreach ($auditorEvaluation->criterionResults as $result) {
                     $assessmentValue = $result->getRawOriginal('assessment');
-                    if (! is_string($assessmentValue) || CriterionAssessment::tryFrom($assessmentValue) === null) {
+                    $assessment = is_string($assessmentValue)
+                        ? CriterionAssessment::tryFrom($assessmentValue)
+                        : null;
+                    if ($assessment === null) {
                         $anomalousResults++;
 
                         continue;
+                    }
+
+                    if ($assessment->isScored()) {
+                        $score = $result->getAttribute('score');
+                        if (! is_numeric($score) || (float) $score < 0 || (float) $score > 100) {
+                            $anomalousResults++;
+                        }
                     }
 
                     $criterionId = (int) $result->criterion_id;

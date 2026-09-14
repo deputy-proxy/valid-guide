@@ -47,9 +47,12 @@ Route::get('community', [PublicCommunityController::class, 'index'])->name('publ
 Route::get('community/{slug}', [PublicCommunityController::class, 'show'])
     ->where('slug', '[A-Za-z0-9][A-Za-z0-9._-]{0,99}')
     ->name('public.community.show');
-Route::get('verify', [PublicVerificationController::class, 'index'])->name('public.verify');
+Route::get('verify', [PublicVerificationController::class, 'index'])
+    ->middleware('throttle:30,1')
+    ->name('public.verify');
 Route::get('verify/{verificationIdentifier}', [PublicVerificationController::class, 'show'])
     ->where('verificationIdentifier', '[A-Za-z0-9][A-Za-z0-9._-]{0,99}')
+    ->middleware('throttle:30,1')
     ->name('public.verify.show');
 
 Route::view('pricing', 'public.pages.pricing')->name('public.pricing');
@@ -72,7 +75,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('creator/marketplace', [CreatorMarketplaceController::class, 'index'])->name('creator.marketplace');
     Route::post('creator/marketplace/{service}/purchase', [CreatorMarketplaceController::class, 'purchase'])->name('creator.marketplace.purchase');
     Route::post('creator/marketplace/transactions/{transaction}/cancel', [CreatorMarketplaceController::class, 'cancel'])->name('creator.marketplace.transactions.cancel');
-    Route::post('community/{contribution}/reports', [CommunityReportController::class, 'store'])->name('community.reports.store');
+    Route::post('community/{contribution}/reports', [CommunityReportController::class, 'store'])
+        ->middleware('throttle:10,1')
+        ->name('community.reports.store');
     Route::get('creator/organizations/{organizationId}/evaluation-requests/create/{evaluationRequestId?}', CreateEvaluationRequest::class)
         ->whereNumber('organizationId')->whereNumber('evaluationRequestId')->name('creator.evaluation-requests.create');
     Route::get('creator/evaluations/{evaluationId}/report', ShowReport::class)

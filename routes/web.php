@@ -16,6 +16,7 @@ use App\Livewire\Creator\Reports\ShowGuidance;
 use App\Livewire\Creator\Reports\ShowReport;
 use App\Livewire\Expert\Community\Contributions;
 use App\Livewire\Expert\Opportunities;
+use App\Services\OperationalDiagnostics;
 use Illuminate\Support\Facades\Route;
 
 Route::view('/', 'public.pages.home')->name('home');
@@ -23,6 +24,12 @@ Route::view('/', 'public.pages.home')->name('home');
 Route::view('how-it-works', 'public.pages.how-it-works')->name('public.how-it-works');
 Route::view('for-creators', 'public.pages.creators')->name('public.creators');
 Route::view('for-buyers', 'public.pages.buyers')->name('public.buyers');
+
+Route::get('ready', function (OperationalDiagnostics $diagnostics) {
+    $result = $diagnostics->readiness();
+
+    return response()->json($result, $result['status'] === 'ready' ? 200 : 503);
+})->name('operational.ready');
 
 Route::get('directory', [PublicDirectoryController::class, 'index'])->name('public.directory');
 Route::get('products/{slug}', [PublicProductController::class, 'show'])

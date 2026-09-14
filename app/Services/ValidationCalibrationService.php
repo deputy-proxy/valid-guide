@@ -37,10 +37,9 @@ final class ValidationCalibrationService
 
         $byStandard = $evaluations->groupBy('standard_version_id');
 
-        return $byStandard
+        return array_values($byStandard
             ->map(fn (Collection $standardEvaluations): array => $this->buildStandardReport($standardEvaluations))
-            ->values()
-            ->all();
+            ->all());
     }
 
     public function recordReview(StandardVersion $standardVersion, User $actor): void
@@ -110,7 +109,7 @@ final class ValidationCalibrationService
                 ->groupBy('criterion_id');
 
             foreach ($criterionGroups as $criterionResults) {
-                if ($criterionResults instanceof Collection === false || $criterionResults->count() < 2) {
+                if ($criterionResults->count() < 2) {
                     continue;
                 }
 
@@ -205,7 +204,7 @@ final class ValidationCalibrationService
                 ? round($scores->avg(), 2)
                 : null,
             'score_variance' => $sampleSize >= self::MINIMUM_SAMPLE_SIZE && $scores->count() >= 2
-                ? round($this->variance($scores->all()), 4)
+                ? round($this->variance(array_values($scores->all())), 4)
                 : null,
             'validated_rate' => $sampleSize >= self::MINIMUM_SAMPLE_SIZE
                 ? round($evaluations->where('decision', 'validated')->count() / $sampleSize, 4)

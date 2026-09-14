@@ -105,9 +105,9 @@ final class CalibrationQualityMeasurement
                     }
 
                     $criterionId = (int) $result->criterion_id;
-                    $criterionName = (string) $result->criterion->name;
+                    $criterionCode = (string) $result->criterion->code;
                     $groupKey = $evaluation->getKey().':'.$criterionId;
-                    $criterionGroups[$groupKey]['criterion'] = $criterionName;
+                    $criterionGroups[$groupKey]['criterion'] = $criterionCode;
                     $criterionGroups[$groupKey]['assessments'][] = $assessmentValue;
                 }
             }

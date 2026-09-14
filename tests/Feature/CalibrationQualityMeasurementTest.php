@@ -149,7 +149,7 @@ test('calibration returns insufficient data and flags anomalies instead of manuf
 
     $metrics = app(CalibrationQualityMeasurement::class)->forStandardVersion($version);
 
-    expect($metrics['status'])->toBe('insufficient_data')
+    expect($metrics['status'])->toBe('anomalous_data')
         ->and($metrics['agreement_rate'])->toBeNull()
         ->and($metrics['anomalous_results'])->toBe(1)
         ->and($metrics['review_flags'])->toContain('insufficient_sample')

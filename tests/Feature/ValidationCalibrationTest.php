@@ -11,6 +11,7 @@ use App\Models\User;
 use App\Services\DomainStateTransitionException;
 use App\Services\ValidationCalibrationService;
 use Illuminate\Support\Facades\DB;
+
 use function Pest\Laravel\actingAs;
 
 function completeCalibrationEvaluation(int $evaluationId, int $auditorEvaluationId, string $decision, float $score): void

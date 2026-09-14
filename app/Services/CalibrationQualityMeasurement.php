@@ -117,7 +117,12 @@ final class CalibrationQualityMeasurement
                     $criterionId = (int) $result->criterion_id;
                     $criterionCode = (string) $result->criterion->code;
                     $groupKey = $evaluation->getKey().':'.$criterionId;
-                    $criterionGroups[$groupKey]['criterion'] = $criterionCode;
+                    if (isset($criterionGroups[$groupKey]) === false) {
+                        $criterionGroups[$groupKey] = [
+                            'criterion' => $criterionCode,
+                            'assessments' => [],
+                        ];
+                    }
                     $criterionGroups[$groupKey]['assessments'][] = $assessmentValue;
                 }
             }
@@ -134,10 +139,17 @@ final class CalibrationQualityMeasurement
             $counts = array_count_values($assessments);
             $agreementShares[] = (max($counts) / count($assessments)) * 100;
             $criterionKey = $group['criterion'];
-            $criterionDisagreements[$criterionKey]['criterion'] = $criterionKey;
-            $criterionDisagreements[$criterionKey]['evaluations'] = ($criterionDisagreements[$criterionKey]['evaluations'] ?? 0) + 1;
-            $criterionDisagreements[$criterionKey]['disagreements'] = ($criterionDisagreements[$criterionKey]['disagreements'] ?? 0)
-                + (count($counts) > 1 ? 1 : 0);
+            if (isset($criterionDisagreements[$criterionKey]) === false) {
+                $criterionDisagreements[$criterionKey] = [
+                    'criterion' => $criterionKey,
+                    'evaluations' => 0,
+                    'disagreements' => 0,
+                ];
+            }
+            $criterionDisagreements[$criterionKey]['evaluations']++;
+            if (count($counts) > 1) {
+                $criterionDisagreements[$criterionKey]['disagreements']++;
+            }
         }
 
         /** @var array<int,array{criterion:string,evaluations:int,disagreements:int,rate:float}> $recurringDisagreements */

@@ -32,6 +32,18 @@ function completedCalibrationEvaluation(
     array $scores,
 ): Evaluation {
     $request = $templateRequest->replicate();
+    $request->setRawAttributes(array_merge(
+        $request->getAttributes(),
+        [
+            'submitted_at' => null,
+            'payment_started_at' => null,
+            'paid_at' => null,
+            'evaluation_started_at' => null,
+            'cancelled_at' => null,
+            'refunded_at' => null,
+        ],
+    ));
+    $request->syncOriginal();
     $request->save();
 
     $evaluation = Evaluation::create([

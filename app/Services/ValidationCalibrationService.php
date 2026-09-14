@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Enums\CriterionAssessment;
 use App\Enums\EvaluationStatus;
 use App\Models\AuditorEvaluation;
+use App\Models\CriterionResult;
 use App\Models\Evaluation;
 use App\Models\StandardVersion;
 use App\Models\User;
@@ -101,11 +103,19 @@ final class ValidationCalibrationService
      */
     private function buildStandardReport(Collection $evaluations): array
     {
-        /** @var StandardVersion $standardVersion */
-        $standardVersion = $evaluations->firstOrFail()->standardVersion;
+        $evaluation = $evaluations->first();
+        if (! $evaluation instanceof Evaluation) {
+            throw new DomainStateTransitionException('Calibration cannot be calculated for an empty methodology population.');
+        }
+
+        $standardVersion = $evaluation->standardVersion;
+        if (! $standardVersion instanceof StandardVersion) {
+            throw new DomainStateTransitionException('Calibration requires a persisted methodology Standard Version.');
+        }
+
         /** @var Collection<int, AuditorEvaluation> $auditorEvaluations */
         $auditorEvaluations = $evaluations->flatMap(
-            fn (Evaluation $evaluation): Collection => $evaluation->auditorEvaluations,
+            fn (Evaluation $currentEvaluation): Collection => $currentEvaluation->auditorEvaluations,
         );
         /** @var Collection<int, float> $scores */
         $scores = $evaluations
@@ -126,9 +136,9 @@ final class ValidationCalibrationService
         /** @var array<string,array{disagreement_count:int,sample_size:int}> $disagreements */
         $disagreements = [];
 
-        foreach ($evaluations as $evaluation) {
-            /** @var Collection<int, Collection<int, \App\Models\CriterionResult>> $criterionGroups */
-            $criterionGroups = $evaluation->auditorEvaluations
+        foreach ($evaluations as $currentEvaluation) {
+            /** @var Collection<int, Collection<int, CriterionResult>> $criterionGroups */
+            $criterionGroups = $currentEvaluation->auditorEvaluations
                 ->flatMap(fn (AuditorEvaluation $auditorEvaluation): Collection => $auditorEvaluation->criterionResults)
                 ->groupBy('criterion_id');
 
@@ -139,7 +149,7 @@ final class ValidationCalibrationService
 
                 $assessments = $criterionResults
                     ->pluck('assessment')
-                    ->map(fn ($assessment): string => $assessment->value)
+                    ->map(fn (CriterionAssessment $assessment): string => $assessment->value)
                     ->values();
 
                 if ($assessments->isEmpty()) {
@@ -149,12 +159,12 @@ final class ValidationCalibrationService
                 $counts = $assessments->countBy();
                 $agreementUnits[] = (int) $counts->max() / $assessments->count();
 
-                $criterion = $criterionResults->first()->criterion;
-                if ($criterion === null) {
+                $criterionResult = $criterionResults->first();
+                if (! $criterionResult instanceof CriterionResult || $criterionResult->criterion === null) {
                     continue;
                 }
 
-                $code = $criterion->code;
+                $code = $criterionResult->criterion->code;
                 $disagreements[$code] ??= ['disagreement_count' => 0, 'sample_size' => 0];
                 $disagreements[$code]['sample_size']++;
                 if ($counts->count() > 1) {
@@ -165,8 +175,8 @@ final class ValidationCalibrationService
 
         /** @var array<string,int> $decisionOutcomes */
         $decisionOutcomes = [];
-        foreach ($evaluations as $evaluation) {
-            $decision = (string) ($evaluation->decision ?? 'unresolved');
+        foreach ($evaluations as $currentEvaluation) {
+            $decision = (string) ($currentEvaluation->decision ?? 'unresolved');
             $decisionOutcomes[$decision] = ($decisionOutcomes[$decision] ?? 0) + 1;
         }
 

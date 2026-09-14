@@ -25,11 +25,14 @@ use Illuminate\Support\Facades\DB;
  */
 function completedCalibrationEvaluation(
     StandardVersion $version,
-    EvaluationRequest $request,
+    EvaluationRequest $templateRequest,
     ProductRelease $release,
     int $evaluationNumber,
     array $scores,
 ): Evaluation {
+    $request = $templateRequest->replicate();
+    $request->save();
+
     $evaluation = Evaluation::create([
         'evaluation_request_id' => $request->id,
         'product_release_id' => $release->id,

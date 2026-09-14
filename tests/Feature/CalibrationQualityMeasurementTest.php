@@ -109,7 +109,7 @@ test('calibration aggregates completed evaluations per standard version without 
         ->and($metrics['status'])->toBe('sufficient')
         ->and(Evaluation::count())->toBe($evaluationCount)
         ->and(CriterionResult::count())->toBe($criterionResultCount)
-        ->and(json_encode($metrics))->not->toContain('Calibration test rationale');
+        ->and(json_encode($metrics, JSON_THROW_ON_ERROR))->not->toContain('Calibration test rationale');
 });
 
 test('calibration distinguishes methodology versions and does not mix their samples', function () {

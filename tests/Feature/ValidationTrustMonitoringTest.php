@@ -169,3 +169,16 @@ it('does not allow terminal validations to be monitored', function () {
     expect(fn () => app(ValidationTrustMonitoring::class)->configure($validation->refresh(), $creator))
         ->toThrow(ValidationTrustMonitoringException::class);
 });
+
+it('runs due trust monitoring through the scheduled command', function () {
+    [$validation] = issuedValidation();
+    [, $creator] = trustMonitorCreator($validation);
+    $monitor = app(ValidationTrustMonitoring::class)->configure($validation, $creator);
+
+    $this->artisan('valid:monitor-trust')
+        ->expectsOutputToContain('Processed 1 monitors: 1 changed')
+        ->assertExitCode(0);
+
+    expect($monitor->refresh()->observed_fingerprint)->not->toBeNull()
+        ->and($monitor->status)->toBe(ValidationTrustMonitorStatus::Active);
+});

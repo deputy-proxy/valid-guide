@@ -132,10 +132,16 @@ final class OperationalMetrics
             $event = (string) $log->getAttribute('event');
             $eventsByType[$event] = ($eventsByType[$event] ?? 0) + 1;
 
-            if (str_starts_with($event, 'evaluation.')) {
+            if (
+                str_starts_with($event, 'evaluation.')
+                || str_starts_with($event, 'evaluation_request.')
+            ) {
                 $evaluationEvents++;
             }
-            if (str_starts_with($event, 'auditor.')) {
+            if (
+                str_starts_with($event, 'auditor.')
+                || str_starts_with($event, 'auditor_')
+            ) {
                 $auditorEvents++;
             }
             if (str_starts_with($event, 'validation.')) {
@@ -148,7 +154,9 @@ final class OperationalMetrics
                 $subscriptionEvents++;
             }
             if (
-                str_starts_with($event, 'discovery.')
+                str_starts_with($event, 'public_verification.')
+                || str_starts_with($event, 'public_directory.')
+                || str_starts_with($event, 'discovery.')
                 || str_starts_with($event, 'public.discovery.')
                 || str_starts_with($event, 'directory.')
             ) {
@@ -226,6 +234,7 @@ final class OperationalMetrics
             $lifecycleDurations[$base][] = (float) $startedAt->diffInSeconds($createdAt);
         }
 
+        /** @var array<string, array{count:int,average_seconds:float,minimum_seconds:float,maximum_seconds:float}> $durationSummary */
         $durationSummary = [];
         foreach ($lifecycleDurations as $event => $durations) {
             $durationSummary[$event] = [

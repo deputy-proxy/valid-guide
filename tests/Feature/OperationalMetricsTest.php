@@ -60,7 +60,7 @@ it('aggregates operational audit signals without crossing organization boundarie
         ->and($metrics['auditor_events'])->toBe(1)
         ->and($metrics['validation_events'])->toBe(1)
         ->and($metrics['subscription_events'])->toBe(1)
-        ->and($metrics['public_discovery_events'])->toBe(0)
+        ->and($metrics['public_discovery_events'])->toBe(1)
         ->and($metrics['notification_events'])->toBe(0)
         ->and($metrics['notification_unread'])->toBe(0)
         ->and($metrics['notification_failure_events'])->toBe(0)

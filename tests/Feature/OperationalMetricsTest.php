@@ -79,7 +79,7 @@ it('aggregates persisted notification outcomes without exposing notification pay
 
     $createdAt = CarbonImmutable::parse('2026-09-01 12:00:00');
 
-    $unread = new DatabaseNotification();
+    $unread = new DatabaseNotification;
     $unread->forceFill([
         'id' => '00000000-0000-0000-0000-000000000001',
         'type' => WorkflowNotification::class,
@@ -95,7 +95,7 @@ it('aggregates persisted notification outcomes without exposing notification pay
     ]);
     $unread->save();
 
-    $read = new DatabaseNotification();
+    $read = new DatabaseNotification;
     $read->forceFill([
         'id' => '00000000-0000-0000-0000-000000000002',
         'type' => WorkflowNotification::class,

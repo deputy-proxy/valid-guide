@@ -6,6 +6,7 @@ use App\Enums\AudiencePromiseCoherence;
 use App\Enums\CriterionVotingMode;
 use App\Enums\EvidenceSufficiency;
 use App\Enums\PlatformRole;
+use App\Filament\Pages\CalibrationQualityPage;
 use App\Models\AuditorAssignment;
 use App\Models\AuditorEvaluation;
 use App\Models\Criterion;
@@ -161,10 +162,10 @@ test('only platform administrators can access and record calibration reviews', f
     [$auditorEvaluation] = auditorEvaluationFixture();
     $version = $auditorEvaluation->evaluation->standardVersion;
 
-    expect(\App\Filament\Pages\CalibrationQualityPage::canAccess())->toBeFalse();
+    expect(CalibrationQualityPage::canAccess())->toBeFalse();
 
     $this->actingAs($admin);
-    expect(\App\Filament\Pages\CalibrationQualityPage::canAccess())->toBeTrue();
+    expect(CalibrationQualityPage::canAccess())->toBeTrue();
 
     $auditLog = app(CalibrationQualityMeasurement::class)->recordReview($version, $admin);
 

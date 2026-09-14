@@ -7,9 +7,9 @@ namespace App\Filament\Pages;
 use App\Models\User;
 use App\Services\OperationalMetrics;
 use BackedEnum;
+use Carbon\CarbonImmutable;
 use Filament\Pages\Page;
 use Illuminate\Support\Facades\Auth;
-use Carbon\CarbonImmutable;
 use UnitEnum;
 
 final class OperationalMetricsPage extends Page

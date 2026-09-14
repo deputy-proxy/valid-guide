@@ -97,8 +97,11 @@ test('calibration aggregates completed evaluations per standard version without 
     expect($metrics['completed_evaluations'])->toBe(5)
         ->and($metrics['locked_auditor_evaluations'])->toBe(10)
         ->and($metrics['insufficient_evidence_rate'])->toBe(0.0)
-        ->and($metrics['agreement_rate'])->toBe(40.0)
-        ->and($metrics['score_variance'])->toBe(8.0)
+        ->and($metrics['audience_promise_coherence_rate'])->toBe(100.0)
+        ->and($metrics['criterion_agreement_rate'])->toBe(70.0)
+        ->and($metrics['overall_score_mean'])->toBe(80.0)
+        ->and($metrics['overall_score_variance'])->toBe(0.0)
+        ->and($metrics['validated_rate'])->toBe(80.0)
         ->and($metrics['decision_outcomes']['validated'])->toBe(4)
         ->and($metrics['decision_outcomes']['not_validated'])->toBe(1)
         ->and($metrics['recurring_disagreements'])->toHaveCount(1)
@@ -151,9 +154,9 @@ test('calibration returns insufficient data and flags anomalies instead of manuf
     $metrics = app(CalibrationQualityMeasurement::class)->forStandardVersion($version);
 
     expect($metrics['status'])->toBe('anomalous_data')
-        ->and($metrics['agreement_rate'])->toBeNull()
+        ->and($metrics['criterion_agreement_rate'])->toBeNull()
         ->and($metrics['anomalous_results'])->toBe(1)
-        ->and($metrics['review_flags'])->toContain('insufficient_sample')
+        ->and($metrics['review_flags'])->toContain('insufficient_evaluation_sample')
         ->and($metrics['review_flags'])->toContain('anomalous_data');
 });
 
@@ -170,8 +173,8 @@ test('only platform administrators can access and record calibration reviews', f
 
     $auditLog = app(CalibrationQualityMeasurement::class)->recordReview($version, $admin);
 
-    expect($auditLog->event)->toBe('calibration.reviewed')
-        ->and(DB::table('audit_logs')->where('event', 'calibration.reviewed')->count())->toBe(1);
+    expect($auditLog->event)->toBe('validation.calibration_reviewed')
+        ->and(DB::table('audit_logs')->where('event', 'validation.calibration_reviewed')->count())->toBe(1);
 
     expect(fn () => app(CalibrationQualityMeasurement::class)->recordReview($version, $organizationUser))
         ->toThrow(AuthorizationException::class);

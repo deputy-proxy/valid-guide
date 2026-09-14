@@ -86,6 +86,7 @@ final class CalibrationQualityMeasurement
                         $criterionGroups[$groupKey]['assessments'][] = $assessment->value;
                     } else {
                         $anomalousResults++;
+
                         continue;
                     }
 
@@ -111,6 +112,7 @@ final class CalibrationQualityMeasurement
             $assessments = array_values(array_unique($group['assessments']));
 
             if (count($assessments) < 2) {
+
                 continue;
             }
 
@@ -131,6 +133,7 @@ final class CalibrationQualityMeasurement
         foreach ($comparableGroups as $group) {
             $scores = $group['scores'];
             if (count($scores) < 2) {
+
                 continue;
             }
 

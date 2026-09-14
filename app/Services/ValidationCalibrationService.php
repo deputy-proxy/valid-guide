@@ -175,7 +175,7 @@ final class ValidationCalibrationService
         if ($auditorSampleSize < self::MINIMUM_SAMPLE_SIZE) {
             $reviewFlags[] = 'insufficient_auditor_sample';
         }
-        if ($agreementSampleSize < self::MINIMUM_SAMPLE_SIZE) {
+        if ($agreementSampleSize === 0) {
             $reviewFlags[] = 'insufficient_agreement_sample';
         }
 
@@ -197,7 +197,7 @@ final class ValidationCalibrationService
             'audience_coherence_rate' => $auditorSampleSize >= self::MINIMUM_SAMPLE_SIZE
                 ? round($coherentCount / $auditorSampleSize, 4)
                 : null,
-            'criterion_agreement_rate' => $agreementSampleSize >= self::MINIMUM_SAMPLE_SIZE
+            'criterion_agreement_rate' => $agreementSampleSize > 0
                 ? round(array_sum($agreementUnits) / $agreementSampleSize, 4)
                 : null,
             'score_mean' => $sampleSize >= self::MINIMUM_SAMPLE_SIZE && $scores->isNotEmpty()
